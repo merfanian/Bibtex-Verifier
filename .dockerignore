@@ -1,0 +1,11 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+.git/
+.gitignore
+.cursor/
+*.md
+LICENSE
+Dockerfile
+.dockerignore

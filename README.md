@@ -4,6 +4,7 @@ A local web app that verifies your `.bib` file entries against academic database
 
 ![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
+![Docker](https://img.shields.io/docker/v/merfanian/bibtex-verifier?label=docker)
 
 ## Why?
 
@@ -38,11 +39,21 @@ Upload .bib  ──>  Parse entries  ──>  For each entry:
 
 ## Quick start
 
+### Option 1: Docker (recommended)
+
+```bash
+docker run -p 8080:8080 merfanian/bibtex-verifier
+```
+
+Then open [http://localhost:8080](http://localhost:8080) in your browser. That's it.
+
+### Option 2: From source
+
 **Requirements:** Python 3.10 or newer.
 
 ```bash
 # Clone the repo
-git clone https://github.com/your-username/BibTeX-Verifier.git
+git clone https://github.com/merfanian/BibTeX-Verifier.git
 cd BibTeX-Verifier
 
 # Create a virtual environment and install dependencies
