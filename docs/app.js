@@ -449,11 +449,19 @@
 
   async function runVerification() {
     const total = parsedEntries.length;
+    const seenTitles = new Map();
 
     for (let i = 0; i < total; i++) {
       const entry = parsedEntries[i];
       const title = entry.title || "";
       const entryId = entry.ID || `entry_${i}`;
+
+      const normKey = normalizeTitle(title);
+      if (normKey && seenTitles.has(normKey)) {
+        entry._duplicateOf = seenTitles.get(normKey);
+      } else if (normKey) {
+        seenTitles.set(normKey, entryId);
+      }
 
       const pct = Math.round(((i + 1) / total) * 100);
       progressFill.style.width = pct + "%";
@@ -501,6 +509,7 @@
       field_diffs: fieldDiffs,
       suggested,
       found_title: found ? (found.title || "") : "",
+      duplicate_of: entry._duplicateOf || null,
     };
   }
 
@@ -514,6 +523,7 @@
     card.className = `entry-card status-${r.status}`;
     card.dataset.status = r.status;
     card.dataset.index = r.index;
+    if (r.duplicate_of) card.dataset.duplicate = "true";
 
     let diffHTML = "";
     if (r.field_diffs?.length) {
@@ -527,6 +537,10 @@
         </tr>`).join("")}
       </table>`;
     }
+
+    let duplicateHTML = "";
+    if (r.duplicate_of)
+      duplicateHTML = `<div class="duplicate-row">Duplicate of <strong>${esc(r.duplicate_of)}</strong></div>`;
 
     let foundTitleHTML = "";
     if (r.status === "needs_review" && r.found_title)
@@ -549,8 +563,11 @@
         <div class="entry-title">${esc(r.title || "(no title)")}</div>
         <div class="entry-meta">${esc(r.entry_id)} &middot; ${esc(r.entry_type)}</div>
       </div>
-      <span class="status-tag tag-${r.status}">${statusLabel(r.status)}</span>
-    </div>${foundTitleHTML}${diffHTML}${actionsHTML}`;
+      <div class="entry-tags">
+        ${r.duplicate_of ? '<span class="status-tag tag-duplicate">Duplicate</span>' : ""}
+        <span class="status-tag tag-${r.status}">${statusLabel(r.status)}</span>
+      </div>
+    </div>${duplicateHTML}${foundTitleHTML}${diffHTML}${actionsHTML}`;
 
     entryList.appendChild(card);
   }
@@ -564,11 +581,16 @@
 
   function updateSummary() {
     const c = { verified: 0, updated: 0, needs_review: 0, not_found: 0 };
-    results.forEach(r => c[r.status] = (c[r.status] || 0) + 1);
+    let dupes = 0;
+    results.forEach(r => {
+      c[r.status] = (c[r.status] || 0) + 1;
+      if (r.duplicate_of) dupes++;
+    });
     $(".badge-verified").textContent = `Verified: ${c.verified}`;
     $(".badge-updated").textContent = `Auto-Updated: ${c.updated}`;
     $(".badge-review").textContent = `Needs Review: ${c.needs_review}`;
     $(".badge-notfound").textContent = `Not Found: ${c.not_found}`;
+    $(".badge-duplicates").textContent = `Duplicates: ${dupes}`;
     $$(".summary-badge").forEach(b => b.classList.add("active"));
   }
 
@@ -580,15 +602,30 @@
     activeFilter = activeFilter === filter ? "all" : filter;
     $$(".summary-badge").forEach(b =>
       b.classList.toggle("active", activeFilter === "all" || b.dataset.filter === activeFilter));
-    $$(".entry-card").forEach(card =>
-      card.classList.toggle("hidden", activeFilter !== "all" && card.dataset.status !== activeFilter));
+    $$(".entry-card").forEach(card => {
+      if (activeFilter === "all") { card.classList.remove("hidden"); return; }
+      if (activeFilter === "duplicate") {
+        card.classList.toggle("hidden", card.dataset.duplicate !== "true");
+      } else {
+        card.classList.toggle("hidden", card.dataset.status !== activeFilter);
+      }
+    });
   });
 
   // ─── Download ─────────────────────────────────────────────────────
+  const optRemoveDuplicates = $("#opt-remove-duplicates");
+  const optRemoveNotFound = $("#opt-remove-notfound");
+
   $(".btn-download").addEventListener("click", () => {
-    const final = parsedEntries.map((entry, i) => {
+    const removeNotFound = optRemoveNotFound.checked;
+    const removeDuplicates = optRemoveDuplicates.checked;
+
+    let final = parsedEntries.map((entry, i) => {
       const r = results[i];
       if (!r) return entry;
+
+      if (removeNotFound && r.status === "not_found") return null;
+
       const decision = decisions[i] ?? (r.status === "verified" ? "accept" : null);
       if ((r.status === "updated" || r.status === "needs_review") && decision === "accept" && r.suggested) {
         const updated = { ...entry };
@@ -597,7 +634,18 @@
         return updated;
       }
       return entry;
-    });
+    }).filter(Boolean);
+
+    if (removeDuplicates) {
+      const seen = new Set();
+      final = final.filter(entry => {
+        const key = normalizeTitle(entry.title || "");
+        if (!key) return true;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
 
     const bibContent = entriesToBib(final);
     const blob = new Blob([bibContent], { type: "application/x-bibtex" });

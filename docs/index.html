@@ -56,11 +56,22 @@
         <span class="summary-badge badge-updated active" data-filter="updated">Auto-Updated: 0</span>
         <span class="summary-badge badge-review active" data-filter="needs_review">Needs Review: 0</span>
         <span class="summary-badge badge-notfound active" data-filter="not_found">Not Found: 0</span>
+        <span class="summary-badge badge-duplicates active" data-filter="duplicate">Duplicates: 0</span>
       </div>
       <div class="entry-list"></div>
     </div>
 
     <div class="download-bar">
+      <div class="download-options">
+        <label class="option-toggle">
+          <input type="checkbox" id="opt-remove-duplicates" />
+          <span>Remove duplicate entries</span>
+        </label>
+        <label class="option-toggle">
+          <input type="checkbox" id="opt-remove-notfound" />
+          <span>Remove "Not Found" entries</span>
+        </label>
+      </div>
       <button class="btn-download">Download Corrected .bib</button>
     </div>
 

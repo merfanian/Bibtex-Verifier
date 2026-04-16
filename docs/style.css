@@ -328,6 +328,12 @@ code {
   border-color: var(--gray-border);
 }
 
+.badge-duplicates {
+  background: rgba(178, 132, 255, 0.1);
+  color: #b284ff;
+  border-color: rgba(178, 132, 255, 0.25);
+}
+
 .entry-list {
   display: flex;
   flex-direction: column;
@@ -379,6 +385,21 @@ code {
 .tag-updated { background: var(--yellow-bg); color: var(--yellow); }
 .tag-needs_review { background: var(--red-bg); color: var(--red); }
 .tag-not_found { background: var(--gray-bg); color: var(--text-dim); }
+.tag-duplicate { background: rgba(178, 132, 255, 0.1); color: #b284ff; }
+
+.entry-tags {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.duplicate-row {
+  margin-top: 0.5rem;
+  font-size: 0.82rem;
+  color: #b284ff;
+}
+
+.duplicate-row strong { color: var(--text); }
 
 .diff-table {
   width: 100%;
@@ -467,6 +488,63 @@ code {
   display: none;
   margin-top: 1.5rem;
   text-align: center;
+}
+
+.download-options {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.option-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  cursor: pointer;
+  user-select: none;
+}
+
+.option-toggle input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 1.5px solid var(--border);
+  border-radius: 3px;
+  background: var(--surface);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.option-toggle input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.option-toggle input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 0.5px;
+  width: 5px;
+  height: 9px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.option-toggle:hover input[type="checkbox"] {
+  border-color: var(--accent);
+}
+
+.option-toggle span {
+  line-height: 1;
 }
 
 .btn-download {
