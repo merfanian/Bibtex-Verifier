@@ -1,8 +1,9 @@
 # BibTeX Verifier
 
-A local web app that verifies your `.bib` file entries against academic databases. Upload a bibliography, and it checks every entry's metadata (authors, year, venue, DOI, etc.) against [CrossRef](https://www.crossref.org/) and [Semantic Scholar](https://www.semanticscholar.org/) to catch errors and fill in missing fields.
+A web app that verifies your `.bib` file entries against academic databases. Upload a bibliography, and it checks every entry's metadata (authors, year, venue, DOI, etc.) against [CrossRef](https://www.crossref.org/) and [Semantic Scholar](https://www.semanticscholar.org/) to catch errors and fill in missing fields.
 
-![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
+Runs entirely in the browser -- no backend, no installation, no data leaves your machine except the title lookups.
+
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 ![Docker](https://img.shields.io/docker/v/merfanian/bibtex-verifier?label=docker)
 
@@ -17,7 +18,7 @@ If you've ever manually compared dozens of BibTeX entries against Google Scholar
 ## Features
 
 - **Drag-and-drop upload** of `.bib` files (standard BibTeX and BibLaTeX)
-- **Real-time progress** via Server-Sent Events as entries are checked one by one
+- **Real-time progress** as entries are checked one by one
 - **Three-tier categorization** of results:
   - **Verified** -- title and all metadata fields match the online record
   - **Auto-Updated** -- title matches but other details (authors, year, venue, DOI, etc.) differ; shows a field-by-field diff
@@ -26,46 +27,48 @@ If you've ever manually compared dozens of BibTeX entries against Google Scholar
 - **Download** the corrected `.bib` file with your decisions applied
 - **Enrichment** -- fills in missing DOIs, publisher info, and other fields from API data
 - **LaTeX-aware** -- strips `\textbf`, accents (`\'e`), braces, etc. before comparing
+- **Zero install** -- works in any modern browser via GitHub Pages
 
 ## How it works
 
 ```
-Upload .bib  ──>  Parse entries  ──>  For each entry:
+Upload .bib  -->  Parse entries  -->  For each entry:
                                         1. Search Semantic Scholar /match (precise title lookup)
                                         2. Enrich with CrossRef (volume, pages, DOI)
                                         3. Fall back to CrossRef search / SS general search
-                                      ──>  Compare fields  ──>  Categorize  ──>  Show results
+                                      -->  Compare fields  -->  Categorize  -->  Show results
 ```
 
 - **Semantic Scholar's `/match` endpoint** is tried first -- it's designed for exact title lookup and returns the single best match.
 - **CrossRef** provides richer metadata (volume, pages, publisher, DOI). Results are merged only when the year and author overlap confirm it's the same paper.
-- **Fuzzy matching** (`rapidfuzz`) handles minor title variations, and author comparison is done by last-name set overlap to tolerate name ordering and formatting differences.
+- **Fuzzy matching** handles minor title variations, and author comparison is done by last-name set overlap to tolerate name ordering and formatting differences.
 
 ## Quick start
 
-### Option 1: Docker (recommended)
+### Option 1: Use online (recommended)
+
+Visit **[https://merfanian.github.io/GoogleScholarPaperChecker/](https://merfanian.github.io/GoogleScholarPaperChecker/)** -- no installation needed.
+
+### Option 2: Docker
 
 ```bash
 docker run -p 8080:8080 merfanian/bibtex-verifier
 ```
 
-Then open [http://localhost:8080](http://localhost:8080) in your browser. That's it.
+Then open [http://localhost:8080](http://localhost:8080) in your browser.
 
-### Option 2: From source
+### Option 3: From source (Python backend)
+
+The `main` branch contains a Python/FastAPI backend version with server-side processing.
 
 **Requirements:** Python 3.10 or newer.
 
 ```bash
-# Clone the repo
-git clone https://github.com/merfanian/BibTeX-Verifier.git
-cd BibTeX-Verifier
-
-# Create a virtual environment and install dependencies
+git clone https://github.com/merfanian/GoogleScholarPaperChecker.git
+cd GoogleScholarPaperChecker
 python -m venv venv
 source venv/bin/activate   # on Windows: venv\Scripts\activate
 pip install -r requirements.txt
-
-# Run the app
 python -m app.main
 ```
 
@@ -74,39 +77,18 @@ Then open [http://localhost:8080](http://localhost:8080) in your browser.
 ## Project structure
 
 ```
-app/
-  main.py          FastAPI server, SSE streaming, upload/verify/download routes
-  bib_parser.py    BibTeX parsing & writing, LaTeX stripping
-  checker.py       Semantic Scholar + CrossRef API clients, smart result merging
-  comparator.py    Field-level comparison, fuzzy matching, categorization
-  static/
-    index.html     Single-page web UI
-    style.css      Dark-themed responsive CSS
-    app.js         Upload handling, SSE progress, result rendering
-requirements.txt
-LICENSE
+docs/                      Client-side app (served by GitHub Pages)
+  index.html               Single-page web UI
+  style.css                Dark-themed responsive CSS
+  app.js                   All logic: parsing, API calls, comparison, download
+
+app/                       Python backend version (main branch)
+  main.py                  FastAPI server, SSE streaming, routes
+  bib_parser.py            BibTeX parsing & writing, LaTeX stripping
+  checker.py               Semantic Scholar + CrossRef API clients
+  comparator.py            Field-level comparison, fuzzy matching
+  static/                  Frontend for the backend version
 ```
-
-## API overview
-
-| Endpoint | Method | Description |
-|---|---|---|
-| `/` | GET | Serves the web UI |
-| `/api/upload` | POST | Accepts a `.bib` file, returns a session ID |
-| `/api/verify/{session_id}` | GET | SSE stream of verification progress and results |
-| `/api/accept/{session_id}` | POST | Submit accept/reject decisions per entry |
-| `/api/download/{session_id}` | GET | Download the corrected `.bib` file |
-
-## Configuration
-
-The app runs with sensible defaults and requires no API keys. A few things you can tweak in the source:
-
-| Setting | File | Default | Description |
-|---|---|---|---|
-| Port | `app/main.py` | `8080` | Server port |
-| Title match threshold | `app/comparator.py` | `85%` | Minimum fuzzy similarity to consider a title "matched" |
-| Concurrency limit | `app/checker.py` | `5` | Max concurrent API requests (be polite to free APIs) |
-| Request timeout | `app/checker.py` | `15s` | Per-request timeout for API calls |
 
 ## Limitations
 
@@ -120,9 +102,8 @@ Contributions are welcome! Feel free to open issues or pull requests. Some ideas
 
 - Add support for additional APIs (OpenAlex, DBLP)
 - Batch processing of multiple `.bib` files
-- Persistent storage (SQLite) for verification history
 - BibLaTeX-specific field handling
-- Configurable settings via a UI panel
+- Configurable thresholds via a UI settings panel
 
 ## License
 
