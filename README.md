@@ -65,7 +65,7 @@ The `main` branch contains a Python/FastAPI backend version with server-side pro
 
 ```bash
 git clone https://github.com/merfanian/Bibtex-Verifier.git
-cd GoogleScholarPaperChecker
+cd Bibtex-Verifier
 python -m venv venv
 source venv/bin/activate   # on Windows: venv\Scripts\activate
 pip install -r requirements.txt
