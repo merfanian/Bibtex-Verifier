@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BibTeX Verifier</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>BibTeX Verifier</h1>
+    <p class="subtitle">Upload a .bib file to verify entries against CrossRef &amp; Semantic Scholar</p>
+
+    <div class="upload-zone">
+      <span class="icon">&#128462;</span>
+      <span class="label">Drop your .bib file here or click to browse</span>
+      <p>Supports standard BibTeX / BibLaTeX files</p>
+      <input type="file" id="file-input" accept=".bib" />
+    </div>
+
+    <div class="progress-section">
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill"></div>
+      </div>
+      <div class="progress-text">Preparing...</div>
+    </div>
+
+    <div class="results-section">
+      <div class="summary-bar">
+        <span class="summary-badge badge-verified active" data-filter="verified">Verified: 0</span>
+        <span class="summary-badge badge-updated active" data-filter="updated">Auto-Updated: 0</span>
+        <span class="summary-badge badge-review active" data-filter="needs_review">Needs Review: 0</span>
+        <span class="summary-badge badge-notfound active" data-filter="not_found">Not Found: 0</span>
+      </div>
+      <div class="entry-list"></div>
+    </div>
+
+    <div class="download-bar">
+      <button class="btn-download">Download Corrected .bib</button>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
