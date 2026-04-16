@@ -19,16 +19,28 @@
         </a>
       </div>
       <p class="hero-lead">Verify your bibliography against academic databases in seconds.
-        Upload a <code>.bib</code> file and this tool checks every entry's authors, year,
+        Upload a <code>.bib</code> file or paste it directly from Overleaf, and this tool checks every entry's authors, year,
         venue, and DOI against <a href="https://www.crossref.org/" target="_blank">CrossRef</a>
         and <a href="https://www.semanticscholar.org/" target="_blank">Semantic Scholar</a>.</p>
     </header>
 
-    <div class="upload-zone">
-      <span class="icon">&#128462;</span>
-      <span class="label">Drop your .bib file here or click to browse</span>
-      <p>Supports standard BibTeX / BibLaTeX files</p>
-      <input type="file" id="file-input" accept=".bib" />
+    <div class="input-tabs">
+      <button class="input-tab active" data-tab="upload">Upload file</button>
+      <button class="input-tab" data-tab="paste">Paste BibTeX</button>
+    </div>
+
+    <div class="tab-panel active" id="tab-upload">
+      <div class="upload-zone">
+        <span class="icon">&#128462;</span>
+        <span class="label">Drop your .bib file here or click to browse</span>
+        <p>Supports standard BibTeX / BibLaTeX files</p>
+        <input type="file" id="file-input" accept=".bib" />
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-paste">
+      <textarea id="bib-paste" class="bib-textarea" placeholder="Paste your BibTeX content here, e.g. from Overleaf...&#10;&#10;@article{example2024,&#10;  title={Your Paper Title},&#10;  author={Author, First and Author, Second},&#10;  year={2024},&#10;  journal={Some Journal}&#10;}"></textarea>
+      <button class="btn-verify-paste" id="btn-verify-paste">Verify pasted BibTeX</button>
     </div>
 
     <div class="progress-section">

@@ -125,6 +125,88 @@ code {
   margin-bottom: 2rem;
 }
 
+/* Input tabs */
+.input-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 0;
+  border-bottom: 2px solid var(--border);
+}
+
+.input-tab {
+  padding: 0.6rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.input-tab:hover {
+  color: var(--text);
+}
+
+.input-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+/* Paste area */
+.bib-textarea {
+  width: 100%;
+  min-height: 220px;
+  margin-top: 1rem;
+  padding: 1rem;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  resize: vertical;
+}
+
+.bib-textarea::placeholder {
+  color: var(--text-dim);
+  opacity: 0.6;
+}
+
+.bib-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.btn-verify-paste {
+  display: block;
+  margin-top: 0.75rem;
+  padding: 0.6rem 1.5rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-verify-paste:hover {
+  background: var(--accent-hover);
+}
+
 /* Upload area */
 .upload-zone {
   border: 2px dashed var(--border);

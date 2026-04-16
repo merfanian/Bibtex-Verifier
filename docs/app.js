@@ -375,6 +375,19 @@
   const entryList = $(".entry-list");
   const downloadBar = $(".download-bar");
 
+  // ─── Tab switching ─────────────────────────────────────────────────
+  const inputTabs = $$(".input-tab");
+  const tabPanels = $$(".tab-panel");
+
+  inputTabs.forEach(tab => {
+    tab.addEventListener("click", () => {
+      inputTabs.forEach(t => t.classList.remove("active"));
+      tabPanels.forEach(p => p.classList.remove("active"));
+      tab.classList.add("active");
+      $(`#tab-${tab.dataset.tab}`).classList.add("active");
+    });
+  });
+
   // ─── Upload handling ──────────────────────────────────────────────
   uploadZone.addEventListener("click", () => fileInput.click());
 
@@ -397,7 +410,21 @@
 
   async function handleFile(file) {
     if (!file.name.endsWith(".bib")) { alert("Please upload a .bib file."); return; }
+    const content = await file.text();
+    startVerificationFromContent(content, "Reading file...");
+  }
 
+  // ─── Paste handling ───────────────────────────────────────────────
+  const bibPaste = $("#bib-paste");
+  const btnVerifyPaste = $("#btn-verify-paste");
+
+  btnVerifyPaste.addEventListener("click", () => {
+    const content = bibPaste.value.trim();
+    if (!content) { alert("Please paste your BibTeX content first."); return; }
+    startVerificationFromContent(content, "Parsing pasted content...");
+  });
+
+  function startVerificationFromContent(content, statusMsg) {
     results = [];
     decisions = {};
     activeFilter = "all";
@@ -406,19 +433,18 @@
     resultsSection.style.display = "none";
     progressSection.style.display = "block";
     progressFill.style.width = "0%";
-    progressText.textContent = "Reading file...";
+    progressText.textContent = statusMsg;
 
-    const content = await file.text();
     parsedEntries = parseBib(content);
 
     if (!parsedEntries.length) {
-      alert("No entries found in the .bib file.");
+      alert("No BibTeX entries found. Make sure the content contains valid @type{key, ...} entries.");
       progressSection.style.display = "none";
       return;
     }
 
     progressText.textContent = `Verifying 0 / ${parsedEntries.length} entries...`;
-    await runVerification();
+    runVerification();
   }
 
   async function runVerification() {
