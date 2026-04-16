@@ -47,7 +47,7 @@ Upload .bib  -->  Parse entries  -->  For each entry:
 
 ### Option 1: Use online (recommended)
 
-Visit **[https://merfanian.github.io/GoogleScholarPaperChecker/](https://merfanian.github.io/GoogleScholarPaperChecker/)** -- no installation needed.
+Visit **[https://merfanian.github.io/Bibtex-Verifier/](https://merfanian.github.io/Bibtex-Verifier/)** -- no installation needed.
 
 ### Option 2: Docker
 
@@ -64,7 +64,7 @@ The `main` branch contains a Python/FastAPI backend version with server-side pro
 **Requirements:** Python 3.10 or newer.
 
 ```bash
-git clone https://github.com/merfanian/GoogleScholarPaperChecker.git
+git clone https://github.com/merfanian/Bibtex-Verifier.git
 cd GoogleScholarPaperChecker
 python -m venv venv
 source venv/bin/activate   # on Windows: venv\Scripts\activate
