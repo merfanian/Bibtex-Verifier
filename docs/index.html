@@ -3,13 +3,26 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BibTeX Verifier</title>
+  <title>BibTeX Verifier - Verify your bibliography against academic databases</title>
+  <meta name="description" content="Free online tool to verify BibTeX entries against CrossRef and Semantic Scholar. Catches wrong authors, years, venues, and fills in missing DOIs." />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="container">
-    <h1>BibTeX Verifier</h1>
-    <p class="subtitle">Upload a .bib file to verify entries against CrossRef &amp; Semantic Scholar</p>
+
+    <header class="hero">
+      <div class="hero-top">
+        <h1>BibTeX Verifier</h1>
+        <a class="github-star-btn" href="https://github.com/merfanian/GoogleScholarPaperChecker" target="_blank" rel="noopener">
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.65 7.65 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+          Star on GitHub
+        </a>
+      </div>
+      <p class="hero-lead">Verify your bibliography against academic databases in seconds.
+        Upload a <code>.bib</code> file and this tool checks every entry's authors, year,
+        venue, and DOI against <a href="https://www.crossref.org/" target="_blank">CrossRef</a>
+        and <a href="https://www.semanticscholar.org/" target="_blank">Semantic Scholar</a>.</p>
+    </header>
 
     <div class="upload-zone">
       <span class="icon">&#128462;</span>
@@ -38,6 +51,100 @@
     <div class="download-bar">
       <button class="btn-download">Download Corrected .bib</button>
     </div>
+
+    <section class="how-it-works" id="how-it-works">
+      <h2>How it works</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <h3>Upload</h3>
+          <p>Drop your <code>.bib</code> file above or click to browse. The file is read entirely in your browser -- nothing is uploaded to a server.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <h3>Verify</h3>
+          <p>Each entry is looked up by title against Semantic Scholar and CrossRef. The tool compares authors, year, venue, DOI, and other fields to the published record.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <h3>Review</h3>
+          <p>Results are color-coded: <strong class="c-green">Verified</strong> means everything matches,
+            <strong class="c-yellow">Auto-Updated</strong> shows a diff of changed fields,
+            and <strong class="c-red">Needs Review</strong> means the title didn't match closely enough. Accept or reject each suggestion.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <h3>Download</h3>
+          <p>Click the download button to get a corrected <code>.bib</code> file with your accepted changes applied. Ready to use in your LaTeX project.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="features">
+      <h2>Features</h2>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-icon">&#128269;</div>
+          <h3>Dual-source verification</h3>
+          <p>Queries both Semantic Scholar and CrossRef to maximize coverage and metadata quality.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#128203;</div>
+          <h3>Field-by-field diff</h3>
+          <p>See exactly which fields differ between your entry and the published record, with similarity scores.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#128274;</div>
+          <h3>Privacy-first</h3>
+          <p>Your file never leaves the browser. Only paper titles are sent to public academic APIs for lookup.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#128221;</div>
+          <h3>DOI enrichment</h3>
+          <p>Fills in missing DOIs, publisher info, and other metadata found in the online record.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#127919;</div>
+          <h3>Fuzzy matching</h3>
+          <p>Handles minor title variations, LaTeX accents, and author name formatting differences.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#9997;&#65039;</div>
+          <h3>Accept or reject</h3>
+          <p>You stay in control. Review every suggested change and decide what to keep before downloading.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="faq">
+      <h2>FAQ</h2>
+      <details>
+        <summary>Is my data safe?</summary>
+        <p>Yes. Your <code>.bib</code> file is parsed entirely in your browser using JavaScript. The only network requests made are title lookups to the public CrossRef and Semantic Scholar APIs. No file data is sent to any server.</p>
+      </details>
+      <details>
+        <summary>Why are some entries "Not Found"?</summary>
+        <p>Not every paper is indexed in CrossRef or Semantic Scholar. ArXiv preprints, workshop papers, theses, and very recent publications may not be found. The tool will flag these so you can verify them manually.</p>
+      </details>
+      <details>
+        <summary>Why does verification take a while?</summary>
+        <p>To respect the free APIs' rate limits, the tool sends requests at a controlled pace (about 1 per second to Semantic Scholar). For a file with 50 entries, expect roughly 2-3 minutes.</p>
+      </details>
+      <details>
+        <summary>Can I use this offline?</summary>
+        <p>The tool requires an internet connection to query the academic APIs. For offline use, you can run the <a href="https://github.com/merfanian/GoogleScholarPaperChecker" target="_blank">Python backend version</a> locally via Docker.</p>
+      </details>
+      <details>
+        <summary>Is this open source?</summary>
+        <p>Yes! The full source code is on <a href="https://github.com/merfanian/GoogleScholarPaperChecker" target="_blank">GitHub</a> under the MIT license. Contributions are welcome.</p>
+      </details>
+    </section>
+
+    <footer class="site-footer">
+      <p>Open source under <a href="https://github.com/merfanian/GoogleScholarPaperChecker/blob/main/LICENSE" target="_blank">MIT License</a>
+        &middot; <a href="https://github.com/merfanian/GoogleScholarPaperChecker" target="_blank">GitHub</a></p>
+    </footer>
+
   </div>
 
   <script src="https://unpkg.com/fuzzball@2.2.3/dist/fuzzball.umd.min.js"></script>

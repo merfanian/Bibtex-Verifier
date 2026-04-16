@@ -12,7 +12,9 @@
     "author", "year", "journal", "booktitle",
     "volume", "number", "pages", "doi", "publisher",
   ];
-  const REQUEST_DELAY_MS = 350;
+  const REQUEST_DELAY_MS = 400;
+  const MAX_RETRIES = 3;
+  const RETRY_BASE_MS = 2000;
 
   // ─── LaTeX helpers ───────────────────────────────────────────────────
   const LATEX_ACCENT_MAP = {
@@ -232,19 +234,49 @@
     };
   }
 
-  async function fetchJSON(url, params) {
+  let lastSSRequestTime = 0;
+
+  async function fetchJSON(url, params, { retries = MAX_RETRIES, is404Ok = false } = {}) {
     const u = new URL(url);
     for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
-    const resp = await fetch(u.toString());
-    if (!resp.ok) {
-      if (resp.status === 404 || resp.status === 429) return null;
-      return null;
+
+    // Throttle Semantic Scholar requests to ~1/sec (their rate limit is strict)
+    const isSS = url.includes("semanticscholar.org");
+    if (isSS) {
+      const elapsed = Date.now() - lastSSRequestTime;
+      if (elapsed < 1000) await sleep(1000 - elapsed);
+      lastSSRequestTime = Date.now();
     }
-    return resp.json();
+
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const resp = await fetch(u.toString());
+        if (resp.ok) return resp.json();
+        if (resp.status === 404 && is404Ok) return null;
+        if (resp.status === 429 && attempt < retries) {
+          const wait = RETRY_BASE_MS * Math.pow(2, attempt);
+          console.warn(`Rate limited (429) on attempt ${attempt + 1}, retrying in ${wait}ms...`);
+          await sleep(wait);
+          continue;
+        }
+        return null;
+      } catch (err) {
+        // Browser throws TypeError on CORS-blocked 429 responses
+        if (attempt < retries) {
+          const wait = RETRY_BASE_MS * Math.pow(2, attempt);
+          console.warn(`Request failed (${err.message}), retrying in ${wait}ms...`);
+          await sleep(wait);
+          continue;
+        }
+        console.warn(`Request failed after ${retries + 1} attempts:`, err.message);
+        return null;
+      }
+    }
+    return null;
   }
 
   async function searchSSMatch(title) {
-    const data = await fetchJSON(SS_MATCH, { query: title, fields: SS_FIELDS });
+    const data = await fetchJSON(SS_MATCH, { query: title, fields: SS_FIELDS }, { is404Ok: true });
     if (!data?.data?.[0]) return null;
     return ssToStandard(data.data[0]);
   }
