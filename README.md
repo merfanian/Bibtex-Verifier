@@ -6,6 +6,10 @@ A local web app that verifies your `.bib` file entries against academic database
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 ![Docker](https://img.shields.io/docker/v/merfanian/bibtex-verifier?label=docker)
 
+## Demo
+
+![BibTeX Verifier demo](demo/demo.gif)
+
 ## Why?
 
 If you've ever manually compared dozens of BibTeX entries against Google Scholar to make sure the authors, year, and venue are correct, you know how tedious it is. This tool automates that process: it looks up each entry by title, compares the fields, and tells you exactly what's wrong -- or fixes it for you.
