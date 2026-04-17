@@ -485,6 +485,7 @@
     downloadBar.style.display = "none";
     resultsSection.style.display = "none";
     progressSection.style.display = "block";
+    $$(".info-section").forEach(s => s.style.display = "none");
     progressFill.style.width = "0%";
     progressText.textContent = statusMsg;
 
@@ -673,17 +674,26 @@
     });
   });
 
-  // ─── Settings panel ──────────────────────────────────────────────
-  const settingsPanel = $(".settings-panel");
+  // ─── Settings popover ────────────────────────────────────────────
   const settingsToggle = $("#settings-toggle");
+  const settingsPopover = $("#settings-popover");
   const optRemoveDuplicates = $("#opt-remove-duplicates");
   const optRemoveNotFound = $("#opt-remove-notfound");
   const optAbbreviateVenue = $("#opt-abbreviate-venue");
   const optPreferPublished = $("#opt-prefer-published");
   const dedupCriteriaWrap = $("#dedup-criteria-wrap");
 
-  settingsToggle.addEventListener("click", () => {
-    settingsPanel.classList.toggle("open");
+  settingsToggle.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isOpen = settingsPopover.classList.toggle("open");
+    settingsToggle.classList.toggle("active", isOpen);
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!settingsPopover.contains(e.target) && e.target !== settingsToggle) {
+      settingsPopover.classList.remove("open");
+      settingsToggle.classList.remove("active");
+    }
   });
 
   optRemoveDuplicates.addEventListener("change", () => {

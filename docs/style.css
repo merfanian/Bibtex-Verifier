@@ -490,89 +490,109 @@ code {
   text-align: center;
 }
 
-/* Settings panel */
-.settings-panel {
-  margin-bottom: 1rem;
+/* Settings popover */
+.download-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
 }
 
-.settings-toggle {
-  display: inline-flex;
+.settings-anchor {
+  position: relative;
+}
+
+.settings-btn {
+  display: flex;
   align-items: center;
-  gap: 0.4rem;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 0.5rem 1rem;
   color: var(--text-dim);
-  font-size: 0.88rem;
-  font-weight: 600;
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  transition: border-color 0.15s, color 0.15s, transform 0.3s;
 }
 
-.settings-toggle:hover {
+.settings-btn:hover {
   border-color: var(--accent);
   color: var(--text);
 }
 
-.settings-toggle svg {
-  flex-shrink: 0;
+.settings-btn.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  transform: rotate(60deg);
 }
 
-.settings-arrow {
-  font-size: 0.7rem;
-  transition: transform 0.2s;
-}
-
-.settings-panel.open .settings-arrow {
-  transform: rotate(180deg);
-}
-
-.settings-body {
+.settings-popover {
   display: none;
-  margin-top: 0.75rem;
-  padding: 1rem 1.25rem;
+  position: absolute;
+  bottom: calc(100% + 12px);
+  right: 0;
+  min-width: 280px;
+  padding: 0.75rem 0.85rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  z-index: 100;
   text-align: left;
 }
 
-.settings-panel.open .settings-body {
+.settings-popover.open {
   display: block;
+  animation: popoverIn 0.15s ease-out;
 }
 
-.settings-group {
-  margin-bottom: 1rem;
+@keyframes popoverIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-.settings-group:last-child {
-  margin-bottom: 0;
+.popover-arrow {
+  position: absolute;
+  bottom: -6px;
+  right: 14px;
+  width: 12px;
+  height: 12px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  transform: rotate(45deg);
 }
 
-.settings-group h4 {
-  font-size: 0.82rem;
-  font-weight: 600;
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0;
+}
+
+.setting-icon {
+  flex-shrink: 0;
   color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 0.6rem;
+  opacity: 0.7;
 }
 
-.settings-group .option-toggle {
-  margin-bottom: 0.4rem;
+.settings-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0.35rem 0;
 }
 
 .sub-option {
   display: none;
-  margin: 0.3rem 0 0.6rem 1.6rem;
-  padding: 0.5rem 0.75rem;
+  margin: 0 0 0.2rem 2rem;
+  padding: 0.3rem 0.6rem;
   background: var(--surface-alt);
   border-radius: var(--radius-sm);
-  font-size: 0.84rem;
+  font-size: 0.8rem;
   color: var(--text-dim);
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
   flex-wrap: wrap;
 }
 
@@ -582,15 +602,15 @@ code {
 
 .sub-label {
   font-weight: 500;
-  margin-right: 0.25rem;
+  margin-right: 0.15rem;
 }
 
 .radio-label {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.25rem;
   cursor: pointer;
-  font-size: 0.84rem;
+  font-size: 0.8rem;
 }
 
 .radio-label input[type="radio"] {
