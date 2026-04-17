@@ -434,6 +434,26 @@ code {
 .diff-table .new-val { color: var(--green); }
 .diff-table .score-val { color: var(--text-dim); text-align: right; white-space: nowrap; }
 
+.fields-toggle-wrap { margin-top: 0.5rem; }
+.fields-toggle-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0;
+  transition: color 0.15s;
+}
+.fields-toggle-btn:hover { color: var(--text); }
+.fields-chevron { transition: transform 0.2s; }
+.fields-toggle-wrap.collapsed .fields-chevron { transform: rotate(-90deg); }
+.fields-toggle-wrap.collapsed .fields-table { display: none; }
+.fields-table .current-val { color: var(--text); }
+.field-row-plain .found-text { color: var(--text); }
+
 .found-text {
   display: block;
   padding: 0.15rem 0.3rem;

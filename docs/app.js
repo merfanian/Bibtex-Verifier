@@ -322,18 +322,21 @@
 
     const idx = r.index;
     if (!fieldEdits[idx]) fieldEdits[idx] = {};
+    const entry = parsedEntries[idx];
 
     let diffHTML = "";
-    if (r.field_diffs?.length) {
-      const isActionable = r.status === "updated" || r.status === "needs_review";
+    const hasDiffs = r.field_diffs?.length > 0;
+    const hasSuggestion = r.status === "updated" || r.status === "needs_review";
+
+    if (hasDiffs) {
       const defaultAction = r.status === "updated" ? "found" : "original";
 
       const rows = r.field_diffs.map(d => {
-        if (isActionable && !fieldEdits[idx][d.field]) {
+        if (!fieldEdits[idx][d.field]) {
           fieldEdits[idx][d.field] = { action: defaultAction, value: d.found || "" };
         }
         const fe = fieldEdits[idx][d.field];
-        const currentAction = fe ? fe.action : "found";
+        const currentAction = fe.action;
         const isEnrichment = !(d.original || "").trim();
 
         return `<tr class="diff-row" data-entry="${idx}" data-field="${esc(d.field)}">
@@ -341,14 +344,14 @@
           <td class="old-val">${esc(d.original || "(empty)")}</td>
           <td class="new-val">
             <span class="found-text ${currentAction === "remove" ? "removed" : ""}"
-                  contenteditable="${isActionable}" spellcheck="false"
-                  data-entry="${idx}" data-field="${esc(d.field)}">${esc(currentAction === "original" ? (d.original || "") : (fe ? fe.value : d.found || ""))}</span>
+                  contenteditable="true" spellcheck="false"
+                  data-entry="${idx}" data-field="${esc(d.field)}">${esc(currentAction === "original" ? (d.original || "") : fe.value)}</span>
           </td>
-          <td class="field-actions">${isActionable ? `
-            <button class="fa-btn fa-use-found ${currentAction === "found" ? "active" : ""}" title="Use suggestion"
+          <td class="field-actions">
+            ${hasSuggestion ? `<button class="fa-btn fa-use-found ${currentAction === "found" ? "active" : ""}" title="Use suggestion"
                     data-entry="${idx}" data-field="${esc(d.field)}" data-action="found" data-val="${esc(d.found || "")}">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            </button>
+            </button>` : ""}
             <button class="fa-btn fa-revert ${currentAction === "original" ? "active" : ""}" title="Revert to original"
                     data-entry="${idx}" data-field="${esc(d.field)}" data-action="original" data-val="${esc(d.original || "")}">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 105.64-11.36L1 10"/></svg>
@@ -356,7 +359,7 @@
             ${!isEnrichment ? `<button class="fa-btn fa-remove ${currentAction === "remove" ? "active" : ""}" title="Remove field"
                     data-entry="${idx}" data-field="${esc(d.field)}" data-action="remove" data-val="">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>` : ""}` : `<span class="score-val">${d.score}%</span>`}
+            </button>` : ""}
           </td>
         </tr>`;
       }).join("");
@@ -365,6 +368,53 @@
         <tr><th>Field</th><th>Original</th><th>Suggestion</th><th></th></tr>
         ${rows}
       </table>`;
+    }
+
+    const EDITABLE_FIELDS = ["title", ...B.COMPARED_FIELDS];
+    const diffFieldsSet = new Set((r.field_diffs || []).map(d => d.field));
+    const extraFields = EDITABLE_FIELDS.filter(f => !diffFieldsSet.has(f) && (entry[f] || "").trim());
+
+    if (extraFields.length) {
+      const extraRows = extraFields.map(f => {
+        const val = entry[f] || "";
+        if (!fieldEdits[idx][f]) {
+          fieldEdits[idx][f] = { action: "original", value: val };
+        }
+        const fe = fieldEdits[idx][f];
+        const currentAction = fe.action;
+
+        return `<tr class="diff-row field-row-plain" data-entry="${idx}" data-field="${esc(f)}">
+          <td class="field-name">${esc(f)}</td>
+          <td class="current-val" colspan="2">
+            <span class="found-text ${currentAction === "remove" ? "removed" : ""}"
+                  contenteditable="true" spellcheck="false"
+                  data-entry="${idx}" data-field="${esc(f)}">${esc(currentAction === "remove" ? "" : fe.value)}</span>
+          </td>
+          <td class="field-actions">
+            <button class="fa-btn fa-revert ${currentAction === "original" ? "active" : ""}" title="Revert to original"
+                    data-entry="${idx}" data-field="${esc(f)}" data-action="original" data-val="${esc(val)}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 105.64-11.36L1 10"/></svg>
+            </button>
+            <button class="fa-btn fa-remove ${currentAction === "remove" ? "active" : ""}" title="Remove field"
+                    data-entry="${idx}" data-field="${esc(f)}" data-action="remove" data-val="">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </td>
+        </tr>`;
+      }).join("");
+
+      const fieldsLabel = hasDiffs ? "Other fields" : "Fields";
+      const collapsed = r.status === "verified" || r.status === "not_found";
+      diffHTML += `<div class="fields-toggle-wrap${collapsed ? " collapsed" : ""}">
+        <button class="fields-toggle-btn" type="button">
+          <svg class="fields-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          ${fieldsLabel} (${extraFields.length})
+        </button>
+        <table class="diff-table fields-table">
+          <tr><th>Field</th><th colspan="2">Value</th><th></th></tr>
+          ${extraRows}
+        </table>
+      </div>`;
     }
 
     let duplicateHTML = "";
@@ -376,11 +426,12 @@
       foundTitleHTML = `<div class="found-title-row">Closest match (${r.title_score}%): <strong>${esc(r.found_title)}</strong></div>`;
 
     let actionsHTML = "";
-    if ((r.status === "updated" || r.status === "needs_review") && r.field_diffs?.length) {
-      actionsHTML = `<div class="entry-actions">
-        <button class="btn btn-accept-all" data-entry="${idx}">Accept all suggestions</button>
-        <button class="btn btn-revert-all" data-entry="${idx}">Revert all to original</button>
-      </div>`;
+    const hasEditable = Object.keys(fieldEdits[idx]).length > 0;
+    if (hasEditable) {
+      const btns = [];
+      if (hasSuggestion && hasDiffs) btns.push(`<button class="btn btn-accept-all" data-entry="${idx}">Accept all suggestions</button>`);
+      btns.push(`<button class="btn btn-revert-all" data-entry="${idx}">Revert all to original</button>`);
+      actionsHTML = `<div class="entry-actions">${btns.join("")}</div>`;
     }
 
     card.innerHTML = `<div class="entry-header">
@@ -404,6 +455,13 @@
 
     entryList.appendChild(card);
   }
+
+  // ─── Fields table toggle ─────────────────────────────────────────
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest(".fields-toggle-btn");
+    if (!btn) return;
+    btn.closest(".fields-toggle-wrap").classList.toggle("collapsed");
+  });
 
   // ─── Per-field action handlers ────────────────────────────────────
   document.addEventListener("click", (e) => {
@@ -547,17 +605,14 @@
 
       const out = { ...entry };
       const edits = fieldEdits[i] || {};
-      if (r.status === "updated" || r.status === "needs_review") {
-        for (const d of (r.field_diffs || [])) {
-          const fe = edits[d.field];
-          if (!fe) continue;
-          if (fe.action === "found" || fe.action === "custom") {
-            if (fe.value) out[d.field] = fe.value;
-          } else if (fe.action === "remove") {
-            delete out[d.field];
-          }
-          // "original" → keep as-is (already in out from entry spread)
+      for (const [field, fe] of Object.entries(edits)) {
+        if (!fe) continue;
+        if (fe.action === "found" || fe.action === "custom") {
+          if (fe.value) out[field] = fe.value;
+        } else if (fe.action === "remove") {
+          delete out[field];
         }
+        // "original" → keep as-is (already in out from entry spread)
       }
 
       if (s.abbreviateVenue) {
