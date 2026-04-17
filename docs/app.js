@@ -13,7 +13,7 @@
     "volume", "number", "pages", "doi", "publisher",
   ];
   const MAX_RETRIES = 4;
-  const RETRY_BASE_MS = 2000;
+  const RETRY_BASE_MS = 1500;
 
   // ─── LaTeX helpers ───────────────────────────────────────────────────
   const LATEX_ACCENT_MAP = {
@@ -237,8 +237,8 @@
   const rateState = {
     ssDelay: 500,
     crDelay: 100,
-    ssMin: 300,   ssMax: 10000,
-    crMin: 50,    crMax: 5000,
+    ssMin: 300,   ssMax: 3000,
+    crMin: 50,    crMax: 2000,
     lastSSTime: 0,
     lastCRTime: 0,
     ssConsecutiveOk: 0,
@@ -247,28 +247,28 @@
 
   function rateBackoff(source) {
     if (source === "ss") {
-      rateState.ssDelay = Math.min(rateState.ssDelay * 2, rateState.ssMax);
+      rateState.ssDelay = Math.min(rateState.ssDelay * 1.3, rateState.ssMax);
       rateState.ssConsecutiveOk = 0;
-      console.log(`[rate] SS backoff → ${rateState.ssDelay}ms`);
+      console.log(`[rate] SS backoff → ${Math.round(rateState.ssDelay)}ms`);
     } else {
-      rateState.crDelay = Math.min(rateState.crDelay * 2, rateState.crMax);
+      rateState.crDelay = Math.min(rateState.crDelay * 1.3, rateState.crMax);
       rateState.crConsecutiveOk = 0;
-      console.log(`[rate] CR backoff → ${rateState.crDelay}ms`);
+      console.log(`[rate] CR backoff → ${Math.round(rateState.crDelay)}ms`);
     }
   }
 
   function rateSuccess(source) {
     if (source === "ss") {
       rateState.ssConsecutiveOk++;
-      if (rateState.ssConsecutiveOk >= 3) {
-        rateState.ssDelay = Math.max(rateState.ssDelay * 0.75, rateState.ssMin);
+      if (rateState.ssConsecutiveOk >= 2) {
+        rateState.ssDelay = Math.max(rateState.ssDelay * 0.85, rateState.ssMin);
         rateState.ssConsecutiveOk = 0;
         console.log(`[rate] SS speed-up → ${Math.round(rateState.ssDelay)}ms`);
       }
     } else {
       rateState.crConsecutiveOk++;
-      if (rateState.crConsecutiveOk >= 3) {
-        rateState.crDelay = Math.max(rateState.crDelay * 0.75, rateState.crMin);
+      if (rateState.crConsecutiveOk >= 2) {
+        rateState.crDelay = Math.max(rateState.crDelay * 0.85, rateState.crMin);
         rateState.crConsecutiveOk = 0;
         console.log(`[rate] CR speed-up → ${Math.round(rateState.crDelay)}ms`);
       }
