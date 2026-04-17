@@ -159,7 +159,7 @@
   const progressText = $(".progress-text");
   const resultsSection = $(".results-section");
   const entryList = $(".entry-list");
-  const downloadBar = $(".download-bar");
+  const floatingBar = $("#floating-bar");
 
   // ─── Tab switching ─────────────────────────────────────────────────
   const inputTabs = $$(".input-tab");
@@ -219,7 +219,7 @@
     rateState.crDelay = 100;
     rateState.ssConsecutiveOk = 0;
     rateState.crConsecutiveOk = 0;
-    downloadBar.style.display = "none";
+    floatingBar.classList.remove("visible");
     resultsSection.style.display = "none";
     progressSection.style.display = "block";
     $$(".info-section").forEach(s => s.style.display = "none");
@@ -286,7 +286,7 @@
     }
 
     progressSection.style.display = "none";
-    downloadBar.style.display = "block";
+    floatingBar.classList.add("visible");
   }
 
   function buildResult(entry, index, status, titleScore, fieldDiffs, suggested, found) {

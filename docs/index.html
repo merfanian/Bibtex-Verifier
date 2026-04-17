@@ -61,55 +61,6 @@
       <div class="entry-list"></div>
     </div>
 
-    <div class="download-bar">
-      <div class="download-actions">
-        <div class="settings-anchor">
-          <button class="settings-btn" id="settings-toggle" title="Download settings">
-            <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
-          </button>
-          <div class="settings-popover" id="settings-popover">
-            <div class="popover-arrow"></div>
-            <div class="settings-row">
-              <svg class="setting-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="17.5" y1="14" x2="17.5" y2="21"/><line x1="14" y1="17.5" x2="21" y2="17.5"/></svg>
-              <label class="option-toggle">
-                <input type="checkbox" id="opt-remove-duplicates" />
-                <span>Remove duplicates</span>
-              </label>
-            </div>
-            <div class="sub-option" id="dedup-criteria-wrap">
-              <span class="sub-label">by:</span>
-              <label class="radio-label"><input type="radio" name="dedup-criteria" value="title" checked /> Title</label>
-              <label class="radio-label"><input type="radio" name="dedup-criteria" value="id" /> ID</label>
-              <label class="radio-label"><input type="radio" name="dedup-criteria" value="doi" /> DOI</label>
-            </div>
-            <div class="settings-row">
-              <svg class="setting-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              <label class="option-toggle">
-                <input type="checkbox" id="opt-remove-notfound" />
-                <span>Remove not-found entries</span>
-              </label>
-            </div>
-            <div class="settings-divider"></div>
-            <div class="settings-row">
-              <svg class="setting-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
-              <label class="option-toggle">
-                <input type="checkbox" id="opt-abbreviate-venue" />
-                <span>Abbreviate venue names</span>
-              </label>
-            </div>
-            <div class="settings-row">
-              <svg class="setting-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-              <label class="option-toggle">
-                <input type="checkbox" id="opt-prefer-published" checked />
-                <span>Prefer peer-reviewed over arXiv</span>
-              </label>
-            </div>
-          </div>
-        </div>
-        <button class="btn-download">Download Corrected .bib</button>
-      </div>
-    </div>
-
     <section class="how-it-works info-section" id="how-it-works">
       <h2>How it works</h2>
       <div class="steps">
@@ -203,6 +154,55 @@
         &middot; <a href="https://github.com/merfanian/Bibtex-Verifier" target="_blank">GitHub</a></p>
     </footer>
 
+  </div>
+
+  <div class="floating-bar" id="floating-bar">
+    <div class="floating-bar-inner">
+      <div class="settings-anchor">
+        <button class="settings-btn" id="settings-toggle" title="Download settings">
+          <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+        </button>
+        <div class="settings-popover" id="settings-popover">
+          <div class="popover-arrow"></div>
+          <div class="settings-row">
+            <svg class="setting-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="17.5" y1="14" x2="17.5" y2="21"/><line x1="14" y1="17.5" x2="21" y2="17.5"/></svg>
+            <label class="option-toggle">
+              <input type="checkbox" id="opt-remove-duplicates" />
+              <span>Remove duplicates</span>
+            </label>
+          </div>
+          <div class="sub-option" id="dedup-criteria-wrap">
+            <span class="sub-label">by:</span>
+            <label class="radio-label"><input type="radio" name="dedup-criteria" value="title" checked /> Title</label>
+            <label class="radio-label"><input type="radio" name="dedup-criteria" value="id" /> ID</label>
+            <label class="radio-label"><input type="radio" name="dedup-criteria" value="doi" /> DOI</label>
+          </div>
+          <div class="settings-row">
+            <svg class="setting-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <label class="option-toggle">
+              <input type="checkbox" id="opt-remove-notfound" />
+              <span>Remove not-found entries</span>
+            </label>
+          </div>
+          <div class="settings-divider"></div>
+          <div class="settings-row">
+            <svg class="setting-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
+            <label class="option-toggle">
+              <input type="checkbox" id="opt-abbreviate-venue" />
+              <span>Abbreviate venue names</span>
+            </label>
+          </div>
+          <div class="settings-row">
+            <svg class="setting-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            <label class="option-toggle">
+              <input type="checkbox" id="opt-prefer-published" checked />
+              <span>Prefer peer-reviewed over arXiv</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <button class="btn-download">Download Corrected .bib</button>
+    </div>
   </div>
 
   <script src="https://unpkg.com/fuzzball@2.2.3/dist/fuzzball.umd.min.js"></script>

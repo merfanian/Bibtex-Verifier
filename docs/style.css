@@ -42,6 +42,7 @@ body {
   max-width: 960px;
   margin: 0 auto;
   padding: 2rem 1.5rem;
+  padding-bottom: 5rem;
 }
 
 h1 {
@@ -484,19 +485,51 @@ code {
   border-color: var(--red);
 }
 
+/* ─── Floating toolbar ──────────────────────────────────────────── */
+.floating-bar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 900;
+  padding: 0 1rem 1rem;
+  pointer-events: none;
+}
+
+.floating-bar.visible {
+  display: flex;
+  justify-content: center;
+  animation: floatIn 0.25s ease-out;
+}
+
+@keyframes floatIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.floating-bar-inner {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 1.25rem;
+  background: rgba(26, 29, 39, 0.72);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid rgba(108, 140, 255, 0.15);
+  border-radius: 14px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* legacy class kept for JS show/hide compatibility */
 .download-bar {
   display: none;
-  margin-top: 1.5rem;
-  text-align: center;
 }
 
 /* Settings popover */
-.download-actions {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-}
 
 .settings-anchor {
   position: relative;
@@ -506,24 +539,26 @@ code {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  width: 38px;
+  height: 38px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-sm);
   color: var(--text-dim);
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s, transform 0.3s;
+  transition: border-color 0.15s, color 0.15s, background 0.15s, transform 0.3s;
 }
 
 .settings-btn:hover {
   border-color: var(--accent);
   color: var(--text);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .settings-btn.active {
   color: var(--accent);
   border-color: var(--accent);
+  background: rgba(108, 140, 255, 0.12);
   transform: rotate(60deg);
 }
 
@@ -531,14 +566,16 @@ code {
   display: none;
   position: absolute;
   bottom: calc(100% + 12px);
-  right: 0;
+  right: -0.5rem;
   min-width: 280px;
   padding: 0.75rem 0.85rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: rgba(26, 29, 39, 0.82);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid rgba(108, 140, 255, 0.15);
   border-radius: var(--radius);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-  z-index: 100;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  z-index: 1000;
   text-align: left;
 }
 
@@ -558,9 +595,9 @@ code {
   right: 14px;
   width: 12px;
   height: 12px;
-  background: var(--surface);
-  border-right: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  background: rgba(26, 29, 39, 0.82);
+  border-right: 1px solid rgba(108, 140, 255, 0.15);
+  border-bottom: 1px solid rgba(108, 140, 255, 0.15);
   transform: rotate(45deg);
 }
 
