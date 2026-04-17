@@ -143,12 +143,27 @@
     return B.bestMatch(ssCandidates, title);
   }
 
+  // ─── Theme ─────────────────────────────────────────────────────────
+  const root = document.documentElement;
+  const themeToggle = document.getElementById("theme-toggle");
+
+  function applyTheme(theme) {
+    root.setAttribute("data-theme", theme);
+    localStorage.setItem("bv-theme", theme);
+  }
+
+  const savedTheme = localStorage.getItem("bv-theme") ||
+    (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+  applyTheme(savedTheme);
+
+  themeToggle.addEventListener("click", () => {
+    applyTheme(root.getAttribute("data-theme") === "dark" ? "light" : "dark");
+  });
+
   // ─── UI State ──────────────────────────────────────────────────────
   let parsedEntries = [];
   let results = [];
   let decisions = {};
-  // Per-field edits: fieldEdits[entryIndex][fieldName] = { action, value }
-  // action: "found" (use suggestion), "original" (revert), "custom" (edited), "remove"
   let fieldEdits = {};
   let activeFilter = "all";
 
@@ -163,6 +178,10 @@
   const resultsSection = $(".results-section");
   const entryList = $(".entry-list");
   const floatingBar = $("#floating-bar");
+  const mainColumns = $("#main-columns");
+  const colPreview = $("#col-preview");
+  const previewCode = $("#preview-code");
+  const previewPlaceholder = $(".preview-placeholder");
 
   // ─── Tab switching ─────────────────────────────────────────────────
   const inputTabs = $$(".input-tab");
@@ -230,6 +249,12 @@
     progressFill.style.width = "0%";
     progressText.textContent = statusMsg;
 
+    mainColumns.classList.add("two-col");
+    colPreview.classList.add("visible");
+    previewPlaceholder.style.display = "flex";
+    previewCode.style.display = "none";
+    previewCode.textContent = "";
+
     parsedEntries = B.parseBib(content);
 
     if (!parsedEntries.length) {
@@ -268,6 +293,7 @@
         results.push(r);
         renderEntryCard(r);
         updateSummary();
+        updatePreview();
         continue;
       }
 
@@ -287,6 +313,7 @@
       }
 
       updateSummary();
+      updatePreview();
     }
 
     progressSection.style.display = "none";
@@ -517,6 +544,7 @@
 
     syncRowState(row, action);
     syncBulkBtns(row.closest(".entry-card"), idx);
+    updatePreview();
   });
 
   document.addEventListener("input", (e) => {
@@ -531,6 +559,7 @@
     row.querySelectorAll(".fa-btn").forEach(b => b.classList.remove("active"));
     syncRowState(row, "custom");
     syncBulkBtns(row.closest(".entry-card"), idx);
+    updatePreview();
   });
 
   document.addEventListener("click", (e) => {
@@ -561,6 +590,7 @@
       }
     });
     syncBulkBtns(card, idx);
+    updatePreview();
   });
 
   function updateSummary() {
@@ -577,6 +607,87 @@
     $(".badge-duplicates").textContent = `Duplicates: ${dupes}`;
     $$(".summary-badge").forEach(b => b.classList.add("active"));
   }
+
+  // ─── Live preview ────────────────────────────────────────────────
+  function buildPreviewBib() {
+    const s = getSettings();
+    let final = parsedEntries.map((entry, i) => {
+      const r = results[i];
+      if (!r) return { ...entry };
+      if (s.removeNotFound && r.status === "not_found") return null;
+
+      const out = { ...entry };
+      const edits = fieldEdits[i] || {};
+      for (const [field, fe] of Object.entries(edits)) {
+        if (!fe) continue;
+        if (fe.action === "found" || fe.action === "custom") {
+          if (fe.value) out[field] = fe.value;
+        } else if (fe.action === "remove") {
+          delete out[field];
+        }
+      }
+
+      if (s.abbreviateVenue) {
+        if (out.journal) out.journal = B.abbreviateVenue(out.journal);
+        if (out.booktitle) out.booktitle = B.abbreviateVenue(out.booktitle);
+      }
+
+      if (s.preferPublished) {
+        const venue = (out.journal || out.booktitle || "").toLowerCase();
+        if (venue.includes("arxiv") || venue.includes("preprint") || venue.includes("corr")) {
+          const res = results[i];
+          if (res && res.suggested) {
+            const foundVenue = res.suggested.journal || res.suggested.booktitle || "";
+            const fvLower = foundVenue.toLowerCase();
+            if (foundVenue && !fvLower.includes("arxiv") && !fvLower.includes("preprint") && !fvLower.includes("corr")) {
+              if (out.journal) out.journal = s.abbreviateVenue ? B.abbreviateVenue(foundVenue) : foundVenue;
+              else if (out.booktitle) out.booktitle = s.abbreviateVenue ? B.abbreviateVenue(foundVenue) : foundVenue;
+            }
+          }
+        }
+      }
+      return out;
+    }).filter(Boolean);
+
+    if (s.removeDuplicates) {
+      const seen = new Set();
+      final = final.filter(entry => {
+        let key;
+        if (s.dedupBy === "doi") key = (entry.doi || "").toLowerCase().trim();
+        else if (s.dedupBy === "id") key = (entry.ID || "").toLowerCase().trim();
+        else key = B.normalizeTitle(entry.title || "");
+        if (!key) return true;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+    return B.entriesToBib(final);
+  }
+
+  function updatePreview() {
+    if (!parsedEntries.length) return;
+    const bib = buildPreviewBib();
+    previewPlaceholder.style.display = "none";
+    previewCode.style.display = "block";
+    previewCode.textContent = bib;
+  }
+
+  const btnCopy = $("#btn-copy-preview");
+  btnCopy.addEventListener("click", () => {
+    const text = previewCode.textContent;
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      btnCopy.classList.add("copied");
+      btnCopy.querySelector("svg + *") || null;
+      const origHTML = btnCopy.innerHTML;
+      btnCopy.innerHTML = btnCopy.innerHTML.replace("Copy", "Copied!");
+      setTimeout(() => {
+        btnCopy.classList.remove("copied");
+        btnCopy.innerHTML = origHTML;
+      }, 1500);
+    });
+  });
 
   // ─── Filtering ────────────────────────────────────────────────────
   document.addEventListener("click", (e) => {
@@ -620,7 +731,13 @@
 
   optRemoveDuplicates.addEventListener("change", () => {
     dedupCriteriaWrap.classList.toggle("visible", optRemoveDuplicates.checked);
+    updatePreview();
   });
+
+  [optRemoveNotFound, optAbbreviateVenue, optPreferPublished].forEach(el =>
+    el.addEventListener("change", updatePreview));
+  $$('input[name="dedup-criteria"]').forEach(el =>
+    el.addEventListener("change", updatePreview));
 
   function getSettings() {
     return {
@@ -634,68 +751,7 @@
 
   // ─── Download ─────────────────────────────────────────────────────
   $(".btn-download").addEventListener("click", () => {
-    const s = getSettings();
-
-    let final = parsedEntries.map((entry, i) => {
-      const r = results[i];
-      if (!r) return { ...entry };
-
-      if (s.removeNotFound && r.status === "not_found") return null;
-
-      const out = { ...entry };
-      const edits = fieldEdits[i] || {};
-      for (const [field, fe] of Object.entries(edits)) {
-        if (!fe) continue;
-        if (fe.action === "found" || fe.action === "custom") {
-          if (fe.value) out[field] = fe.value;
-        } else if (fe.action === "remove") {
-          delete out[field];
-        }
-        // "original" → keep as-is (already in out from entry spread)
-      }
-
-      if (s.abbreviateVenue) {
-        if (out.journal) out.journal = B.abbreviateVenue(out.journal);
-        if (out.booktitle) out.booktitle = B.abbreviateVenue(out.booktitle);
-      }
-
-      if (s.preferPublished) {
-        const venue = (out.journal || out.booktitle || "").toLowerCase();
-        if (venue.includes("arxiv") || venue.includes("preprint") || venue.includes("corr")) {
-          const res = results[i];
-          if (res && res.suggested) {
-            const foundVenue = res.suggested.journal || res.suggested.booktitle || "";
-            const fvLower = foundVenue.toLowerCase();
-            if (foundVenue && !fvLower.includes("arxiv") && !fvLower.includes("preprint") && !fvLower.includes("corr")) {
-              if (out.journal) out.journal = s.abbreviateVenue ? B.abbreviateVenue(foundVenue) : foundVenue;
-              else if (out.booktitle) out.booktitle = s.abbreviateVenue ? B.abbreviateVenue(foundVenue) : foundVenue;
-            }
-          }
-        }
-      }
-
-      return out;
-    }).filter(Boolean);
-
-    if (s.removeDuplicates) {
-      const seen = new Set();
-      final = final.filter(entry => {
-        let key;
-        if (s.dedupBy === "doi") {
-          key = (entry.doi || "").toLowerCase().trim();
-        } else if (s.dedupBy === "id") {
-          key = (entry.ID || "").toLowerCase().trim();
-        } else {
-          key = B.normalizeTitle(entry.title || "");
-        }
-        if (!key) return true;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-    }
-
-    const bibContent = B.entriesToBib(final);
+    const bibContent = buildPreviewBib();
     const blob = new Blob([bibContent], { type: "application/x-bibtex" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
