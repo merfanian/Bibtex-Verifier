@@ -443,6 +443,7 @@
       return;
     }
 
+    resultsSection.style.display = "block";
     progressText.textContent = `Verifying 0 / ${parsedEntries.length} entries...`;
     runVerification();
   }
@@ -471,6 +472,7 @@
         const r = buildResult(entry, i, "not_found", 0, [], {}, null);
         results.push(r);
         renderEntryCard(r);
+        updateSummary();
         continue;
       }
 
@@ -489,13 +491,13 @@
         renderEntryCard(r);
       }
 
+      updateSummary();
+
       if (i < total - 1) await sleep(REQUEST_DELAY_MS);
     }
 
     progressSection.style.display = "none";
-    resultsSection.style.display = "block";
     downloadBar.style.display = "block";
-    updateSummary();
   }
 
   function buildResult(entry, index, status, titleScore, fieldDiffs, suggested, found) {
@@ -568,6 +570,14 @@
         <span class="status-tag tag-${r.status}">${statusLabel(r.status)}</span>
       </div>
     </div>${duplicateHTML}${foundTitleHTML}${diffHTML}${actionsHTML}`;
+
+    if (activeFilter !== "all") {
+      if (activeFilter === "duplicate") {
+        if (!r.duplicate_of) card.classList.add("hidden");
+      } else if (card.dataset.status !== activeFilter) {
+        card.classList.add("hidden");
+      }
+    }
 
     entryList.appendChild(card);
   }
