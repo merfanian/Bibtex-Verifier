@@ -12,8 +12,7 @@
     "author", "year", "journal", "booktitle",
     "volume", "number", "pages", "doi", "publisher",
   ];
-  const REQUEST_DELAY_MS = 400;
-  const MAX_RETRIES = 3;
+  const MAX_RETRIES = 4;
   const RETRY_BASE_MS = 2000;
 
   // ─── LaTeX helpers ───────────────────────────────────────────────────
@@ -234,34 +233,84 @@
     };
   }
 
-  let lastSSRequestTime = 0;
+  // ─── Adaptive rate controller ──────────────────────────────────────
+  const rateState = {
+    ssDelay: 500,
+    crDelay: 100,
+    ssMin: 300,   ssMax: 10000,
+    crMin: 50,    crMax: 5000,
+    lastSSTime: 0,
+    lastCRTime: 0,
+    ssConsecutiveOk: 0,
+    crConsecutiveOk: 0,
+  };
+
+  function rateBackoff(source) {
+    if (source === "ss") {
+      rateState.ssDelay = Math.min(rateState.ssDelay * 2, rateState.ssMax);
+      rateState.ssConsecutiveOk = 0;
+      console.log(`[rate] SS backoff → ${rateState.ssDelay}ms`);
+    } else {
+      rateState.crDelay = Math.min(rateState.crDelay * 2, rateState.crMax);
+      rateState.crConsecutiveOk = 0;
+      console.log(`[rate] CR backoff → ${rateState.crDelay}ms`);
+    }
+  }
+
+  function rateSuccess(source) {
+    if (source === "ss") {
+      rateState.ssConsecutiveOk++;
+      if (rateState.ssConsecutiveOk >= 3) {
+        rateState.ssDelay = Math.max(rateState.ssDelay * 0.75, rateState.ssMin);
+        rateState.ssConsecutiveOk = 0;
+        console.log(`[rate] SS speed-up → ${Math.round(rateState.ssDelay)}ms`);
+      }
+    } else {
+      rateState.crConsecutiveOk++;
+      if (rateState.crConsecutiveOk >= 3) {
+        rateState.crDelay = Math.max(rateState.crDelay * 0.75, rateState.crMin);
+        rateState.crConsecutiveOk = 0;
+        console.log(`[rate] CR speed-up → ${Math.round(rateState.crDelay)}ms`);
+      }
+    }
+  }
+
+  function getRateInfo() {
+    return `SS: ${Math.round(rateState.ssDelay)}ms · CR: ${Math.round(rateState.crDelay)}ms`;
+  }
 
   async function fetchJSON(url, params, { retries = MAX_RETRIES, is404Ok = false } = {}) {
     const u = new URL(url);
     for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
 
-    // Throttle Semantic Scholar requests to ~1/sec (their rate limit is strict)
     const isSS = url.includes("semanticscholar.org");
-    if (isSS) {
-      const elapsed = Date.now() - lastSSRequestTime;
-      if (elapsed < 1000) await sleep(1000 - elapsed);
-      lastSSRequestTime = Date.now();
-    }
+    const source = isSS ? "ss" : "cr";
+    const delay = isSS ? rateState.ssDelay : rateState.crDelay;
+    const lastKey = isSS ? "lastSSTime" : "lastCRTime";
+    const elapsed = Date.now() - rateState[lastKey];
+    if (elapsed < delay) await sleep(delay - elapsed);
+    rateState[lastKey] = Date.now();
 
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
         const resp = await fetch(u.toString());
-        if (resp.ok) return resp.json();
+        if (resp.ok) {
+          rateSuccess(source);
+          return resp.json();
+        }
         if (resp.status === 404 && is404Ok) return null;
-        if (resp.status === 429 && attempt < retries) {
-          const wait = RETRY_BASE_MS * Math.pow(2, attempt);
-          console.warn(`Rate limited (429) on attempt ${attempt + 1}, retrying in ${wait}ms...`);
-          await sleep(wait);
-          continue;
+        if (resp.status === 429) {
+          rateBackoff(source);
+          if (attempt < retries) {
+            const wait = RETRY_BASE_MS * Math.pow(2, attempt);
+            console.warn(`Rate limited (429) on attempt ${attempt + 1}, retrying in ${wait}ms...`);
+            await sleep(wait);
+            continue;
+          }
         }
         return null;
       } catch (err) {
-        // Browser throws TypeError on CORS-blocked 429 responses
+        rateBackoff(source);
         if (attempt < retries) {
           const wait = RETRY_BASE_MS * Math.pow(2, attempt);
           console.warn(`Request failed (${err.message}), retrying in ${wait}ms...`);
@@ -429,6 +478,10 @@
     decisions = {};
     activeFilter = "all";
     entryList.innerHTML = "";
+    rateState.ssDelay = 500;
+    rateState.crDelay = 100;
+    rateState.ssConsecutiveOk = 0;
+    rateState.crConsecutiveOk = 0;
     downloadBar.style.display = "none";
     resultsSection.style.display = "none";
     progressSection.style.display = "block";
@@ -466,7 +519,7 @@
 
       const pct = Math.round(((i + 1) / total) * 100);
       progressFill.style.width = pct + "%";
-      progressText.textContent = `Verifying ${i + 1} / ${total}: ${title.slice(0, 80)}`;
+      progressText.textContent = `Verifying ${i + 1} / ${total}: ${title.slice(0, 60)}  [${getRateInfo()}]`;
 
       if (!title.trim()) {
         const r = buildResult(entry, i, "not_found", 0, [], {}, null);
@@ -492,8 +545,6 @@
       }
 
       updateSummary();
-
-      if (i < total - 1) await sleep(REQUEST_DELAY_MS);
     }
 
     progressSection.style.display = "none";
