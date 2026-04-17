@@ -490,12 +490,111 @@ code {
   text-align: center;
 }
 
-.download-options {
-  display: flex;
-  justify-content: center;
-  gap: 1.5rem;
+/* Settings panel */
+.settings-panel {
   margin-bottom: 1rem;
+}
+
+.settings-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 1rem;
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.settings-toggle:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.settings-toggle svg {
+  flex-shrink: 0;
+}
+
+.settings-arrow {
+  font-size: 0.7rem;
+  transition: transform 0.2s;
+}
+
+.settings-panel.open .settings-arrow {
+  transform: rotate(180deg);
+}
+
+.settings-body {
+  display: none;
+  margin-top: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-align: left;
+}
+
+.settings-panel.open .settings-body {
+  display: block;
+}
+
+.settings-group {
+  margin-bottom: 1rem;
+}
+
+.settings-group:last-child {
+  margin-bottom: 0;
+}
+
+.settings-group h4 {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.6rem;
+}
+
+.settings-group .option-toggle {
+  margin-bottom: 0.4rem;
+}
+
+.sub-option {
+  display: none;
+  margin: 0.3rem 0 0.6rem 1.6rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface-alt);
+  border-radius: var(--radius-sm);
+  font-size: 0.84rem;
+  color: var(--text-dim);
+  align-items: center;
+  gap: 0.75rem;
   flex-wrap: wrap;
+}
+
+.sub-option.visible {
+  display: flex;
+}
+
+.sub-label {
+  font-weight: 500;
+  margin-right: 0.25rem;
+}
+
+.radio-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+  font-size: 0.84rem;
+}
+
+.radio-label input[type="radio"] {
+  accent-color: var(--accent);
 }
 
 .option-toggle {
