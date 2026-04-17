@@ -339,7 +339,7 @@
         const currentAction = fe.action;
         const isEnrichment = !(d.original || "").trim();
 
-        return `<tr class="diff-row" data-entry="${idx}" data-field="${esc(d.field)}">
+        return `<tr class="diff-row" data-entry="${idx}" data-field="${esc(d.field)}" data-action="${currentAction}">
           <td class="field-name">${esc(d.field)}</td>
           <td class="old-val">${esc(d.original || "(empty)")}</td>
           <td class="new-val">
@@ -383,7 +383,7 @@
         const fe = fieldEdits[idx][f];
         const currentAction = fe.action;
 
-        return `<tr class="diff-row field-row-plain" data-entry="${idx}" data-field="${esc(f)}">
+        return `<tr class="diff-row field-row-plain" data-entry="${idx}" data-field="${esc(f)}" data-action="${currentAction}">
           <td class="field-name">${esc(f)}</td>
           <td class="current-val" colspan="2">
             <span class="found-text ${currentAction === "remove" ? "removed" : ""}"
@@ -427,11 +427,19 @@
 
     let actionsHTML = "";
     const hasEditable = Object.keys(fieldEdits[idx]).length > 0;
-    if (hasEditable) {
-      const btns = [];
-      if (hasSuggestion && hasDiffs) btns.push(`<button class="btn btn-accept-all" data-entry="${idx}">Accept all suggestions</button>`);
-      btns.push(`<button class="btn btn-revert-all" data-entry="${idx}">Revert all to original</button>`);
-      actionsHTML = `<div class="entry-actions">${btns.join("")}</div>`;
+    if (hasEditable && hasSuggestion && hasDiffs) {
+      const allFound = r.field_diffs.every(d => (fieldEdits[idx][d.field] || {}).action === "found");
+      const allOriginal = r.field_diffs.every(d => (fieldEdits[idx][d.field] || {}).action === "original");
+      actionsHTML = `<div class="entry-actions">
+        <button class="seg-btn btn-accept-all ${allFound ? "active-accept" : ""}" data-entry="${idx}">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Accept all
+        </button>
+        <button class="seg-btn btn-revert-all ${allOriginal ? "active-revert" : ""}" data-entry="${idx}">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 105.64-11.36L1 10"/></svg>
+          Keep original
+        </button>
+      </div>`;
     }
 
     card.innerHTML = `<div class="entry-header">
@@ -463,6 +471,29 @@
     btn.closest(".fields-toggle-wrap").classList.toggle("collapsed");
   });
 
+  // ─── Helpers for row visual state ────────────────────────────────
+  function flashRow(row) {
+    row.classList.remove("flash");
+    void row.offsetWidth;
+    row.classList.add("flash");
+  }
+
+  function syncRowState(row, action) {
+    row.dataset.action = action;
+    flashRow(row);
+  }
+
+  function syncBulkBtns(card, idx) {
+    const diffRows = card.querySelectorAll(".diff-row:not(.field-row-plain)");
+    if (!diffRows.length) return;
+    const allFound = [...diffRows].every(r => r.dataset.action === "found");
+    const allOriginal = [...diffRows].every(r => r.dataset.action === "original");
+    const acceptBtn = card.querySelector(".btn-accept-all");
+    const revertBtn = card.querySelector(".btn-revert-all");
+    if (acceptBtn) acceptBtn.classList.toggle("active-accept", allFound);
+    if (revertBtn) revertBtn.classList.toggle("active-revert", allOriginal);
+  }
+
   // ─── Per-field action handlers ────────────────────────────────────
   document.addEventListener("click", (e) => {
     const btn = e.target.closest(".fa-btn");
@@ -483,6 +514,9 @@
     span.textContent = action === "remove" ? "" : val;
     span.classList.toggle("removed", action === "remove");
     span.contentEditable = action !== "remove";
+
+    syncRowState(row, action);
+    syncBulkBtns(row.closest(".entry-card"), idx);
   });
 
   document.addEventListener("input", (e) => {
@@ -495,6 +529,8 @@
 
     const row = span.closest(".diff-row");
     row.querySelectorAll(".fa-btn").forEach(b => b.classList.remove("active"));
+    syncRowState(row, "custom");
+    syncBulkBtns(row.closest(".entry-card"), idx);
   });
 
   document.addEventListener("click", (e) => {
@@ -504,7 +540,7 @@
     const isAccept = btn.classList.contains("btn-accept-all");
     const card = btn.closest(".entry-card");
 
-    card.querySelectorAll(".diff-row").forEach(row => {
+    card.querySelectorAll(".diff-row:not(.field-row-plain)").forEach(row => {
       const field = row.dataset.field;
       const target = isAccept ? "found" : "original";
       const targetBtn = row.querySelector(`.fa-btn[data-action="${target}"]`);
@@ -517,11 +553,14 @@
         targetBtn.classList.add("active");
 
         const span = row.querySelector(".found-text");
-        span.textContent = val || (target === "original" ? "" : "");
+        span.textContent = val || "";
         span.classList.remove("removed");
         span.contentEditable = "true";
+
+        syncRowState(row, target);
       }
     });
+    syncBulkBtns(card, idx);
   });
 
   function updateSummary() {
