@@ -147,6 +147,9 @@
   let parsedEntries = [];
   let results = [];
   let decisions = {};
+  // Per-field edits: fieldEdits[entryIndex][fieldName] = { action, value }
+  // action: "found" (use suggestion), "original" (revert), "custom" (edited), "remove"
+  let fieldEdits = {};
   let activeFilter = "all";
 
   const $ = (sel) => document.querySelector(sel);
@@ -213,6 +216,7 @@
   function startVerificationFromContent(content, statusMsg) {
     results = [];
     decisions = {};
+    fieldEdits = {};
     activeFilter = "all";
     entryList.innerHTML = "";
     rateState.ssDelay = 500;
@@ -316,16 +320,50 @@
     card.dataset.index = r.index;
     if (r.duplicate_of) card.dataset.duplicate = "true";
 
+    const idx = r.index;
+    if (!fieldEdits[idx]) fieldEdits[idx] = {};
+
     let diffHTML = "";
     if (r.field_diffs?.length) {
-      diffHTML = `<table class="diff-table">
-        <tr><th>Field</th><th>Original</th><th>Found</th><th>Match</th></tr>
-        ${r.field_diffs.map(d => `<tr>
+      const isActionable = r.status === "updated" || r.status === "needs_review";
+      const defaultAction = r.status === "updated" ? "found" : "original";
+
+      const rows = r.field_diffs.map(d => {
+        if (isActionable && !fieldEdits[idx][d.field]) {
+          fieldEdits[idx][d.field] = { action: defaultAction, value: d.found || "" };
+        }
+        const fe = fieldEdits[idx][d.field];
+        const currentAction = fe ? fe.action : "found";
+        const isEnrichment = !(d.original || "").trim();
+
+        return `<tr class="diff-row" data-entry="${idx}" data-field="${esc(d.field)}">
           <td class="field-name">${esc(d.field)}</td>
           <td class="old-val">${esc(d.original || "(empty)")}</td>
-          <td class="new-val">${esc(d.found || "(empty)")}</td>
-          <td class="score-val">${d.score}%</td>
-        </tr>`).join("")}
+          <td class="new-val">
+            <span class="found-text ${currentAction === "remove" ? "removed" : ""}"
+                  contenteditable="${isActionable}" spellcheck="false"
+                  data-entry="${idx}" data-field="${esc(d.field)}">${esc(currentAction === "original" ? (d.original || "") : (fe ? fe.value : d.found || ""))}</span>
+          </td>
+          <td class="field-actions">${isActionable ? `
+            <button class="fa-btn fa-use-found ${currentAction === "found" ? "active" : ""}" title="Use suggestion"
+                    data-entry="${idx}" data-field="${esc(d.field)}" data-action="found" data-val="${esc(d.found || "")}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            </button>
+            <button class="fa-btn fa-revert ${currentAction === "original" ? "active" : ""}" title="Revert to original"
+                    data-entry="${idx}" data-field="${esc(d.field)}" data-action="original" data-val="${esc(d.original || "")}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 105.64-11.36L1 10"/></svg>
+            </button>
+            ${!isEnrichment ? `<button class="fa-btn fa-remove ${currentAction === "remove" ? "active" : ""}" title="Remove field"
+                    data-entry="${idx}" data-field="${esc(d.field)}" data-action="remove" data-val="">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>` : ""}` : `<span class="score-val">${d.score}%</span>`}
+          </td>
+        </tr>`;
+      }).join("");
+
+      diffHTML = `<table class="diff-table">
+        <tr><th>Field</th><th>Original</th><th>Suggestion</th><th></th></tr>
+        ${rows}
       </table>`;
     }
 
@@ -338,14 +376,10 @@
       foundTitleHTML = `<div class="found-title-row">Closest match (${r.title_score}%): <strong>${esc(r.found_title)}</strong></div>`;
 
     let actionsHTML = "";
-    if (r.status === "updated" || r.status === "needs_review") {
-      const def = r.status === "updated" ? "accept" : "reject";
-      decisions[r.index] = decisions[r.index] || def;
+    if ((r.status === "updated" || r.status === "needs_review") && r.field_diffs?.length) {
       actionsHTML = `<div class="entry-actions">
-        <button class="btn btn-accept ${decisions[r.index] === "accept" ? "selected" : ""}"
-                onclick="window._decide(${r.index},'accept',this)">Accept Changes</button>
-        <button class="btn btn-reject ${decisions[r.index] === "reject" ? "selected" : ""}"
-                onclick="window._decide(${r.index},'reject',this)">Keep Original</button>
+        <button class="btn btn-accept-all" data-entry="${idx}">Accept all suggestions</button>
+        <button class="btn btn-revert-all" data-entry="${idx}">Revert all to original</button>
       </div>`;
     }
 
@@ -371,12 +405,66 @@
     entryList.appendChild(card);
   }
 
-  window._decide = function (index, decision, btn) {
-    decisions[index] = decision;
+  // ─── Per-field action handlers ────────────────────────────────────
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest(".fa-btn");
+    if (!btn) return;
+    const idx = parseInt(btn.dataset.entry);
+    const field = btn.dataset.field;
+    const action = btn.dataset.action;
+    const val = btn.dataset.val;
+
+    if (!fieldEdits[idx]) fieldEdits[idx] = {};
+    fieldEdits[idx][field] = { action, value: val };
+
+    const row = btn.closest(".diff-row");
+    row.querySelectorAll(".fa-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    const span = row.querySelector(".found-text");
+    span.textContent = action === "remove" ? "" : val;
+    span.classList.toggle("removed", action === "remove");
+    span.contentEditable = action !== "remove";
+  });
+
+  document.addEventListener("input", (e) => {
+    const span = e.target.closest(".found-text[contenteditable]");
+    if (!span) return;
+    const idx = parseInt(span.dataset.entry);
+    const field = span.dataset.field;
+    if (!fieldEdits[idx]) fieldEdits[idx] = {};
+    fieldEdits[idx][field] = { action: "custom", value: span.textContent.trim() };
+
+    const row = span.closest(".diff-row");
+    row.querySelectorAll(".fa-btn").forEach(b => b.classList.remove("active"));
+  });
+
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest(".btn-accept-all, .btn-revert-all");
+    if (!btn) return;
+    const idx = parseInt(btn.dataset.entry);
+    const isAccept = btn.classList.contains("btn-accept-all");
     const card = btn.closest(".entry-card");
-    card.querySelectorAll(".btn-accept, .btn-reject").forEach(b => b.classList.remove("selected"));
-    btn.classList.add("selected");
-  };
+
+    card.querySelectorAll(".diff-row").forEach(row => {
+      const field = row.dataset.field;
+      const target = isAccept ? "found" : "original";
+      const targetBtn = row.querySelector(`.fa-btn[data-action="${target}"]`);
+      if (targetBtn) {
+        const val = targetBtn.dataset.val;
+        if (!fieldEdits[idx]) fieldEdits[idx] = {};
+        fieldEdits[idx][field] = { action: target, value: val };
+
+        row.querySelectorAll(".fa-btn").forEach(b => b.classList.remove("active"));
+        targetBtn.classList.add("active");
+
+        const span = row.querySelector(".found-text");
+        span.textContent = val || (target === "original" ? "" : "");
+        span.classList.remove("removed");
+        span.contentEditable = "true";
+      }
+    });
+  });
 
   function updateSummary() {
     const c = { verified: 0, updated: 0, needs_review: 0, not_found: 0 };
@@ -458,10 +546,18 @@
       if (s.removeNotFound && r.status === "not_found") return null;
 
       const out = { ...entry };
-      const decision = decisions[i] ?? (r.status === "verified" ? "accept" : null);
-      if ((r.status === "updated" || r.status === "needs_review") && decision === "accept" && r.suggested) {
-        for (const [field, value] of Object.entries(r.suggested))
-          if (value) out[field] = value;
+      const edits = fieldEdits[i] || {};
+      if (r.status === "updated" || r.status === "needs_review") {
+        for (const d of (r.field_diffs || [])) {
+          const fe = edits[d.field];
+          if (!fe) continue;
+          if (fe.action === "found" || fe.action === "custom") {
+            if (fe.value) out[d.field] = fe.value;
+          } else if (fe.action === "remove") {
+            delete out[d.field];
+          }
+          // "original" → keep as-is (already in out from entry spread)
+        }
       }
 
       if (s.abbreviateVenue) {

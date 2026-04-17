@@ -432,7 +432,104 @@ code {
 
 .diff-table .old-val { color: var(--red); }
 .diff-table .new-val { color: var(--green); }
-.diff-table .score-val { color: var(--text-dim); width: 60px; text-align: right; }
+.diff-table .score-val { color: var(--text-dim); text-align: right; white-space: nowrap; }
+
+.found-text {
+  display: block;
+  padding: 0.15rem 0.3rem;
+  border-radius: 3px;
+  border: 1px solid transparent;
+  outline: none;
+  min-height: 1.3em;
+  transition: border-color 0.15s, background 0.15s;
+  word-break: break-word;
+}
+
+.found-text[contenteditable="true"]:hover {
+  border-color: var(--border);
+  background: var(--surface-alt);
+}
+
+.found-text[contenteditable="true"]:focus {
+  border-color: var(--accent);
+  background: var(--surface-alt);
+}
+
+.found-text.removed {
+  opacity: 0.3;
+  text-decoration: line-through;
+  pointer-events: none;
+}
+
+.field-actions {
+  white-space: nowrap;
+  text-align: right;
+  width: 90px;
+}
+
+.fa-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0;
+  margin-left: 2px;
+  transition: all 0.12s;
+  vertical-align: middle;
+}
+
+.fa-btn:hover {
+  background: var(--surface-alt);
+  color: var(--text);
+  border-color: var(--text-dim);
+}
+
+.fa-btn.fa-use-found.active {
+  background: var(--green-bg);
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.fa-btn.fa-revert.active {
+  background: var(--yellow-bg);
+  border-color: var(--yellow);
+  color: var(--yellow);
+}
+
+.fa-btn.fa-remove.active {
+  background: var(--red-bg);
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.btn-accept-all, .btn-revert-all {
+  padding: 0.35rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-alt);
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.btn-accept-all:hover {
+  background: var(--green-bg);
+  border-color: var(--green-border);
+  color: var(--green);
+}
+
+.btn-revert-all:hover {
+  background: var(--yellow-bg);
+  border-color: var(--yellow-border);
+  color: var(--yellow);
+}
 
 .found-title-row {
   margin-top: 0.5rem;
