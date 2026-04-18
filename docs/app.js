@@ -617,7 +617,8 @@
   // ─── Live preview ────────────────────────────────────────────────
   function buildPreviewBib() {
     const s = getSettings();
-    let final = parsedEntries.map((entry, i) => {
+    const count = results.length;
+    let final = parsedEntries.slice(0, count).map((entry, i) => {
       const r = results[i];
       if (!r) return { ...entry };
       if (s.removeNotFound && r.status === "not_found") return null;
