@@ -714,15 +714,74 @@ code {
 
 .preview-code {
   display: block;
-  padding: 0.75rem 1rem;
+  padding: 0;
   margin: 0;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-  font-size: 0.78rem;
-  line-height: 1.55;
+  font-size: 0.75rem;
+  line-height: 1.5;
   color: var(--text);
+  white-space: pre;
+  background: transparent;
+  counter-reset: diff-line;
+}
+
+.diff-line {
+  display: block;
+  padding: 0 0.75rem 0 0.5rem;
+  min-height: 1.5em;
   white-space: pre-wrap;
   word-break: break-all;
-  background: transparent;
+}
+
+.diff-line::before {
+  display: inline-block;
+  width: 1.6em;
+  margin-right: 0.6em;
+  text-align: right;
+  color: var(--text-dim);
+  opacity: 0.5;
+  user-select: none;
+  font-size: 0.7rem;
+}
+
+.diff-line.diff-add {
+  background: var(--green-bg);
+  border-left: 3px solid var(--green);
+}
+.diff-line.diff-add::before {
+  content: "+";
+  color: var(--green);
+  opacity: 0.8;
+}
+
+.diff-line.diff-del {
+  background: var(--red-bg);
+  border-left: 3px solid var(--red);
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+.diff-line.diff-del::before {
+  content: "−";
+  color: var(--red);
+  opacity: 0.8;
+}
+
+.diff-line.diff-ctx {
+  border-left: 3px solid transparent;
+}
+.diff-line.diff-ctx::before {
+  content: " ";
+}
+
+.diff-sep {
+  display: block;
+  padding: 0.15rem 0.75rem;
+  font-size: 0.7rem;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border-left: 3px solid var(--accent);
+  user-select: none;
+  opacity: 0.7;
 }
 
 .preview-placeholder {

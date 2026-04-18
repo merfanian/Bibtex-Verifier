@@ -665,23 +665,72 @@
     return B.entriesToBib(final);
   }
 
+  let currentPreviewBib = "";
+
+  function diffLines(oldLines, newLines) {
+    const m = oldLines.length, n = newLines.length;
+    const dp = Array.from({ length: m + 1 }, () => new Uint16Array(n + 1));
+    for (let i = 1; i <= m; i++)
+      for (let j = 1; j <= n; j++)
+        dp[i][j] = oldLines[i - 1] === newLines[j - 1]
+          ? dp[i - 1][j - 1] + 1
+          : Math.max(dp[i - 1][j], dp[i][j - 1]);
+
+    const result = [];
+    let i = m, j = n;
+    while (i > 0 || j > 0) {
+      if (i > 0 && j > 0 && oldLines[i - 1] === newLines[j - 1]) {
+        result.push({ type: "ctx", text: newLines[j - 1] });
+        i--; j--;
+      } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+        result.push({ type: "add", text: newLines[j - 1] });
+        j--;
+      } else {
+        result.push({ type: "del", text: oldLines[i - 1] });
+        i--;
+      }
+    }
+    return result.reverse();
+  }
+
+  function buildOriginalBib() {
+    return B.entriesToBib(parsedEntries.slice(0, results.length));
+  }
+
+  function renderDiff(oldBib, newBib) {
+    const oldLines = oldBib.split("\n");
+    const newLines = newBib.split("\n");
+    const ops = diffLines(oldLines, newLines);
+    const hasChanges = ops.some(o => o.type !== "ctx");
+
+    if (!hasChanges) {
+      return ops.map(o =>
+        `<span class="diff-line diff-ctx">${esc(o.text)}</span>`
+      ).join("");
+    }
+
+    return ops.map(o => {
+      const cls = o.type === "add" ? "diff-add" : o.type === "del" ? "diff-del" : "diff-ctx";
+      return `<span class="diff-line ${cls}">${esc(o.text)}</span>`;
+    }).join("");
+  }
+
   function updatePreview() {
     if (!parsedEntries.length) return;
-    const bib = buildPreviewBib();
+    currentPreviewBib = buildPreviewBib();
+    const origBib = buildOriginalBib();
     previewPlaceholder.style.display = "none";
     previewCode.style.display = "block";
-    previewCode.textContent = bib;
+    previewCode.innerHTML = renderDiff(origBib, currentPreviewBib);
   }
 
   const btnCopy = $("#btn-copy-preview");
   btnCopy.addEventListener("click", () => {
-    const text = previewCode.textContent;
-    if (!text) return;
-    navigator.clipboard.writeText(text).then(() => {
+    if (!currentPreviewBib) return;
+    navigator.clipboard.writeText(currentPreviewBib).then(() => {
       btnCopy.classList.add("copied");
-      btnCopy.querySelector("svg + *") || null;
       const origHTML = btnCopy.innerHTML;
-      btnCopy.innerHTML = btnCopy.innerHTML.replace("Copy", "Copied!");
+      btnCopy.innerHTML = origHTML.replace("Copy", "Copied!");
       setTimeout(() => {
         btnCopy.classList.remove("copied");
         btnCopy.innerHTML = origHTML;
@@ -751,7 +800,7 @@
 
   // ─── Download ─────────────────────────────────────────────────────
   $(".btn-download").addEventListener("click", () => {
-    const bibContent = buildPreviewBib();
+    const bibContent = currentPreviewBib || buildPreviewBib();
     const blob = new Blob([bibContent], { type: "application/x-bibtex" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
