@@ -335,31 +335,53 @@ code {
   display: none;
 }
 
-/* ─── Progress ─────────────────────────────────────────────────── */
-.progress-section {
+/* ─── In-bar progress ──────────────────────────────────────────── */
+.bar-progress {
   display: none;
-  margin-top: 1.5rem;
+  flex: 1;
+  min-width: 180px;
+  max-width: 420px;
+  flex-direction: column;
+  gap: 0.3rem;
+  transition: opacity 0.3s, max-width 0.4s;
 }
 
-.progress-bar-track {
+.bar-progress.active {
+  display: flex;
+}
+
+.bar-progress.fade-out {
+  opacity: 0;
+  max-width: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.bar-progress-track {
   background: var(--surface-alt);
   border-radius: 999px;
-  height: 8px;
+  height: 6px;
   overflow: hidden;
-  margin-bottom: 0.5rem;
 }
 
-.progress-bar-fill {
+.bar-progress-fill {
   background: var(--accent);
   height: 100%;
   width: 0%;
   border-radius: 999px;
-  transition: width 0.3s ease;
+  transition: width 0.3s ease, background 0.3s;
 }
 
-.progress-text {
-  font-size: 0.85rem;
+.bar-progress-fill.done {
+  background: var(--green);
+}
+
+.bar-progress-text {
+  font-size: 0.75rem;
   color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ─── Results ──────────────────────────────────────────────────── */
@@ -1006,10 +1028,24 @@ code {
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, opacity 0.3s, transform 0.3s;
+  white-space: nowrap;
 }
 
 .btn-download:hover { background: var(--accent-hover); }
+
+.btn-download.hidden {
+  display: none;
+}
+
+.btn-download.fade-in {
+  animation: btnAppear 0.35s ease-out;
+}
+
+@keyframes btnAppear {
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
+}
 
 .entry-card.hidden { display: none; }
 

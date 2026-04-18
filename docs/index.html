@@ -50,13 +50,6 @@
       <button class="btn-verify-paste" id="btn-verify-paste">Verify pasted BibTeX</button>
     </div>
 
-    <div class="progress-section">
-      <div class="progress-bar-track">
-        <div class="progress-bar-fill"></div>
-      </div>
-      <div class="progress-text">Preparing...</div>
-    </div>
-
     <div class="main-columns" id="main-columns">
       <div class="col-entries">
         <div class="results-section">
@@ -231,7 +224,15 @@
           </div>
         </div>
       </div>
-      <button class="btn-download">Download Corrected .bib</button>
+
+      <div class="bar-progress" id="bar-progress">
+        <div class="bar-progress-track">
+          <div class="bar-progress-fill"></div>
+        </div>
+        <div class="bar-progress-text">Preparing...</div>
+      </div>
+
+      <button class="btn-download" id="btn-download">Download Corrected .bib</button>
     </div>
   </div>
 

@@ -27,11 +27,9 @@
     if (source === "ss") {
       rateState.ssDelay = Math.min(rateState.ssDelay * 1.3, rateState.ssMax);
       rateState.ssConsecutiveOk = 0;
-      console.log(`[rate] SS backoff → ${Math.round(rateState.ssDelay)}ms`);
     } else {
       rateState.crDelay = Math.min(rateState.crDelay * 1.3, rateState.crMax);
       rateState.crConsecutiveOk = 0;
-      console.log(`[rate] CR backoff → ${Math.round(rateState.crDelay)}ms`);
     }
   }
 
@@ -41,20 +39,14 @@
       if (rateState.ssConsecutiveOk >= 2) {
         rateState.ssDelay = Math.max(rateState.ssDelay * 0.85, rateState.ssMin);
         rateState.ssConsecutiveOk = 0;
-        console.log(`[rate] SS speed-up → ${Math.round(rateState.ssDelay)}ms`);
       }
     } else {
       rateState.crConsecutiveOk++;
       if (rateState.crConsecutiveOk >= 2) {
         rateState.crDelay = Math.max(rateState.crDelay * 0.85, rateState.crMin);
         rateState.crConsecutiveOk = 0;
-        console.log(`[rate] CR speed-up → ${Math.round(rateState.crDelay)}ms`);
       }
     }
-  }
-
-  function getRateInfo() {
-    return `SS: ${Math.round(rateState.ssDelay)}ms · CR: ${Math.round(rateState.crDelay)}ms`;
   }
 
   // ─── Network ─────────────────────────────────────────────────────────
@@ -172,12 +164,13 @@
 
   const uploadZone = $(".upload-zone");
   const fileInput = $("#file-input");
-  const progressSection = $(".progress-section");
-  const progressFill = $(".progress-bar-fill");
-  const progressText = $(".progress-text");
   const resultsSection = $(".results-section");
   const entryList = $(".entry-list");
   const floatingBar = $("#floating-bar");
+  const barProgress = $("#bar-progress");
+  const barProgressFill = $(".bar-progress-fill");
+  const barProgressText = $(".bar-progress-text");
+  const btnDownload = $("#btn-download");
   const mainColumns = $("#main-columns");
   const colPreview = $("#col-preview");
   const previewCode = $("#preview-code");
@@ -242,12 +235,17 @@
     rateState.crDelay = 100;
     rateState.ssConsecutiveOk = 0;
     rateState.crConsecutiveOk = 0;
-    floatingBar.classList.remove("visible");
-    resultsSection.style.display = "none";
-    progressSection.style.display = "block";
     $$(".info-section").forEach(s => s.style.display = "none");
-    progressFill.style.width = "0%";
-    progressText.textContent = statusMsg;
+    resultsSection.style.display = "none";
+
+    barProgress.classList.add("active");
+    barProgress.classList.remove("fade-out");
+    barProgressFill.style.width = "0%";
+    barProgressFill.classList.remove("done");
+    barProgressText.textContent = statusMsg;
+    btnDownload.classList.add("hidden");
+    btnDownload.classList.remove("fade-in");
+    floatingBar.classList.add("visible");
 
     mainColumns.classList.add("two-col");
     colPreview.classList.add("visible");
@@ -259,12 +257,12 @@
 
     if (!parsedEntries.length) {
       alert("No BibTeX entries found. Make sure the content contains valid @type{key, ...} entries.");
-      progressSection.style.display = "none";
+      floatingBar.classList.remove("visible");
       return;
     }
 
     resultsSection.style.display = "block";
-    progressText.textContent = `Verifying 0 / ${parsedEntries.length} entries...`;
+    barProgressText.textContent = `Verifying 0 / ${parsedEntries.length} entries...`;
     runVerification();
   }
 
@@ -285,8 +283,8 @@
       }
 
       const pct = Math.round(((i + 1) / total) * 100);
-      progressFill.style.width = pct + "%";
-      progressText.textContent = `Verifying ${i + 1} / ${total}: ${title.slice(0, 60)}  [${getRateInfo()}]`;
+      barProgressFill.style.width = pct + "%";
+      barProgressText.textContent = `Verifying ${i + 1} / ${total}: ${title.slice(0, 50)}…`;
 
       if (!title.trim()) {
         const r = buildResult(entry, i, "not_found", 0, [], {}, null);
@@ -316,8 +314,16 @@
       updatePreview();
     }
 
-    progressSection.style.display = "none";
-    floatingBar.classList.add("visible");
+    barProgressFill.classList.add("done");
+    barProgressText.textContent = `Done — ${total} entries verified`;
+    setTimeout(() => {
+      barProgress.classList.add("fade-out");
+      setTimeout(() => {
+        barProgress.classList.remove("active", "fade-out");
+        btnDownload.classList.remove("hidden");
+        btnDownload.classList.add("fade-in");
+      }, 350);
+    }, 800);
   }
 
   function buildResult(entry, index, status, titleScore, fieldDiffs, suggested, found) {
@@ -799,7 +805,7 @@
   }
 
   // ─── Download ─────────────────────────────────────────────────────
-  $(".btn-download").addEventListener("click", () => {
+  btnDownload.addEventListener("click", () => {
     const bibContent = currentPreviewBib || buildPreviewBib();
     const blob = new Blob([bibContent], { type: "application/x-bibtex" });
     const url = URL.createObjectURL(blob);
