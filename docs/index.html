@@ -4,8 +4,41 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="google-site-verification" content="Ec53uaP67xWogWFEI0Asj4FyQZ3RjAtHp6CcQckrWOI" />
-  <title>BibTeX Verifier - Verify your bibliography against academic databases</title>
-  <meta name="description" content="Free online tool to verify BibTeX entries against CrossRef and Semantic Scholar. Catches wrong authors, years, venues, and fills in missing DOIs." />
+
+  <title>BibTeX Verifier — Catch Errors &amp; Hallucinated References in Your Bibliography</title>
+  <meta name="description" content="Free online tool to verify BibTeX entries against CrossRef and Semantic Scholar. Detects hallucinated references from AI, wrong authors, incorrect years, missing DOIs, and duplicate entries. Works in the browser — no install needed." />
+  <meta name="keywords" content="BibTeX, bibliography checker, verify references, hallucinated citations, LaTeX, CrossRef, Semantic Scholar, DOI, citation checker, academic references, .bib file, Overleaf, BibLaTeX, reference manager, paper verification" />
+  <meta name="author" content="merfanian" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://merfanian.github.io/Bibtex-Verifier/" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://merfanian.github.io/Bibtex-Verifier/" />
+  <meta property="og:title" content="BibTeX Verifier — Catch Errors & Hallucinated References" />
+  <meta property="og:description" content="Free browser-based tool to verify your .bib file against CrossRef and Semantic Scholar. Finds wrong authors, incorrect years, fabricated citations, and missing DOIs." />
+  <meta property="og:site_name" content="BibTeX Verifier" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="BibTeX Verifier — Catch Errors & Hallucinated References" />
+  <meta name="twitter:description" content="Verify BibTeX entries against academic databases. Detects AI-hallucinated citations, wrong metadata, and missing DOIs. Free, private, no install." />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "BibTeX Verifier",
+    "url": "https://merfanian.github.io/Bibtex-Verifier/",
+    "description": "Free online tool to verify BibTeX bibliography entries against CrossRef and Semantic Scholar. Catches hallucinated references, wrong authors, incorrect years, and missing DOIs.",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "Any",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "browserRequirements": "Requires a modern web browser with JavaScript enabled",
+    "featureList": ["BibTeX verification", "Hallucinated reference detection", "DOI enrichment", "Duplicate detection", "Field-by-field diff", "Dark/light theme"],
+    "isAccessibleForFree": true,
+    "license": "https://opensource.org/licenses/MIT"
+  }
+  </script>
+
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -25,10 +58,14 @@
           </button>
         </div>
       </div>
-      <p class="hero-lead">Verify your bibliography against academic databases in seconds.
-        Upload a <code>.bib</code> file or paste it directly from Overleaf, and this tool checks every entry's authors, year,
-        venue, and DOI against <a href="https://www.crossref.org/" target="_blank">CrossRef</a>
-        and <a href="https://www.semanticscholar.org/" target="_blank">Semantic Scholar</a>.</p>
+      <p class="hero-tagline">Catch errors, hallucinated references, and missing metadata before you submit.</p>
+      <p class="hero-lead">Upload a <code>.bib</code> file or paste directly from Overleaf.
+        BibTeX Verifier checks every entry against
+        <a href="https://www.crossref.org/" target="_blank">CrossRef</a> and
+        <a href="https://www.semanticscholar.org/" target="_blank">Semantic Scholar</a> to find
+        wrong authors, incorrect years, mismatched venues, missing DOIs, duplicates,
+        and <strong>AI-hallucinated citations</strong> that don't exist in any database.
+        100% in-browser — your data never leaves your machine.</p>
     </header>
 
     <div class="input-tabs">
@@ -40,7 +77,7 @@
       <div class="upload-zone">
         <span class="icon">&#128462;</span>
         <span class="label">Drop your .bib file here or click to browse</span>
-        <p>Supports standard BibTeX / BibLaTeX files</p>
+        <p>Standard BibTeX &amp; BibLaTeX &middot; Processed entirely in your browser</p>
         <input type="file" id="file-input" accept=".bib" />
       </div>
     </div>
@@ -89,25 +126,25 @@
       <div class="steps">
         <div class="step">
           <div class="step-num">1</div>
-          <h3>Upload</h3>
-          <p>Drop your <code>.bib</code> file above or click to browse. The file is read entirely in your browser -- nothing is uploaded to a server.</p>
+          <h3>Upload or paste</h3>
+          <p>Drop your <code>.bib</code> file or paste directly from Overleaf. Everything is parsed in your browser — nothing is uploaded to any server.</p>
         </div>
         <div class="step">
           <div class="step-num">2</div>
           <h3>Verify</h3>
-          <p>Each entry is looked up by title against Semantic Scholar and CrossRef. The tool compares authors, year, venue, DOI, and other fields to the published record.</p>
+          <p>Each entry is looked up by title against Semantic Scholar and CrossRef. Authors, year, venue, DOI, and other fields are compared to the published record. Entries that don't match any real publication are flagged — perfect for catching AI-hallucinated citations.</p>
         </div>
         <div class="step">
           <div class="step-num">3</div>
-          <h3>Review</h3>
+          <h3>Review &amp; edit</h3>
           <p>Results are color-coded: <strong class="c-green">Verified</strong> means everything matches,
-            <strong class="c-yellow">Auto-Updated</strong> shows a diff of changed fields,
-            and <strong class="c-red">Needs Review</strong> means the title didn't match closely enough. Accept or reject each suggestion.</p>
+            <strong class="c-yellow">Auto-Updated</strong> shows a diff you can accept or edit inline,
+            and <strong class="c-red">Needs Review</strong> flags possible errors. A live preview shows the corrected BibTeX in real time.</p>
         </div>
         <div class="step">
           <div class="step-num">4</div>
           <h3>Download</h3>
-          <p>Click the download button to get a corrected <code>.bib</code> file with your accepted changes applied. Ready to use in your LaTeX project.</p>
+          <p>Download or copy the corrected <code>.bib</code> file with your changes applied. Ready for LaTeX, Overleaf, or any reference manager.</p>
         </div>
       </div>
     </section>
@@ -116,6 +153,11 @@
       <h2>Features</h2>
       <div class="feature-grid">
         <div class="feature-card">
+          <div class="feature-icon">&#129302;</div>
+          <h3>Hallucination detection</h3>
+          <p>Flags entries whose titles don't match any known publication — catches fabricated references from AI-generated bibliographies.</p>
+        </div>
+        <div class="feature-card">
           <div class="feature-icon">&#128269;</div>
           <h3>Dual-source verification</h3>
           <p>Queries both Semantic Scholar and CrossRef to maximize coverage and metadata quality.</p>
@@ -123,27 +165,22 @@
         <div class="feature-card">
           <div class="feature-icon">&#128203;</div>
           <h3>Field-by-field diff</h3>
-          <p>See exactly which fields differ between your entry and the published record, with similarity scores.</p>
+          <p>See exactly which fields differ — authors, year, venue, DOI, pages — with inline editing and a live BibTeX preview.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">&#128274;</div>
           <h3>Privacy-first</h3>
-          <p>Your file never leaves the browser. Only paper titles are sent to public academic APIs for lookup.</p>
+          <p>Your file never leaves the browser. Only paper titles are sent to public academic APIs for lookup. No server, no tracking.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">&#128221;</div>
-          <h3>DOI enrichment</h3>
-          <p>Fills in missing DOIs, publisher info, and other metadata found in the online record.</p>
+          <h3>DOI &amp; metadata enrichment</h3>
+          <p>Fills in missing DOIs, publisher info, volume, pages, and other metadata from the online record automatically.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">&#127919;</div>
-          <h3>Fuzzy matching</h3>
-          <p>Handles minor title variations, LaTeX accents, and author name formatting differences.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">&#9997;&#65039;</div>
-          <h3>Accept or reject</h3>
-          <p>You stay in control. Review every suggested change and decide what to keep before downloading.</p>
+          <h3>Smart matching</h3>
+          <p>Fuzzy title matching, LaTeX-aware text processing, and last-name-based author comparison handle real-world formatting differences.</p>
         </div>
       </div>
     </section>
@@ -151,20 +188,24 @@
     <section class="faq info-section">
       <h2>FAQ</h2>
       <details>
+        <summary>Can it detect AI-hallucinated references?</summary>
+        <p>Yes. When a BibTeX entry's title doesn't match any real publication in CrossRef or Semantic Scholar, it's flagged as "Not Found" or "Needs Review." This is how fabricated citations from ChatGPT, Copilot, or other AI tools get caught — the paper simply doesn't exist in any academic database.</p>
+      </details>
+      <details>
         <summary>Is my data safe?</summary>
-        <p>Yes. Your <code>.bib</code> file is parsed entirely in your browser using JavaScript. The only network requests made are title lookups to the public CrossRef and Semantic Scholar APIs. No file data is sent to any server.</p>
+        <p>Yes. Your <code>.bib</code> file is parsed entirely in your browser using JavaScript. The only network requests made are title lookups to the public CrossRef and Semantic Scholar APIs. No file content is sent to any server.</p>
       </details>
       <details>
         <summary>Why are some entries "Not Found"?</summary>
-        <p>Not every paper is indexed in CrossRef or Semantic Scholar. ArXiv preprints, workshop papers, theses, and very recent publications may not be found. The tool will flag these so you can verify them manually.</p>
+        <p>Not every paper is indexed in CrossRef or Semantic Scholar. ArXiv preprints, workshop papers, theses, and very recent publications may not be found. The tool flags these so you can verify them manually — or remove them if they're fabricated.</p>
       </details>
       <details>
         <summary>Why does verification take a while?</summary>
-        <p>To respect the free APIs' rate limits, the tool sends requests at a controlled pace (about 1 per second to Semantic Scholar). For a file with 50 entries, expect roughly 2-3 minutes.</p>
+        <p>To respect the free APIs' rate limits, requests are sent at a controlled pace with adaptive throttling. For a file with 50 entries, expect roughly 2–3 minutes. You can review results and change settings while it's still processing.</p>
       </details>
       <details>
-        <summary>Can I use this offline?</summary>
-        <p>The tool requires an internet connection to query the academic APIs. For offline use, you can run the <a href="https://github.com/merfanian/Bibtex-Verifier" target="_blank">Python backend version</a> locally via Docker.</p>
+        <summary>Does it work with Overleaf?</summary>
+        <p>Yes! You can copy your entire <code>.bib</code> file from Overleaf and paste it directly into the "Paste BibTeX" tab. After reviewing, download the corrected file and upload it back to Overleaf.</p>
       </details>
       <details>
         <summary>Is this open source?</summary>

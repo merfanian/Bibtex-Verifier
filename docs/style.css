@@ -206,12 +206,25 @@ code {
 [data-theme="light"] .theme-toggle .icon-moon { display: block; }
 :root:not([data-theme]) .theme-toggle .icon-sun { display: block; }
 
+.hero-tagline {
+  color: var(--accent);
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin-bottom: 0.6rem;
+  letter-spacing: -0.01em;
+}
+
 .hero-lead {
   color: var(--text-dim);
   font-size: 1.05rem;
   line-height: 1.7;
-  max-width: 680px;
+  max-width: 720px;
   margin-top: 0.5rem;
+}
+
+.hero-lead strong {
+  color: var(--red);
+  font-weight: 600;
 }
 
 /* ─── Input tabs ───────────────────────────────────────────────── */
