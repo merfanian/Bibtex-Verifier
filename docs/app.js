@@ -365,15 +365,20 @@
     const hasSuggestion = r.status === "updated" || r.status === "needs_review";
 
     if (hasDiffs) {
-      const defaultAction = r.status === "updated" ? "found" : "original";
-
       const rows = r.field_diffs.map(d => {
+        const isEnrichment = !(d.original || "").trim();
+        // needs_review defaults to "keep original" per field, but empty originals have no
+        // revert control — default to "found" so the API suggestion is visible (like Auto-Updated).
+        const defaultAction =
+          r.status === "updated" || (r.status === "needs_review" && isEnrichment)
+            ? "found"
+            : "original";
+
         if (!fieldEdits[idx][d.field]) {
           fieldEdits[idx][d.field] = { action: defaultAction, value: d.found || "" };
         }
         const fe = fieldEdits[idx][d.field];
         const currentAction = fe.action;
-        const isEnrichment = !(d.original || "").trim();
 
         return `<tr class="diff-row" data-entry="${idx}" data-field="${esc(d.field)}" data-action="${currentAction}">
           <td class="field-name">${esc(d.field)}</td>
