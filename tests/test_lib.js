@@ -284,6 +284,39 @@ test("enrichments don't cause updated status", () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
+console.log("\n── fieldDiffsForNeedsReview ──");
+
+test("returns empty array when found is null", () => {
+  assert.deepStrictEqual(lib.fieldDiffsForNeedsReview({ title: "X" }, null), []);
+});
+
+test("includes title and differing fields for a weak title match", () => {
+  const orig = {
+    title: "My Completely Different Title",
+    author: "Smith, Alice",
+    year: "2020",
+  };
+  const found = {
+    title: "Attention Is All You Need",
+    author: "Vaswani, Ashish",
+    year: "2017",
+    journal: "NeurIPS",
+  };
+  const diffs = lib.fieldDiffsForNeedsReview(orig, found);
+  assert.ok(diffs.some(d => d.field === "title"));
+  assert.ok(diffs.some(d => d.field === "author"));
+  assert.ok(diffs.some(d => d.field === "year"));
+  assert.ok(diffs.some(d => d.field === "journal"));
+});
+
+test("includes enrichment fields from found", () => {
+  const orig = { title: "Different Title Here", year: "2023" };
+  const found = { title: "Another Title", year: "2023", doi: "10.1000/182" };
+  const diffs = lib.fieldDiffsForNeedsReview(orig, found);
+  assert.ok(diffs.some(d => d.field === "doi" && d.score === 0), "doi should be enrichment");
+});
+
+// ═══════════════════════════════════════════════════════════════════════
 console.log("\n── crossrefToStandard ──");
 
 test("converts CrossRef response to standard format", () => {

@@ -305,7 +305,10 @@
         renderEntryCard(r);
       } else {
         const cmp = B.compareEntry(entry, found);
-        const r = buildResult(entry, i, cmp.status, cmp.title_score, cmp.field_diffs, cmp.suggested, found);
+        let fieldDiffs = cmp.field_diffs;
+        if (cmp.status === "needs_review" && found)
+          fieldDiffs = B.fieldDiffsForNeedsReview(entry, found);
+        const r = buildResult(entry, i, cmp.status, cmp.title_score, fieldDiffs, cmp.suggested, found);
         results.push(r);
         renderEntryCard(r);
       }
@@ -454,9 +457,21 @@
     if (r.duplicate_of)
       duplicateHTML = `<div class="duplicate-row">Duplicate of <strong>${esc(r.duplicate_of)}</strong></div>`;
 
-    let foundTitleHTML = "";
-    if (r.status === "needs_review" && r.found_title)
-      foundTitleHTML = `<div class="found-title-row">Closest match (${r.title_score}%): <strong>${esc(r.found_title)}</strong></div>`;
+    let reviewHintHTML = "";
+    if (r.status === "needs_review" && r.found_title) {
+      reviewHintHTML = `<div class="review-hint">The closest database record may not be the paper you meant
+        (<strong>${esc(String(r.title_score))}%</strong> title similarity to
+        <strong class="review-hint-match">${esc(r.found_title)}</strong>).
+        Review the suggestions below and use the checkmark on each row to adopt a value, or keep your original text.</div>`;
+    }
+
+    let notFoundHintHTML = "";
+    if (r.status === "not_found") {
+      const hasTitle = (r.title || "").trim();
+      notFoundHintHTML = `<div class="not-found-hint">${hasTitle
+        ? "No matching publication was found in CrossRef or Semantic Scholar for this title. Try fixing typos or adding missing words, then re-run verification, or check the reference manually."
+        : "This entry has no title, so it cannot be looked up automatically. Add a title in your .bib file or verify the entry by hand."}</div>`;
+    }
 
     let actionsHTML = "";
     const hasEditable = Object.keys(fieldEdits[idx]).length > 0;
@@ -475,21 +490,24 @@
       </div>`;
     }
 
-    const jumpBtn = `<button class="btn-jump-preview" data-entry-id="${esc(r.entry_id)}" title="Show in preview">
+    const jumpBtn = `<button class="btn-jump-preview" type="button" data-entry-id="${esc(r.entry_id)}" title="Scroll to this entry in the live preview">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
     </button>`;
 
     card.innerHTML = `<div class="entry-header">
-      <div>
+      <div class="entry-header-text">
         <div class="entry-title">${esc(r.title || "(no title)")}</div>
         <div class="entry-meta">${esc(r.entry_id)} &middot; ${esc(r.entry_type)}</div>
       </div>
-      <div class="entry-tags">
-        ${r.duplicate_of ? '<span class="status-tag tag-duplicate">Duplicate</span>' : ""}
-        <span class="status-tag tag-${r.status}">${statusLabel(r.status)}</span>
+      <div class="entry-header-aside">
+        ${jumpBtn}
+        <div class="entry-tags">
+          ${r.duplicate_of ? '<span class="status-tag tag-duplicate">Duplicate</span>' : ""}
+          <span class="status-tag tag-${r.status}">${statusLabel(r.status)}</span>
+        </div>
       </div>
-    </div>${duplicateHTML}${foundTitleHTML}${diffHTML}${actionsHTML}${jumpBtn}`;
+    </div>${duplicateHTML}${reviewHintHTML}${notFoundHintHTML}${diffHTML}${actionsHTML}`;
 
     if (activeFilter !== "all") {
       if (activeFilter === "duplicate") {

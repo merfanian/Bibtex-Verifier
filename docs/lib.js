@@ -179,6 +179,58 @@
     return { status, title_score: Math.round(titleScore * 10) / 10, field_diffs: allDiffs, suggested };
   }
 
+  /**
+   * When compareEntry returns needs_review (title below threshold), field_diffs is empty.
+   * Build a full diff against the closest `found` record so the UI can show suggestions
+   * and per-field accept / revert actions.
+   */
+  function fieldDiffsForNeedsReview(original, found) {
+    if (!found) return [];
+    const merged = { ...found };
+    const foundJournal = merged.journal || "";
+    if (original.booktitle && !original.journal && foundJournal)
+      merged.booktitle = foundJournal;
+
+    const origTitle = original.title || "";
+    const foundTitle = merged.title || "";
+    const titleScore = tokenSortRatio(normalizeTitle(origTitle), normalizeTitle(foundTitle));
+    const fieldDiffs = [];
+    const enrichments = [];
+
+    if (origTitle.trim() || foundTitle.trim()) {
+      fieldDiffs.push({
+        field: "title",
+        original: origTitle,
+        found: foundTitle,
+        score: Math.round(titleScore * 10) / 10,
+      });
+    }
+
+    for (const field of COMPARED_FIELDS) {
+      const origVal = original[field] || "";
+      const foundVal = merged[field] || "";
+      if (!origVal && !foundVal) continue;
+
+      if (!origVal.trim() && foundVal.trim()) {
+        enrichments.push({ field, original: origVal, found: foundVal, score: 0 });
+        continue;
+      }
+      if (origVal.trim() && !foundVal.trim()) continue;
+
+      const score = compareField(field, origVal, foundVal);
+      if (score < 100) {
+        fieldDiffs.push({
+          field,
+          original: origVal,
+          found: foundVal,
+          score: Math.round(score * 10) / 10,
+        });
+      }
+    }
+
+    return fieldDiffs.concat(enrichments);
+  }
+
   // ─── API response converters ─────────────────────────────────────────
   function crossrefToStandard(item) {
     const authors = (item.author || []).map(a => {
@@ -348,6 +400,7 @@
   exports.compareAuthors = compareAuthors;
   exports.compareField = compareField;
   exports.compareEntry = compareEntry;
+  exports.fieldDiffsForNeedsReview = fieldDiffsForNeedsReview;
   exports.crossrefToStandard = crossrefToStandard;
   exports.ssToStandard = ssToStandard;
   exports.extractLastNames = extractLastNames;
