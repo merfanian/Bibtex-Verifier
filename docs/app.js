@@ -523,16 +523,19 @@
       behavior: "smooth",
     });
 
-    previewCode.querySelectorAll(".highlight-flash").forEach(el =>
-      el.classList.remove("highlight-flash"));
-
+    const toHighlight = [];
     let node = target;
     while (node) {
-      node.classList.add("highlight-flash");
+      toHighlight.push(node);
       const next = node.nextElementSibling;
       if (!next || next.dataset.entryId) break;
       node = next;
     }
+
+    previewCode.querySelectorAll(".highlight-flash").forEach(el =>
+      el.classList.remove("highlight-flash"));
+    void previewCode.offsetWidth;
+    toHighlight.forEach(el => el.classList.add("highlight-flash"));
   });
 
   // ─── Helpers for row visual state ────────────────────────────────
