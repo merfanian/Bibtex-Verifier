@@ -620,6 +620,16 @@ code {
   pointer-events: none;
 }
 
+/* API suggestion shown while action is "keep original" (empty bib field) */
+.found-text.suggestion-preview {
+  color: var(--text-dim);
+  font-style: italic;
+  border: 1px dashed var(--border);
+  background: var(--surface-alt);
+  cursor: default;
+  user-select: text;
+}
+
 .field-actions {
   white-space: nowrap;
   text-align: right;

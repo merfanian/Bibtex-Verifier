@@ -367,26 +367,39 @@
     if (hasDiffs) {
       const rows = r.field_diffs.map(d => {
         const isEnrichment = !(d.original || "").trim();
-        // needs_review defaults to "keep original" per field, but empty originals have no
-        // revert control — default to "found" so the API suggestion is visible (like Auto-Updated).
-        const defaultAction =
-          r.status === "updated" || (r.status === "needs_review" && isEnrichment)
-            ? "found"
-            : "original";
+        const defaultAction = r.status === "updated" ? "found" : "original";
 
         if (!fieldEdits[idx][d.field]) {
-          fieldEdits[idx][d.field] = { action: defaultAction, value: d.found || "" };
+          fieldEdits[idx][d.field] = {
+            action: defaultAction,
+            value: d.found || "",
+          };
         }
         const fe = fieldEdits[idx][d.field];
         const currentAction = fe.action;
 
-        return `<tr class="diff-row" data-entry="${idx}" data-field="${esc(d.field)}" data-action="${currentAction}">
+        let suggestionText = "";
+        if (currentAction === "remove") suggestionText = "";
+        else if (currentAction === "found" || currentAction === "custom") suggestionText = fe.value || "";
+        else if (currentAction === "original" && isEnrichment) suggestionText = d.found || "";
+        else suggestionText = d.original || "";
+
+        const previewOnly = isEnrichment && currentAction === "original";
+        const encAttr = isEnrichment ? encodeURIComponent(d.found || "") : "";
+        const origAttr = encodeURIComponent(d.original || "");
+
+        return `<tr class="diff-row" data-entry="${idx}" data-field="${esc(d.field)}" data-action="${currentAction}"
+          data-enrichment="${isEnrichment ? "1" : ""}"
+          data-api-suggestion="${encAttr}"
+          data-original-val="${origAttr}">
           <td class="field-name">${esc(d.field)}</td>
           <td class="old-val">${esc(d.original || "(empty)")}</td>
           <td class="new-val">
-            <span class="found-text ${currentAction === "remove" ? "removed" : ""}"
-                  contenteditable="true" spellcheck="false"
-                  data-entry="${idx}" data-field="${esc(d.field)}">${esc(currentAction === "original" ? (d.original || "") : fe.value)}</span>
+            <span class="found-text ${previewOnly ? "suggestion-preview" : ""} ${currentAction === "remove" ? "removed" : ""}"
+                  contenteditable="${currentAction === "remove" || previewOnly ? "false" : "true"}"
+                  spellcheck="false"
+                  title="${previewOnly ? "Suggested value (not applied). Click the checkmark to add it." : ""}"
+                  data-entry="${idx}" data-field="${esc(d.field)}">${esc(suggestionText)}</span>
           </td>
           <td class="field-actions">
             ${hasSuggestion ? `<button class="fa-btn fa-use-found ${currentAction === "found" ? "active" : ""}" title="Use suggestion"
@@ -593,17 +606,31 @@
     const action = btn.dataset.action;
     const val = btn.dataset.val;
 
-    if (!fieldEdits[idx]) fieldEdits[idx] = {};
-    fieldEdits[idx][field] = { action, value: val };
-
     const row = btn.closest(".diff-row");
+    const isEnc = row.dataset.enrichment === "1";
+    const api = decodeURIComponent(row.getAttribute("data-api-suggestion") || "");
+
+    if (!fieldEdits[idx]) fieldEdits[idx] = {};
+    if (action === "original")
+      fieldEdits[idx][field] = { action: "original", value: isEnc ? api : val };
+    else if (action === "found")
+      fieldEdits[idx][field] = { action: "found", value: val };
+    else
+      fieldEdits[idx][field] = { action: "remove", value: "" };
+
     row.querySelectorAll(".fa-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
 
     const span = row.querySelector(".found-text");
-    span.textContent = action === "remove" ? "" : val;
+    const previewOriginal = isEnc && action === "original";
+    if (action === "remove") span.textContent = "";
+    else if (action === "found" || action === "custom") span.textContent = fieldEdits[idx][field].value || "";
+    else span.textContent = previewOriginal ? api : val;
+
+    span.classList.toggle("suggestion-preview", previewOriginal);
     span.classList.toggle("removed", action === "remove");
-    span.contentEditable = action !== "remove";
+    span.contentEditable = action !== "remove" && !previewOriginal ? "true" : "false";
+    span.title = previewOriginal ? "Suggested value (not applied). Click the checkmark to add it." : "";
 
     syncRowState(row, action);
     syncBulkBtns(row.closest(".entry-card"), idx);
@@ -636,6 +663,10 @@
       const field = row.dataset.field;
       const target = isAccept ? "found" : "original";
       const targetBtn = row.querySelector(`.fa-btn[data-action="${target}"]`);
+      const isEnc = row.dataset.enrichment === "1";
+      const api = decodeURIComponent(row.getAttribute("data-api-suggestion") || "");
+      const origDec = decodeURIComponent(row.getAttribute("data-original-val") || "");
+
       if (targetBtn) {
         const val = targetBtn.dataset.val;
         if (!fieldEdits[idx]) fieldEdits[idx] = {};
@@ -647,9 +678,25 @@
         const span = row.querySelector(".found-text");
         span.textContent = val || "";
         span.classList.remove("removed");
-        span.contentEditable = "true";
+        span.classList.toggle("suggestion-preview", target === "original" && isEnc);
+        span.contentEditable = target === "original" && isEnc ? "false" : "true";
+        span.title = target === "original" && isEnc ? "Suggested value (not applied). Click the checkmark to add it." : "";
 
         syncRowState(row, target);
+      } else if (!isAccept && isEnc) {
+        if (!fieldEdits[idx]) fieldEdits[idx] = {};
+        fieldEdits[idx][field] = { action: "original", value: api };
+
+        row.querySelectorAll(".fa-btn").forEach(b => b.classList.remove("active"));
+
+        const span = row.querySelector(".found-text");
+        span.textContent = api;
+        span.classList.remove("removed");
+        span.classList.add("suggestion-preview");
+        span.contentEditable = "false";
+        span.title = "Suggested value (not applied). Click the checkmark to add it.";
+
+        syncRowState(row, "original");
       }
     });
     syncBulkBtns(card, idx);
