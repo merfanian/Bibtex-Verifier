@@ -475,6 +475,11 @@
       </div>`;
     }
 
+    const jumpBtn = `<button class="btn-jump-preview" data-entry-id="${esc(r.entry_id)}" title="Show in preview">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>`;
+
     card.innerHTML = `<div class="entry-header">
       <div>
         <div class="entry-title">${esc(r.title || "(no title)")}</div>
@@ -484,7 +489,7 @@
         ${r.duplicate_of ? '<span class="status-tag tag-duplicate">Duplicate</span>' : ""}
         <span class="status-tag tag-${r.status}">${statusLabel(r.status)}</span>
       </div>
-    </div>${duplicateHTML}${foundTitleHTML}${diffHTML}${actionsHTML}`;
+    </div>${duplicateHTML}${foundTitleHTML}${diffHTML}${actionsHTML}${jumpBtn}`;
 
     if (activeFilter !== "all") {
       if (activeFilter === "duplicate") {
@@ -502,6 +507,32 @@
     const btn = e.target.closest(".fields-toggle-btn");
     if (!btn) return;
     btn.closest(".fields-toggle-wrap").classList.toggle("collapsed");
+  });
+
+  // ─── Jump to preview ─────────────────────────────────────────────
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest(".btn-jump-preview");
+    if (!btn) return;
+    const entryId = btn.dataset.entryId;
+    const target = previewCode.querySelector(`.diff-line[data-entry-id="${entryId}"]`);
+    if (!target) return;
+
+    const previewBody = previewCode.closest(".preview-body");
+    previewBody.scrollTo({
+      top: target.offsetTop - previewBody.offsetTop - 40,
+      behavior: "smooth",
+    });
+
+    previewCode.querySelectorAll(".highlight-flash").forEach(el =>
+      el.classList.remove("highlight-flash"));
+
+    let node = target;
+    while (node) {
+      node.classList.add("highlight-flash");
+      const next = node.nextElementSibling;
+      if (!next || next.dataset.entryId) break;
+      node = next;
+    }
   });
 
   // ─── Helpers for row visual state ────────────────────────────────
@@ -718,7 +749,9 @@
 
     return ops.map(o => {
       const cls = o.type === "add" ? "diff-add" : o.type === "del" ? "diff-del" : "diff-ctx";
-      return `<span class="diff-line ${cls}">${esc(o.text)}</span>`;
+      const entryMatch = o.text.match(/^@\w+\{(.+),\s*$/);
+      const idAttr = entryMatch ? ` data-entry-id="${esc(entryMatch[1])}"` : "";
+      return `<span class="diff-line ${cls}"${idAttr}>${esc(o.text)}</span>`;
     }).join("");
   }
 
