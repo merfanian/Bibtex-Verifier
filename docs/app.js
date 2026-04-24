@@ -583,6 +583,56 @@
     toHighlight.forEach(el => el.classList.add("highlight-flash"));
   });
 
+  // ─── Autoscroll preview ──────────────────────────────────────────
+  let autoScrollEnabled = true;
+  const btnAutoScroll = $("#btn-autoscroll");
+
+  btnAutoScroll.addEventListener("click", () => {
+    autoScrollEnabled = !autoScrollEnabled;
+    btnAutoScroll.classList.toggle("active", autoScrollEnabled);
+  });
+
+  function getVisibleEntryCard() {
+    const cards = $$(".entry-card:not(.hidden)");
+    const viewMid = window.innerHeight / 2;
+    let best = null;
+    let bestDist = Infinity;
+    for (const card of cards) {
+      const rect = card.getBoundingClientRect();
+      const cardMid = rect.top + rect.height / 2;
+      const dist = Math.abs(cardMid - viewMid);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = card;
+      }
+    }
+    return best;
+  }
+
+  let scrollTicking = false;
+  window.addEventListener("scroll", () => {
+    if (!autoScrollEnabled || !scrollTicking) {
+      scrollTicking = true;
+      requestAnimationFrame(() => {
+        scrollTicking = false;
+        if (!autoScrollEnabled) return;
+        const card = getVisibleEntryCard();
+        if (!card) return;
+        const entryId = card.querySelector(".btn-jump-preview")?.dataset?.entryId;
+        if (!entryId) return;
+        const target = previewCode.querySelector(`.diff-line[data-entry-id="${entryId}"]`);
+        if (!target) return;
+
+        const previewBody = previewCode.closest(".preview-body");
+        const bodyHeight = previewBody.clientHeight;
+        previewBody.scrollTo({
+          top: target.offsetTop - previewBody.offsetTop - bodyHeight / 2 + 20,
+          behavior: "smooth",
+        });
+      });
+    }
+  });
+
   // ─── Helpers for row visual state ────────────────────────────────
   function flashRow(row) {
     row.classList.remove("flash");

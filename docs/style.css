@@ -1024,6 +1024,22 @@ code {
 .btn-copy:hover { border-color: var(--accent); color: var(--accent); }
 .btn-copy.copied { border-color: var(--green); color: var(--green); }
 
+.btn-autoscroll {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-autoscroll:hover { border-color: var(--accent); color: var(--accent); }
+.btn-autoscroll.active { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+
 .preview-body {
   flex: 1;
   overflow-y: auto;
