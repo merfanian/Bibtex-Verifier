@@ -382,6 +382,11 @@
         const origAttr = encodeURIComponent(d.original || "");
         const foundAttr = encodeURIComponent(d.found || "");
 
+        // Apply author truncation for display
+        const maxA = parseInt(optMaxAuthors.value) || 0;
+        const displayOriginal = (d.field === "author" && maxA > 0) ? truncateAuthors(d.original || "", maxA) : (d.original || "");
+        const displaySuggestion = (d.field === "author" && maxA > 0 && currentAction !== "custom") ? truncateAuthors(suggestionText, maxA) : suggestionText;
+
         return `<tr class="diff-row" data-entry="${idx}" data-field="${esc(d.field)}" data-action="${currentAction}"
           data-enrichment="${isEnrichment ? "1" : ""}"
           data-found-val="${foundAttr}"
@@ -390,14 +395,14 @@
           <td class="val-col val-col-original">
             ${!isEnrichment ? `<button class="choice-pill pill-original ${currentAction === "original" ? "active" : ""}"
                     data-entry="${idx}" data-field="${esc(d.field)}" data-action="original" data-val="${esc(d.original || "")}"
-                    title="Keep your value">${esc(d.original)}</button>` : '<span class="empty-val">\u2014</span>'}
+                    title="Keep your value">${esc(displayOriginal)}</button>` : '<span class="empty-val">\u2014</span>'}
           </td>
           <td class="val-col val-col-suggested">
             ${hasSuggestion ? `<span class="choice-pill pill-suggested ${currentAction === "found" || currentAction === "custom" ? "active" : ""} ${currentAction === "remove" ? "removed" : ""}"
                     contenteditable="${currentAction === "remove" ? "false" : "true"}"
                     spellcheck="false"
                     data-entry="${idx}" data-field="${esc(d.field)}" data-action="found" data-val="${esc(d.found || "")}"
-                    title="Use suggested value (click to select, edit to customize)">${esc(suggestionText)}</span>` : ""}
+                    title="Use suggested value (click to select, edit to customize)">${esc(displaySuggestion)}</span>` : ""}
           </td>
           <td class="field-actions-mini">
             <button class="fa-btn-x ${currentAction === "remove" ? "active" : ""}" title="${isEnrichment ? "Don\u2019t add" : "Remove field"}"
@@ -914,6 +919,37 @@
     return authors.slice(0, max).join(" and ") + " and others";
   }
 
+  function updateAuthorPills() {
+    const max = parseInt(optMaxAuthors.value) || 0;
+    // Update all author diff rows
+    $$('.diff-row[data-field="author"]').forEach(row => {
+      const idx = parseInt(row.dataset.entry);
+      const origVal = decodeURIComponent(row.getAttribute("data-original-val") || "");
+      const foundVal = decodeURIComponent(row.getAttribute("data-found-val") || "");
+
+      const origPill = row.querySelector(".pill-original");
+      if (origPill) {
+        origPill.textContent = max > 0 ? truncateAuthors(origVal, max) : origVal;
+      }
+
+      const sugPill = row.querySelector(".pill-suggested");
+      if (sugPill && row.dataset.action !== "custom") {
+        sugPill.textContent = max > 0 ? truncateAuthors(foundVal, max) : foundVal;
+      }
+    });
+
+    // Update author pills in plain field rows
+    $$('.field-row-plain[data-field="author"]').forEach(row => {
+      const idx = parseInt(row.dataset.entry);
+      const entry = parsedEntries[idx];
+      const origVal = entry?.author || "";
+      const valPill = row.querySelector(".pill-value");
+      if (valPill && row.dataset.action !== "custom" && row.dataset.action !== "remove") {
+        valPill.textContent = max > 0 ? truncateAuthors(origVal, max) : origVal;
+      }
+    });
+  }
+
   // ─── Live preview ────────────────────────────────────────────────
   function buildPreviewBib() {
     const s = getSettings();
@@ -1093,8 +1129,12 @@
     updatePreview();
   });
 
-  [optRemoveNotFound, optMaxAuthors, optPreferPublished].forEach(el =>
+  [optRemoveNotFound, optPreferPublished].forEach(el =>
     el.addEventListener("change", updatePreview));
+  optMaxAuthors.addEventListener("change", () => {
+    updateAuthorPills();
+    updatePreview();
+  });
   $$('input[name="dedup-criteria"]').forEach(el =>
     el.addEventListener("change", updatePreview));
 
