@@ -429,19 +429,15 @@
 
         return `<tr class="diff-row field-row-plain" data-entry="${idx}" data-field="${esc(f)}" data-action="${currentAction}">
           <td class="field-name"><span class="field-name-pill">${esc(f)}</span></td>
-          <td class="current-val" colspan="2">
-            <span class="found-text ${currentAction === "remove" ? "removed" : ""}"
-                  contenteditable="true" spellcheck="false"
+          <td class="val-col" colspan="2">
+            <span class="choice-pill pill-value ${currentAction === "remove" ? "removed" : "active"}"
+                  contenteditable="${currentAction === "remove" ? "false" : "true"}" spellcheck="false"
                   data-entry="${idx}" data-field="${esc(f)}">${esc(currentAction === "remove" ? "" : fe.value)}</span>
           </td>
-          <td class="field-actions">
-            <button class="fa-btn fa-revert ${currentAction === "original" ? "active" : ""}" title="Revert to original"
-                    data-entry="${idx}" data-field="${esc(f)}" data-action="original" data-val="${esc(val)}">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 105.64-11.36L1 10"/></svg>
-            </button>
-            <button class="fa-btn fa-remove ${currentAction === "remove" ? "active" : ""}" title="Remove field"
+          <td class="field-actions-mini">
+            <button class="fa-btn-x ${currentAction === "remove" ? "active" : ""}" title="Remove field"
                     data-entry="${idx}" data-field="${esc(f)}" data-action="remove" data-val="">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </td>
         </tr>`;
@@ -674,8 +670,20 @@
       if (row.dataset.action === "remove") {
         const r = results[idx];
         const defaultAction = (r && r.status === "updated") ? "found" : "original";
+        const origVal = decodeURIComponent(row.getAttribute("data-original-val") || "");
 
-        if (defaultAction === "found" || isEnc) {
+        // Handle pill-value (plain field rows)
+        const valPill = row.querySelector(".pill-value");
+        if (valPill) {
+          const restoreVal = origVal || fieldEdits[idx]?.[field]?._savedValue || "";
+          fieldEdits[idx][field] = { action: "original", value: restoreVal };
+          valPill.textContent = restoreVal;
+          valPill.classList.add("active");
+          valPill.classList.remove("removed");
+          valPill.contentEditable = "true";
+          xBtn.classList.remove("active");
+          syncRowState(row, "original");
+        } else if (defaultAction === "found" || isEnc) {
           fieldEdits[idx][field] = { action: "found", value: foundVal };
           const sug = row.querySelector(".pill-suggested");
           if (sug) {
@@ -701,13 +709,23 @@
         }
       } else {
         // Remove the field
-        fieldEdits[idx][field] = { action: "remove", value: "" };
+        // Save current value for undo
+        if (fieldEdits[idx][field]) {
+          fieldEdits[idx][field]._savedValue = fieldEdits[idx][field].value;
+        }
+        fieldEdits[idx][field] = { action: "remove", value: "", _savedValue: fieldEdits[idx][field]?._savedValue || "" };
         row.querySelectorAll(".pill-original").forEach(p => p.classList.remove("active"));
         const sug = row.querySelector(".pill-suggested");
         if (sug) {
           sug.classList.remove("active");
           sug.classList.add("removed");
           sug.contentEditable = "false";
+        }
+        const valPill = row.querySelector(".pill-value");
+        if (valPill) {
+          valPill.classList.remove("active");
+          valPill.classList.add("removed");
+          valPill.contentEditable = "false";
         }
         xBtn.classList.add("active");
         syncRowState(row, "remove");
@@ -761,7 +779,7 @@
   });
 
   document.addEventListener("input", (e) => {
-    const span = e.target.closest(".found-text[contenteditable], .pill-suggested[contenteditable]");
+    const span = e.target.closest(".found-text[contenteditable], .pill-suggested[contenteditable], .pill-value[contenteditable]");
     if (!span) return;
     const idx = parseInt(span.dataset.entry);
     const field = span.dataset.field;

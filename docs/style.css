@@ -735,6 +735,26 @@ code {
   pointer-events: none;
 }
 
+/* ── Plain field value pill ── */
+.choice-pill.pill-value {
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--surface-alt);
+}
+
+.choice-pill.pill-value.active {
+  border-color: var(--border);
+  background: var(--surface-alt);
+  color: var(--text);
+  font-weight: 400;
+}
+
+.choice-pill.pill-value[contenteditable="true"]:focus {
+  border-color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 0 0 2px var(--accent-bg);
+}
+
 /* ── Mini × button ── */
 .field-actions-mini {
   white-space: nowrap;
