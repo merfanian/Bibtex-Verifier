@@ -484,36 +484,34 @@ code {
 .search-links {
   display: flex;
   align-items: center;
-  gap: 0.15rem;
-  padding: 0.2rem 0.35rem;
+  gap: 1px;
+  padding: 0.15rem 0.2rem;
   background: var(--surface-alt);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
 }
 
-.search-links-label {
-  font-size: 0.68rem;
-  color: var(--text-dim);
-  margin-right: 0.15rem;
-  user-select: none;
-}
-
 .search-link {
   display: inline-flex;
   align-items: center;
-  padding: 0.15rem 0.4rem;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
   border-radius: 3px;
-  font-size: 0.7rem;
-  font-weight: 600;
   color: var(--text-dim);
   text-decoration: none;
-  transition: color 0.15s, background 0.15s;
-  white-space: nowrap;
+  transition: background 0.15s;
+  opacity: 0.7;
+}
+
+.search-link img {
+  display: block;
+  border-radius: 2px;
 }
 
 .search-link:hover {
-  color: var(--accent);
   background: var(--accent-bg);
+  opacity: 1;
   text-decoration: none;
 }
 

@@ -508,12 +508,21 @@
 
     const searchQuery = encodeURIComponent(B.stripLatex(r.title || ""));
     const searchLinks = (r.title || "").trim() ? `<div class="search-links">
-      <span class="search-links-label">Search:</span>
-      <a class="search-link" href="https://scholar.google.com/scholar?q=${searchQuery}" target="_blank" rel="noopener" title="Google Scholar">Scholar</a>
-      <a class="search-link" href="https://www.google.com/search?q=${searchQuery}" target="_blank" rel="noopener" title="Google">Google</a>
-      <a class="search-link" href="https://www.semanticscholar.org/search?q=${searchQuery}" target="_blank" rel="noopener" title="Semantic Scholar">S2</a>
-      <a class="search-link" href="https://search.crossref.org/?q=${searchQuery}&from_ui=yes" target="_blank" rel="noopener" title="CrossRef">CrossRef</a>
-      <a class="search-link" href="https://dblp.org/search?q=${searchQuery}" target="_blank" rel="noopener" title="DBLP">DBLP</a>
+      <a class="search-link" href="https://scholar.google.com/scholar?q=${searchQuery}" target="_blank" rel="noopener" title="Google Scholar">
+        <img src="https://scholar.google.com/favicon.ico" width="14" height="14" alt="Scholar">
+      </a>
+      <a class="search-link" href="https://www.google.com/search?q=${searchQuery}" target="_blank" rel="noopener" title="Google">
+        <img src="https://www.google.com/favicon.ico" width="14" height="14" alt="Google">
+      </a>
+      <a class="search-link" href="https://www.semanticscholar.org/search?q=${searchQuery}" target="_blank" rel="noopener" title="Semantic Scholar">
+        <img src="https://www.semanticscholar.org/favicon.ico" width="14" height="14" alt="S2">
+      </a>
+      <a class="search-link" href="https://search.crossref.org/?q=${searchQuery}&from_ui=yes" target="_blank" rel="noopener" title="CrossRef">
+        <img src="https://search.crossref.org/favicon.ico" width="14" height="14" alt="CrossRef">
+      </a>
+      <a class="search-link" href="https://dblp.org/search?q=${searchQuery}" target="_blank" rel="noopener" title="DBLP">
+        <img src="https://dblp.org/img/dblp.icon.192x192.png" width="14" height="14" alt="DBLP">
+      </a>
     </div>` : "";
 
     card.innerHTML = `<div class="entry-header">
