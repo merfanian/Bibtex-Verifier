@@ -508,34 +508,28 @@
 
     const searchQuery = encodeURIComponent(B.stripLatex(r.title || ""));
     const searchLinks = (r.title || "").trim() ? `<div class="search-links">
-      <a class="search-link" href="https://scholar.google.com/scholar?q=${searchQuery}" target="_blank" rel="noopener" title="Search Google Scholar">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12 12 2 2 12h4v8h12v-8z"/><circle cx="12" cy="15" r="3"/></svg>
-      </a>
-      <a class="search-link" href="https://www.google.com/search?q=${searchQuery}" target="_blank" rel="noopener" title="Search Google">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      </a>
-      <a class="search-link" href="https://www.semanticscholar.org/search?q=${searchQuery}" target="_blank" rel="noopener" title="Search Semantic Scholar">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-      </a>
-      <a class="search-link" href="https://search.crossref.org/?q=${searchQuery}&from_ui=yes" target="_blank" rel="noopener" title="Search CrossRef">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
-      </a>
-      <a class="search-link" href="https://dblp.org/search?q=${searchQuery}" target="_blank" rel="noopener" title="Search DBLP">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-      </a>
+      <span class="search-links-label">Search:</span>
+      <a class="search-link" href="https://scholar.google.com/scholar?q=${searchQuery}" target="_blank" rel="noopener" title="Google Scholar">Scholar</a>
+      <a class="search-link" href="https://www.google.com/search?q=${searchQuery}" target="_blank" rel="noopener" title="Google">Google</a>
+      <a class="search-link" href="https://www.semanticscholar.org/search?q=${searchQuery}" target="_blank" rel="noopener" title="Semantic Scholar">S2</a>
+      <a class="search-link" href="https://search.crossref.org/?q=${searchQuery}&from_ui=yes" target="_blank" rel="noopener" title="CrossRef">CrossRef</a>
+      <a class="search-link" href="https://dblp.org/search?q=${searchQuery}" target="_blank" rel="noopener" title="DBLP">DBLP</a>
     </div>` : "";
 
     card.innerHTML = `<div class="entry-header">
       <div class="entry-header-text">
-        <div class="entry-title">${esc(r.title || "(no title)")}${searchLinks}</div>
+        <div class="entry-title">${esc(r.title || "(no title)")}</div>
         <div class="entry-meta">${esc(r.entry_id)} &middot; ${esc(r.entry_type)}</div>
       </div>
       <div class="entry-header-aside">
-        ${jumpBtn}
-        <div class="entry-tags">
-          ${r.duplicate_of ? '<span class="status-tag tag-duplicate">Duplicate</span>' : ""}
-          <span class="status-tag tag-${r.status}">${statusLabel(r.status)}</span>
+        <div class="entry-aside-top">
+          ${jumpBtn}
+          <div class="entry-tags">
+            ${r.duplicate_of ? '<span class="status-tag tag-duplicate">Duplicate</span>' : ""}
+            <span class="status-tag tag-${r.status}">${statusLabel(r.status)}</span>
+          </div>
         </div>
+        ${searchLinks}
       </div>
     </div>${duplicateHTML}${reviewHintHTML}${notFoundHintHTML}${diffHTML}${actionsHTML}`;
 
