@@ -905,6 +905,15 @@
     $$(".summary-badge").forEach(b => b.classList.add("active"));
   }
 
+  // ─── Author truncation ────────────────────────────────────────────
+  function truncateAuthors(authorStr, max) {
+    if (!authorStr || max <= 0) return authorStr;
+    // BibTeX authors are separated by " and "
+    const authors = authorStr.split(/\s+and\s+/i);
+    if (authors.length <= max) return authorStr;
+    return authors.slice(0, max).join(" and ") + " and others";
+  }
+
   // ─── Live preview ────────────────────────────────────────────────
   function buildPreviewBib() {
     const s = getSettings();
@@ -925,9 +934,8 @@
         }
       }
 
-      if (s.abbreviateVenue) {
-        if (out.journal) out.journal = B.abbreviateVenue(out.journal);
-        if (out.booktitle) out.booktitle = B.abbreviateVenue(out.booktitle);
+      if (s.maxAuthors > 0 && out.author) {
+        out.author = truncateAuthors(out.author, s.maxAuthors);
       }
 
       if (s.preferPublished) {
@@ -938,8 +946,8 @@
             const foundVenue = res.suggested.journal || res.suggested.booktitle || "";
             const fvLower = foundVenue.toLowerCase();
             if (foundVenue && !fvLower.includes("arxiv") && !fvLower.includes("preprint") && !fvLower.includes("corr")) {
-              if (out.journal) out.journal = s.abbreviateVenue ? B.abbreviateVenue(foundVenue) : foundVenue;
-              else if (out.booktitle) out.booktitle = s.abbreviateVenue ? B.abbreviateVenue(foundVenue) : foundVenue;
+              if (out.journal) out.journal = foundVenue;
+              else if (out.booktitle) out.booktitle = foundVenue;
             }
           }
         }
@@ -1063,7 +1071,7 @@
   const settingsPopover = $("#settings-popover");
   const optRemoveDuplicates = $("#opt-remove-duplicates");
   const optRemoveNotFound = $("#opt-remove-notfound");
-  const optAbbreviateVenue = $("#opt-abbreviate-venue");
+  const optMaxAuthors = $("#opt-max-authors");
   const optPreferPublished = $("#opt-prefer-published");
   const dedupCriteriaWrap = $("#dedup-criteria-wrap");
 
@@ -1085,7 +1093,7 @@
     updatePreview();
   });
 
-  [optRemoveNotFound, optAbbreviateVenue, optPreferPublished].forEach(el =>
+  [optRemoveNotFound, optMaxAuthors, optPreferPublished].forEach(el =>
     el.addEventListener("change", updatePreview));
   $$('input[name="dedup-criteria"]').forEach(el =>
     el.addEventListener("change", updatePreview));
@@ -1095,7 +1103,7 @@
       removeDuplicates: optRemoveDuplicates.checked,
       dedupBy: (document.querySelector('input[name="dedup-criteria"]:checked') || {}).value || "title",
       removeNotFound: optRemoveNotFound.checked,
-      abbreviateVenue: optAbbreviateVenue.checked,
+      maxAuthors: parseInt(optMaxAuthors.value) || 0,
       preferPublished: optPreferPublished.checked,
     };
   }

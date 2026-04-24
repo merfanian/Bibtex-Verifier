@@ -1324,6 +1324,24 @@ code {
 .option-toggle:hover input[type="checkbox"] { border-color: var(--accent); }
 .option-toggle span { line-height: 1; }
 
+.option-select {
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.82rem;
+  cursor: pointer;
+  outline: none;
+  margin-left: 0.25rem;
+  transition: border-color 0.15s;
+}
+
+.option-select:hover,
+.option-select:focus {
+  border-color: var(--accent);
+}
+
 .btn-download {
   padding: 0.65rem 2rem;
   background: var(--accent);
