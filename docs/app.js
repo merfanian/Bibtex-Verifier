@@ -382,9 +382,8 @@
         const origAttr = encodeURIComponent(d.original || "");
         const foundAttr = encodeURIComponent(d.found || "");
 
-        // Apply author truncation for display
+        // Apply author truncation for display (suggested only)
         const maxA = parseInt(optMaxAuthors.value) || 0;
-        const displayOriginal = (d.field === "author" && maxA > 0) ? truncateAuthors(d.original || "", maxA) : (d.original || "");
         const displaySuggestion = (d.field === "author" && maxA > 0 && currentAction !== "custom") ? truncateAuthors(suggestionText, maxA) : suggestionText;
 
         return `<tr class="diff-row" data-entry="${idx}" data-field="${esc(d.field)}" data-action="${currentAction}"
@@ -395,7 +394,7 @@
           <td class="val-col val-col-original">
             ${!isEnrichment ? `<button class="choice-pill pill-original ${currentAction === "original" ? "active" : ""}"
                     data-entry="${idx}" data-field="${esc(d.field)}" data-action="original" data-val="${esc(d.original || "")}"
-                    title="Keep your value">${esc(displayOriginal)}</button>` : '<span class="empty-val">\u2014</span>'}
+                    title="Keep your value">${esc(d.original)}</button>` : '<span class="empty-val">\u2014</span>'}
           </td>
           <td class="val-col val-col-suggested">
             ${hasSuggestion ? `<span class="choice-pill pill-suggested ${currentAction === "found" || currentAction === "custom" ? "active" : ""} ${currentAction === "remove" ? "removed" : ""}"
@@ -921,31 +920,13 @@
 
   function updateAuthorPills() {
     const max = parseInt(optMaxAuthors.value) || 0;
-    // Update all author diff rows
+    // Update suggested author pills only
     $$('.diff-row[data-field="author"]').forEach(row => {
-      const idx = parseInt(row.dataset.entry);
-      const origVal = decodeURIComponent(row.getAttribute("data-original-val") || "");
       const foundVal = decodeURIComponent(row.getAttribute("data-found-val") || "");
-
-      const origPill = row.querySelector(".pill-original");
-      if (origPill) {
-        origPill.textContent = max > 0 ? truncateAuthors(origVal, max) : origVal;
-      }
 
       const sugPill = row.querySelector(".pill-suggested");
       if (sugPill && row.dataset.action !== "custom") {
         sugPill.textContent = max > 0 ? truncateAuthors(foundVal, max) : foundVal;
-      }
-    });
-
-    // Update author pills in plain field rows
-    $$('.field-row-plain[data-field="author"]').forEach(row => {
-      const idx = parseInt(row.dataset.entry);
-      const entry = parsedEntries[idx];
-      const origVal = entry?.author || "";
-      const valPill = row.querySelector(".pill-value");
-      if (valPill && row.dataset.action !== "custom" && row.dataset.action !== "remove") {
-        valPill.textContent = max > 0 ? truncateAuthors(origVal, max) : origVal;
       }
     });
   }
