@@ -473,6 +473,37 @@ code {
   font-size: 0.95rem;
 }
 
+/* ── Search links inline after title ── */
+.search-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+}
+.search-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  color: var(--text-dim);
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+  opacity: 0.5;
+}
+.search-link:hover {
+  color: var(--accent);
+  background: var(--accent-bg);
+  opacity: 1;
+}
+.entry-card:hover .search-link {
+  opacity: 0.7;
+}
+
 .entry-meta {
   font-size: 0.8rem;
   color: var(--text-dim);
@@ -524,6 +555,9 @@ code {
   font-weight: 500;
   padding: 0.35rem 0.5rem;
   border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .diff-table td {
@@ -539,33 +573,84 @@ code {
   width: 80px;
 }
 
-.diff-table .old-val { color: var(--red); opacity: 0.7; }
-.diff-table .new-val { color: var(--green); }
+/* ── Original & Suggested value columns ── */
+.diff-table .val-original {
+  color: var(--text);
+  opacity: 0.7;
+  word-break: break-word;
+  max-width: 250px;
+  font-size: 0.8rem;
+  transition: opacity 0.2s, text-decoration 0.2s;
+}
+
+.diff-table .val-original .empty-val {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.diff-table .val-suggested {
+  color: var(--green);
+  word-break: break-word;
+  max-width: 250px;
+  transition: opacity 0.2s;
+}
+
 .diff-table .score-val { color: var(--text-dim); text-align: right; white-space: nowrap; }
 
 .diff-row {
   transition: background 0.2s, border-color 0.2s;
   border-left: 3px solid transparent;
 }
+
+/* Row states: visual indicators for which value is chosen */
 .diff-row[data-action="found"] {
   background: var(--green-bg);
   border-left-color: var(--green);
 }
+.diff-row[data-action="found"] .val-original {
+  text-decoration: line-through;
+  opacity: 0.4;
+}
+.diff-row[data-action="found"] .val-suggested {
+  opacity: 1;
+}
+
 .diff-row[data-action="original"] {
   background: transparent;
   border-left-color: transparent;
 }
+.diff-row[data-action="original"] .val-original {
+  opacity: 1;
+  font-weight: 500;
+  color: var(--text);
+}
+.diff-row[data-action="original"] .val-suggested {
+  opacity: 0.35;
+}
+
 .diff-row[data-action="custom"] {
   background: var(--accent-bg);
   border-left-color: var(--accent);
 }
+.diff-row[data-action="custom"] .val-original {
+  text-decoration: line-through;
+  opacity: 0.4;
+}
+.diff-row[data-action="custom"] .val-suggested {
+  color: var(--accent);
+}
+
 .diff-row[data-action="remove"] {
   background: var(--red-bg);
   border-left-color: var(--red);
 }
-.diff-row[data-action="original"] .old-val { opacity: 1; font-weight: 500; }
-.diff-row[data-action="found"] .old-val { text-decoration: line-through; }
-.diff-row[data-action="remove"] .old-val { text-decoration: line-through; }
+.diff-row[data-action="remove"] .val-original {
+  text-decoration: line-through;
+  opacity: 0.35;
+}
+.diff-row[data-action="remove"] .val-suggested {
+  opacity: 0.2;
+}
 
 @keyframes row-flash {
   0%   { filter: brightness(1.4); }
@@ -614,20 +699,11 @@ code {
   background: var(--surface-alt);
 }
 
+/* Editable suggestion text */
 .found-text.removed {
   opacity: 0.3;
   text-decoration: line-through;
   pointer-events: none;
-}
-
-/* API suggestion shown while action is "keep original" (empty bib field) */
-.found-text.suggestion-preview {
-  color: var(--text-dim);
-  font-style: italic;
-  border: 1px dashed var(--border);
-  background: var(--surface-alt);
-  cursor: default;
-  user-select: text;
 }
 
 .field-actions {

@@ -378,35 +378,28 @@
         const fe = fieldEdits[idx][d.field];
         const currentAction = fe.action;
 
-        let suggestionText = "";
-        if (currentAction === "remove") suggestionText = "";
-        else if (currentAction === "found" || currentAction === "custom") suggestionText = fe.value || "";
-        else if (currentAction === "original" && isEnrichment) suggestionText = d.found || "";
-        else suggestionText = d.original || "";
-
-        const previewOnly = isEnrichment && currentAction === "original";
-        const encAttr = isEnrichment ? encodeURIComponent(d.found || "") : "";
+        const suggestionText = currentAction === "custom" ? (fe.value || "") : (d.found || "");
         const origAttr = encodeURIComponent(d.original || "");
+        const foundAttr = encodeURIComponent(d.found || "");
 
         return `<tr class="diff-row" data-entry="${idx}" data-field="${esc(d.field)}" data-action="${currentAction}"
           data-enrichment="${isEnrichment ? "1" : ""}"
-          data-api-suggestion="${encAttr}"
+          data-found-val="${foundAttr}"
           data-original-val="${origAttr}">
           <td class="field-name">${esc(d.field)}</td>
-          <td class="old-val">${esc(d.original || "(empty)")}</td>
-          <td class="new-val">
-            <span class="found-text ${previewOnly ? "suggestion-preview" : ""} ${currentAction === "remove" ? "removed" : ""}"
-                  contenteditable="${currentAction === "remove" || previewOnly ? "false" : "true"}"
+          <td class="val-original">${isEnrichment ? '<span class="empty-val">\u2014</span>' : esc(d.original)}</td>
+          <td class="val-suggested">
+            <span class="found-text ${currentAction === "remove" ? "removed" : ""}"
+                  contenteditable="${currentAction === "remove" || currentAction === "original" ? "false" : "true"}"
                   spellcheck="false"
-                  title="${previewOnly ? "Suggested value (not applied). Click the checkmark to add it." : ""}"
                   data-entry="${idx}" data-field="${esc(d.field)}">${esc(suggestionText)}</span>
           </td>
           <td class="field-actions">
-            ${hasSuggestion ? `<button class="fa-btn fa-use-found ${currentAction === "found" ? "active" : ""}" title="Use suggestion"
+            ${hasSuggestion ? `<button class="fa-btn fa-use-found ${currentAction === "found" ? "active" : ""}" title="Use suggested value"
                     data-entry="${idx}" data-field="${esc(d.field)}" data-action="found" data-val="${esc(d.found || "")}">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
             </button>` : ""}
-            ${!isEnrichment ? `<button class="fa-btn fa-revert ${currentAction === "original" ? "active" : ""}" title="Revert to original"
+            ${!isEnrichment ? `<button class="fa-btn fa-revert ${currentAction === "original" ? "active" : ""}" title="Keep your value"
                     data-entry="${idx}" data-field="${esc(d.field)}" data-action="original" data-val="${esc(d.original || "")}">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 105.64-11.36L1 10"/></svg>
             </button>` : ""}
@@ -419,7 +412,7 @@
       }).join("");
 
       diffHTML = `<table class="diff-table">
-        <tr><th>Field</th><th>Original</th><th>Suggestion</th><th></th></tr>
+        <tr><th>Field</th><th>Your Value</th><th>Suggested</th><th></th></tr>
         ${rows}
       </table>`;
     }
@@ -513,9 +506,28 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
     </button>`;
 
+    const searchQuery = encodeURIComponent(B.stripLatex(r.title || ""));
+    const searchLinks = (r.title || "").trim() ? `<div class="search-links">
+      <a class="search-link" href="https://scholar.google.com/scholar?q=${searchQuery}" target="_blank" rel="noopener" title="Search Google Scholar">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12 12 2 2 12h4v8h12v-8z"/><circle cx="12" cy="15" r="3"/></svg>
+      </a>
+      <a class="search-link" href="https://www.google.com/search?q=${searchQuery}" target="_blank" rel="noopener" title="Search Google">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </a>
+      <a class="search-link" href="https://www.semanticscholar.org/search?q=${searchQuery}" target="_blank" rel="noopener" title="Search Semantic Scholar">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      </a>
+      <a class="search-link" href="https://search.crossref.org/?q=${searchQuery}&from_ui=yes" target="_blank" rel="noopener" title="Search CrossRef">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+      </a>
+      <a class="search-link" href="https://dblp.org/search?q=${searchQuery}" target="_blank" rel="noopener" title="Search DBLP">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      </a>
+    </div>` : "";
+
     card.innerHTML = `<div class="entry-header">
       <div class="entry-header-text">
-        <div class="entry-title">${esc(r.title || "(no title)")}</div>
+        <div class="entry-title">${esc(r.title || "(no title)")}${searchLinks}</div>
         <div class="entry-meta">${esc(r.entry_id)} &middot; ${esc(r.entry_type)}</div>
       </div>
       <div class="entry-header-aside">
@@ -608,11 +620,12 @@
 
     const row = btn.closest(".diff-row");
     const isEnc = row.dataset.enrichment === "1";
-    const api = decodeURIComponent(row.getAttribute("data-api-suggestion") || "");
+    const foundVal = decodeURIComponent(row.getAttribute("data-found-val") || "");
+    const origVal = decodeURIComponent(row.getAttribute("data-original-val") || "");
 
     if (!fieldEdits[idx]) fieldEdits[idx] = {};
     if (action === "original")
-      fieldEdits[idx][field] = { action: "original", value: isEnc ? api : val };
+      fieldEdits[idx][field] = { action: "original", value: isEnc ? foundVal : val };
     else if (action === "found")
       fieldEdits[idx][field] = { action: "found", value: val };
     else
@@ -622,15 +635,16 @@
     btn.classList.add("active");
 
     const span = row.querySelector(".found-text");
-    const previewOriginal = isEnc && action === "original";
-    if (action === "remove") span.textContent = "";
-    else if (action === "found" || action === "custom") span.textContent = fieldEdits[idx][field].value || "";
-    else span.textContent = previewOriginal ? api : val;
-
-    span.classList.toggle("suggestion-preview", previewOriginal);
+    if (action === "found") {
+      span.textContent = foundVal;
+      span.contentEditable = "true";
+    } else if (action === "original") {
+      span.textContent = foundVal;
+      span.contentEditable = "false";
+    } else {
+      span.contentEditable = "false";
+    }
     span.classList.toggle("removed", action === "remove");
-    span.contentEditable = action !== "remove" && !previewOriginal ? "true" : "false";
-    span.title = previewOriginal ? "Suggested value (not applied). Click the checkmark to add it." : "";
 
     syncRowState(row, action);
     syncBulkBtns(row.closest(".entry-card"), idx);
@@ -664,8 +678,7 @@
       const target = isAccept ? "found" : "original";
       const targetBtn = row.querySelector(`.fa-btn[data-action="${target}"]`);
       const isEnc = row.dataset.enrichment === "1";
-      const api = decodeURIComponent(row.getAttribute("data-api-suggestion") || "");
-      const origDec = decodeURIComponent(row.getAttribute("data-original-val") || "");
+      const foundVal = decodeURIComponent(row.getAttribute("data-found-val") || "");
 
       if (targetBtn) {
         const val = targetBtn.dataset.val;
@@ -676,25 +689,21 @@
         targetBtn.classList.add("active");
 
         const span = row.querySelector(".found-text");
-        span.textContent = val || "";
+        span.textContent = foundVal;
         span.classList.remove("removed");
-        span.classList.toggle("suggestion-preview", target === "original" && isEnc);
-        span.contentEditable = target === "original" && isEnc ? "false" : "true";
-        span.title = target === "original" && isEnc ? "Suggested value (not applied). Click the checkmark to add it." : "";
+        span.contentEditable = target === "found" ? "true" : "false";
 
         syncRowState(row, target);
       } else if (!isAccept && isEnc) {
         if (!fieldEdits[idx]) fieldEdits[idx] = {};
-        fieldEdits[idx][field] = { action: "original", value: api };
+        fieldEdits[idx][field] = { action: "original", value: foundVal };
 
         row.querySelectorAll(".fa-btn").forEach(b => b.classList.remove("active"));
 
         const span = row.querySelector(".found-text");
-        span.textContent = api;
+        span.textContent = foundVal;
         span.classList.remove("removed");
-        span.classList.add("suggestion-preview");
         span.contentEditable = "false";
-        span.title = "Suggested value (not applied). Click the checkmark to add it.";
 
         syncRowState(row, "original");
       }
@@ -815,9 +824,11 @@
     const hasChanges = ops.some(o => o.type !== "ctx");
 
     if (!hasChanges) {
-      return ops.map(o =>
-        `<span class="diff-line diff-ctx">${esc(o.text)}</span>`
-      ).join("");
+      return ops.map(o => {
+        const entryMatch = o.text.match(/^@\w+\{(.+),\s*$/);
+        const idAttr = entryMatch ? ` data-entry-id="${esc(entryMatch[1])}"` : "";
+        return `<span class="diff-line diff-ctx"${idAttr}>${esc(o.text)}</span>`;
+      }).join("");
     }
 
     return ops.map(o => {
