@@ -386,7 +386,7 @@
           data-enrichment="${isEnrichment ? "1" : ""}"
           data-found-val="${foundAttr}"
           data-original-val="${origAttr}">
-          <td class="field-name">${esc(d.field)}</td>
+          <td class="field-name"><span class="field-name-pill">${esc(d.field)}</span></td>
           <td class="val-col val-col-original">
             ${!isEnrichment ? `<button class="choice-pill pill-original ${currentAction === "original" ? "active" : ""}"
                     data-entry="${idx}" data-field="${esc(d.field)}" data-action="original" data-val="${esc(d.original || "")}"
@@ -428,7 +428,7 @@
         const currentAction = fe.action;
 
         return `<tr class="diff-row field-row-plain" data-entry="${idx}" data-field="${esc(f)}" data-action="${currentAction}">
-          <td class="field-name">${esc(f)}</td>
+          <td class="field-name"><span class="field-name-pill">${esc(f)}</span></td>
           <td class="current-val" colspan="2">
             <span class="found-text ${currentAction === "remove" ? "removed" : ""}"
                   contenteditable="true" spellcheck="false"

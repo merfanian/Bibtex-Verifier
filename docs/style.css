@@ -581,27 +581,41 @@ code {
 }
 
 .diff-table th {
-  text-align: left;
+  text-align: center;
   color: var(--text-dim);
   font-weight: 500;
   padding: 0.35rem 0.5rem;
-  border-bottom: 1px solid var(--border);
+  border-bottom: none;
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
+.diff-table th:first-child {
+  text-align: left;
+}
+
 .diff-table td {
-  padding: 0.35rem 0.5rem;
-  border-bottom: 1px solid var(--border);
-  vertical-align: top;
+  padding: 0.4rem 0.35rem;
+  border-bottom: none;
+  vertical-align: middle;
 }
 
 .diff-table .field-name {
-  color: var(--accent);
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
   width: 80px;
+}
+
+.diff-table .field-name-pill {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 /* ── Original & Suggested value columns ── */
@@ -634,9 +648,10 @@ code {
 
 /* ── Value columns for pills ── */
 .val-col {
-  vertical-align: top;
+  vertical-align: middle;
   padding: 0.3rem 0.35rem;
   border-bottom: none;
+  text-align: center;
 }
 
 .val-col-original {
