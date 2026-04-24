@@ -636,7 +636,7 @@ code {
 .val-col {
   vertical-align: top;
   padding: 0.3rem 0.35rem;
-  border-bottom: 1px solid var(--border);
+  border-bottom: none;
 }
 
 .val-col-original {
@@ -669,9 +669,9 @@ code {
   font-size: 0.8rem;
   line-height: 1.45;
   cursor: pointer;
-  border: 1.5px solid transparent;
-  background: transparent;
-  color: var(--text-dim);
+  border: 1.5px solid var(--border);
+  background: var(--surface-alt);
+  color: var(--text);
   transition: all 0.15s;
   word-break: break-word;
   max-width: 100%;
@@ -680,8 +680,7 @@ code {
 }
 
 .choice-pill:hover {
-  background: var(--surface-alt);
-  border-color: var(--border);
+  border-color: var(--text-dim);
   color: var(--text);
 }
 
@@ -700,12 +699,11 @@ code {
 }
 
 .choice-pill.pill-suggested:not(.active) {
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
 .choice-pill.pill-original:not(.active) {
-  opacity: 0.5;
-  text-decoration: line-through;
+  opacity: 0.6;
 }
 
 .choice-pill.pill-suggested[contenteditable="true"]:focus {
@@ -764,9 +762,9 @@ code {
   border-left: 3px solid transparent;
 }
 
-/* Row states: visual indicators for which value is chosen */
+/* Row states: subtle left border only */
 .diff-row[data-action="found"] {
-  background: var(--green-bg);
+  background: transparent;
   border-left-color: var(--green);
 }
 
@@ -776,12 +774,12 @@ code {
 }
 
 .diff-row[data-action="custom"] {
-  background: var(--accent-bg);
+  background: transparent;
   border-left-color: var(--accent);
 }
 
 .diff-row[data-action="remove"] {
-  background: var(--red-bg);
+  background: transparent;
   border-left-color: var(--red);
 }
 
