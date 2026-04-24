@@ -1007,6 +1007,12 @@ code {
 
 .preview-header h3 svg { color: var(--accent); }
 
+.preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 .btn-copy {
   display: inline-flex;
   align-items: center;
