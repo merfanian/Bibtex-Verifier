@@ -463,16 +463,9 @@ code {
 
 .entry-header-aside {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.4rem;
-  flex-shrink: 0;
-}
-
-.entry-aside-top {
-  display: flex;
   align-items: flex-start;
   gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .entry-title {
@@ -480,23 +473,33 @@ code {
   font-size: 0.95rem;
 }
 
-/* ── Search links box ── */
-.search-links {
+.entry-meta {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-top: 0.25rem;
   display: flex;
   align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ── Search links box ── */
+.search-links {
+  display: inline-flex;
+  align-items: center;
   gap: 1px;
-  padding: 0.15rem 0.2rem;
+  padding: 0.1rem 0.15rem;
   background: var(--surface-alt);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 4px;
 }
 
 .search-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 3px;
   color: var(--text-dim);
   text-decoration: none;

@@ -528,17 +528,17 @@
     card.innerHTML = `<div class="entry-header">
       <div class="entry-header-text">
         <div class="entry-title">${esc(r.title || "(no title)")}</div>
-        <div class="entry-meta">${esc(r.entry_id)} &middot; ${esc(r.entry_type)}</div>
+        <div class="entry-meta">
+          <span>${esc(r.entry_id)} &middot; ${esc(r.entry_type)}</span>
+          ${searchLinks}
+        </div>
       </div>
       <div class="entry-header-aside">
-        <div class="entry-aside-top">
-          ${jumpBtn}
-          <div class="entry-tags">
-            ${r.duplicate_of ? '<span class="status-tag tag-duplicate">Duplicate</span>' : ""}
-            <span class="status-tag tag-${r.status}">${statusLabel(r.status)}</span>
-          </div>
+        ${jumpBtn}
+        <div class="entry-tags">
+          ${r.duplicate_of ? '<span class="status-tag tag-duplicate">Duplicate</span>' : ""}
+          <span class="status-tag tag-${r.status}">${statusLabel(r.status)}</span>
         </div>
-        ${searchLinks}
       </div>
     </div>${duplicateHTML}${reviewHintHTML}${notFoundHintHTML}${diffHTML}${actionsHTML}`;
 
