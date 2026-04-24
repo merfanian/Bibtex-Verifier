@@ -436,10 +436,12 @@ code {
 }
 
 .entry-card {
+  position: relative;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1rem 1.25rem;
+  padding-bottom: 1.5rem;
   border-left: 4px solid var(--border);
 }
 
@@ -477,21 +479,22 @@ code {
   font-size: 0.8rem;
   color: var(--text-dim);
   margin-top: 0.25rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
 }
 
-/* ── Search links box ── */
+/* ── Search links – integrated bottom-right corner tab ── */
 .search-links {
-  display: inline-flex;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  display: flex;
   align-items: center;
   gap: 1px;
-  padding: 0.1rem 0.15rem;
+  padding: 0.2rem 0.35rem;
   background: var(--surface-alt);
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  border-bottom-right-radius: var(--radius);
+  border-top-left-radius: var(--radius-sm);
 }
 
 .search-link {
@@ -501,10 +504,9 @@ code {
   width: 22px;
   height: 22px;
   border-radius: 3px;
-  color: var(--text-dim);
   text-decoration: none;
-  transition: background 0.15s;
-  opacity: 0.7;
+  transition: background 0.15s, opacity 0.15s;
+  opacity: 0.55;
 }
 
 .search-link img {
@@ -516,6 +518,10 @@ code {
   background: var(--accent-bg);
   opacity: 1;
   text-decoration: none;
+}
+
+.entry-card:hover .search-link {
+  opacity: 0.8;
 }
 
 .entry-meta {

@@ -528,10 +528,7 @@
     card.innerHTML = `<div class="entry-header">
       <div class="entry-header-text">
         <div class="entry-title">${esc(r.title || "(no title)")}</div>
-        <div class="entry-meta">
-          <span>${esc(r.entry_id)} &middot; ${esc(r.entry_type)}</span>
-          ${searchLinks}
-        </div>
+        <div class="entry-meta">${esc(r.entry_id)} &middot; ${esc(r.entry_type)}</div>
       </div>
       <div class="entry-header-aside">
         ${jumpBtn}
@@ -540,7 +537,7 @@
           <span class="status-tag tag-${r.status}">${statusLabel(r.status)}</span>
         </div>
       </div>
-    </div>${duplicateHTML}${reviewHintHTML}${notFoundHintHTML}${diffHTML}${actionsHTML}`;
+    </div>${duplicateHTML}${reviewHintHTML}${notFoundHintHTML}${diffHTML}${actionsHTML}${searchLinks}`;
 
     if (activeFilter !== "all") {
       if (activeFilter === "duplicate") {
