@@ -387,17 +387,17 @@
           data-found-val="${foundAttr}"
           data-original-val="${origAttr}">
           <td class="field-name">${esc(d.field)}</td>
-          <td class="val-choices" colspan="2">
-            <div class="choice-pills">
-              ${!isEnrichment ? `<button class="choice-pill pill-original ${currentAction === "original" ? "active" : ""}"
-                      data-entry="${idx}" data-field="${esc(d.field)}" data-action="original" data-val="${esc(d.original || "")}"
-                      title="Keep your value">${esc(d.original)}</button>` : ""}
-              ${hasSuggestion ? `<span class="choice-pill pill-suggested ${currentAction === "found" || currentAction === "custom" ? "active" : ""} ${currentAction === "remove" ? "removed" : ""}"
-                      contenteditable="${currentAction === "remove" ? "false" : "true"}"
-                      spellcheck="false"
-                      data-entry="${idx}" data-field="${esc(d.field)}" data-action="found" data-val="${esc(d.found || "")}"
-                      title="Use suggested value (click to select, edit to customize)">${esc(suggestionText)}</span>` : ""}
-            </div>
+          <td class="val-col val-col-original">
+            ${!isEnrichment ? `<button class="choice-pill pill-original ${currentAction === "original" ? "active" : ""}"
+                    data-entry="${idx}" data-field="${esc(d.field)}" data-action="original" data-val="${esc(d.original || "")}"
+                    title="Keep your value">${esc(d.original)}</button>` : '<span class="empty-val">\u2014</span>'}
+          </td>
+          <td class="val-col val-col-suggested">
+            ${hasSuggestion ? `<span class="choice-pill pill-suggested ${currentAction === "found" || currentAction === "custom" ? "active" : ""} ${currentAction === "remove" ? "removed" : ""}"
+                    contenteditable="${currentAction === "remove" ? "false" : "true"}"
+                    spellcheck="false"
+                    data-entry="${idx}" data-field="${esc(d.field)}" data-action="found" data-val="${esc(d.found || "")}"
+                    title="Use suggested value (click to select, edit to customize)">${esc(suggestionText)}</span>` : ""}
           </td>
           <td class="field-actions-mini">
             <button class="fa-btn-x ${currentAction === "remove" ? "active" : ""}" title="${isEnrichment ? "Don\u2019t add" : "Remove field"}"
@@ -409,7 +409,7 @@
       }).join("");
 
       diffHTML = `<table class="diff-table">
-        <tr><th>Field</th><th colspan="2">Choose a value</th><th></th></tr>
+        <tr><th>Field</th><th>Your Value</th><th>Suggested</th><th></th></tr>
         ${rows}
       </table>`;
     }
@@ -658,26 +658,60 @@
       return;
     }
 
-    // Handle × button click (remove field)
+    // Handle × button click (toggle remove field)
     const xBtn = e.target.closest(".fa-btn-x");
     if (xBtn) {
       const idx = parseInt(xBtn.dataset.entry);
       const field = xBtn.dataset.field;
       const row = xBtn.closest(".diff-row");
+      const isEnc = row.dataset.enrichment === "1";
+      const foundVal = decodeURIComponent(row.getAttribute("data-found-val") || "");
+      const origVal = decodeURIComponent(row.getAttribute("data-original-val") || "");
 
       if (!fieldEdits[idx]) fieldEdits[idx] = {};
-      fieldEdits[idx][field] = { action: "remove", value: "" };
 
-      row.querySelectorAll(".pill-original").forEach(p => p.classList.remove("active"));
-      const sug = row.querySelector(".pill-suggested");
-      if (sug) {
-        sug.classList.remove("active");
-        sug.classList.add("removed");
-        sug.contentEditable = "false";
+      // If already removed, undo back to the default action
+      if (row.dataset.action === "remove") {
+        const r = results[idx];
+        const defaultAction = (r && r.status === "updated") ? "found" : "original";
+
+        if (defaultAction === "found" || isEnc) {
+          fieldEdits[idx][field] = { action: "found", value: foundVal };
+          const sug = row.querySelector(".pill-suggested");
+          if (sug) {
+            sug.classList.add("active");
+            sug.classList.remove("removed");
+            sug.contentEditable = "true";
+            sug.textContent = foundVal;
+          }
+          row.querySelectorAll(".pill-original").forEach(p => p.classList.remove("active"));
+          xBtn.classList.remove("active");
+          syncRowState(row, "found");
+        } else {
+          fieldEdits[idx][field] = { action: "original", value: origVal };
+          row.querySelectorAll(".pill-original").forEach(p => p.classList.add("active"));
+          const sug = row.querySelector(".pill-suggested");
+          if (sug) {
+            sug.classList.remove("active");
+            sug.classList.remove("removed");
+            sug.contentEditable = "false";
+          }
+          xBtn.classList.remove("active");
+          syncRowState(row, "original");
+        }
+      } else {
+        // Remove the field
+        fieldEdits[idx][field] = { action: "remove", value: "" };
+        row.querySelectorAll(".pill-original").forEach(p => p.classList.remove("active"));
+        const sug = row.querySelector(".pill-suggested");
+        if (sug) {
+          sug.classList.remove("active");
+          sug.classList.add("removed");
+          sug.contentEditable = "false";
+        }
+        xBtn.classList.add("active");
+        syncRowState(row, "remove");
       }
-      xBtn.classList.add("active");
-
-      syncRowState(row, "remove");
       syncBulkBtns(row.closest(".entry-card"), idx);
       updatePreview();
       return;

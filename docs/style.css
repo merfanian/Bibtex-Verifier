@@ -632,6 +632,28 @@ code {
 
 .diff-table .score-val { color: var(--text-dim); text-align: right; white-space: nowrap; }
 
+/* ── Value columns for pills ── */
+.val-col {
+  vertical-align: top;
+  padding: 0.3rem 0.35rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.val-col-original {
+  width: 42%;
+}
+
+.val-col-suggested {
+  width: 42%;
+}
+
+.val-col .empty-val {
+  color: var(--text-dim);
+  font-style: italic;
+  font-size: 0.8rem;
+  opacity: 0.5;
+}
+
 /* ── Choice pills (original & suggested as clickable values) ── */
 .choice-pills {
   display: flex;
@@ -647,18 +669,19 @@ code {
   font-size: 0.8rem;
   line-height: 1.45;
   cursor: pointer;
-  border: 1.5px solid var(--border);
-  background: var(--surface-alt);
+  border: 1.5px solid transparent;
+  background: transparent;
   color: var(--text-dim);
   transition: all 0.15s;
   word-break: break-word;
-  max-width: 320px;
+  max-width: 100%;
   outline: none;
   min-height: 1.4em;
 }
 
 .choice-pill:hover {
-  border-color: var(--text-dim);
+  background: var(--surface-alt);
+  border-color: var(--border);
   color: var(--text);
 }
 
