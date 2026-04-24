@@ -488,9 +488,9 @@ code {
   right: 0;
   display: flex;
   align-items: center;
-  gap: 1px;
-  padding: 0.2rem 0.35rem;
-  background: var(--surface-alt);
+  gap: 2px;
+  padding: 0.3rem 0.45rem;
+  background: var(--bg);
   border-top: 1px solid var(--border);
   border-left: 1px solid var(--border);
   border-bottom-right-radius: var(--radius);
@@ -501,16 +501,18 @@ code {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 3px;
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
   text-decoration: none;
   transition: background 0.15s, opacity 0.15s;
-  opacity: 0.55;
+  opacity: 0.6;
 }
 
 .search-link img {
   display: block;
+  width: 16px;
+  height: 16px;
   border-radius: 2px;
 }
 
@@ -521,7 +523,7 @@ code {
 }
 
 .entry-card:hover .search-link {
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
 .entry-meta {
