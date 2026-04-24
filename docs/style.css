@@ -490,11 +490,20 @@ code {
   align-items: center;
   gap: 2px;
   padding: 0.3rem 0.45rem;
-  background: var(--bg);
+  background: var(--surface-alt);
   border-top: 1px solid var(--border);
   border-left: 1px solid var(--border);
   border-bottom-right-radius: var(--radius);
   border-top-left-radius: var(--radius-sm);
+}
+
+[data-theme="light"] .search-links {
+  background: #e8eaef;
+}
+
+[data-theme="dark"] .search-links,
+:root:not([data-theme]) .search-links {
+  background: #232938;
 }
 
 .search-link {
@@ -617,7 +626,115 @@ code {
   transition: opacity 0.2s;
 }
 
+.diff-table .val-choices {
+  word-break: break-word;
+}
+
 .diff-table .score-val { color: var(--text-dim); text-align: right; white-space: nowrap; }
+
+/* ── Choice pills (original & suggested as clickable values) ── */
+.choice-pills {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.choice-pill {
+  display: inline-block;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  cursor: pointer;
+  border: 1.5px solid var(--border);
+  background: var(--surface-alt);
+  color: var(--text-dim);
+  transition: all 0.15s;
+  word-break: break-word;
+  max-width: 320px;
+  outline: none;
+  min-height: 1.4em;
+}
+
+.choice-pill:hover {
+  border-color: var(--text-dim);
+  color: var(--text);
+}
+
+.choice-pill.pill-original.active {
+  background: var(--yellow-bg);
+  border-color: var(--yellow-border);
+  color: var(--text);
+  font-weight: 500;
+}
+
+.choice-pill.pill-suggested.active {
+  background: var(--green-bg);
+  border-color: var(--green-border);
+  color: var(--green);
+  font-weight: 500;
+}
+
+.choice-pill.pill-suggested:not(.active) {
+  opacity: 0.5;
+}
+
+.choice-pill.pill-original:not(.active) {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.choice-pill.pill-suggested[contenteditable="true"]:focus {
+  border-color: var(--accent);
+  background: var(--surface);
+  color: var(--text);
+  opacity: 1;
+  box-shadow: 0 0 0 2px var(--accent-bg);
+}
+
+.choice-pill.removed {
+  opacity: 0.2;
+  text-decoration: line-through;
+  pointer-events: none;
+}
+
+/* ── Mini × button ── */
+.field-actions-mini {
+  white-space: nowrap;
+  text-align: right;
+  width: 28px;
+  vertical-align: middle;
+}
+
+.fa-btn-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.4;
+  transition: all 0.12s;
+  vertical-align: middle;
+}
+
+.fa-btn-x:hover {
+  opacity: 1;
+  background: var(--red-bg);
+  color: var(--red);
+}
+
+.fa-btn-x.active {
+  opacity: 1;
+  background: var(--red-bg);
+  color: var(--red);
+}
 
 .diff-row {
   transition: background 0.2s, border-color 0.2s;
@@ -629,49 +746,20 @@ code {
   background: var(--green-bg);
   border-left-color: var(--green);
 }
-.diff-row[data-action="found"] .val-original {
-  text-decoration: line-through;
-  opacity: 0.4;
-}
-.diff-row[data-action="found"] .val-suggested {
-  opacity: 1;
-}
 
 .diff-row[data-action="original"] {
   background: transparent;
   border-left-color: transparent;
-}
-.diff-row[data-action="original"] .val-original {
-  opacity: 1;
-  font-weight: 500;
-  color: var(--text);
-}
-.diff-row[data-action="original"] .val-suggested {
-  opacity: 0.35;
 }
 
 .diff-row[data-action="custom"] {
   background: var(--accent-bg);
   border-left-color: var(--accent);
 }
-.diff-row[data-action="custom"] .val-original {
-  text-decoration: line-through;
-  opacity: 0.4;
-}
-.diff-row[data-action="custom"] .val-suggested {
-  color: var(--accent);
-}
 
 .diff-row[data-action="remove"] {
   background: var(--red-bg);
   border-left-color: var(--red);
-}
-.diff-row[data-action="remove"] .val-original {
-  text-decoration: line-through;
-  opacity: 0.35;
-}
-.diff-row[data-action="remove"] .val-suggested {
-  opacity: 0.2;
 }
 
 @keyframes row-flash {
@@ -731,7 +819,7 @@ code {
 .field-actions {
   white-space: nowrap;
   text-align: right;
-  width: 90px;
+  width: 60px;
 }
 
 .fa-btn {

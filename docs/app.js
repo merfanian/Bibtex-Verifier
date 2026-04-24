@@ -387,32 +387,29 @@
           data-found-val="${foundAttr}"
           data-original-val="${origAttr}">
           <td class="field-name">${esc(d.field)}</td>
-          <td class="val-original">${isEnrichment ? '<span class="empty-val">\u2014</span>' : esc(d.original)}</td>
-          <td class="val-suggested">
-            <span class="found-text ${currentAction === "remove" ? "removed" : ""}"
-                  contenteditable="${currentAction === "remove" || currentAction === "original" ? "false" : "true"}"
-                  spellcheck="false"
-                  data-entry="${idx}" data-field="${esc(d.field)}">${esc(suggestionText)}</span>
+          <td class="val-choices" colspan="2">
+            <div class="choice-pills">
+              ${!isEnrichment ? `<button class="choice-pill pill-original ${currentAction === "original" ? "active" : ""}"
+                      data-entry="${idx}" data-field="${esc(d.field)}" data-action="original" data-val="${esc(d.original || "")}"
+                      title="Keep your value">${esc(d.original)}</button>` : ""}
+              ${hasSuggestion ? `<span class="choice-pill pill-suggested ${currentAction === "found" || currentAction === "custom" ? "active" : ""} ${currentAction === "remove" ? "removed" : ""}"
+                      contenteditable="${currentAction === "remove" ? "false" : "true"}"
+                      spellcheck="false"
+                      data-entry="${idx}" data-field="${esc(d.field)}" data-action="found" data-val="${esc(d.found || "")}"
+                      title="Use suggested value (click to select, edit to customize)">${esc(suggestionText)}</span>` : ""}
+            </div>
           </td>
-          <td class="field-actions">
-            ${hasSuggestion ? `<button class="fa-btn fa-use-found ${currentAction === "found" ? "active" : ""}" title="Use suggested value"
-                    data-entry="${idx}" data-field="${esc(d.field)}" data-action="found" data-val="${esc(d.found || "")}">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            </button>` : ""}
-            ${!isEnrichment ? `<button class="fa-btn fa-revert ${currentAction === "original" ? "active" : ""}" title="Keep your value"
-                    data-entry="${idx}" data-field="${esc(d.field)}" data-action="original" data-val="${esc(d.original || "")}">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 105.64-11.36L1 10"/></svg>
-            </button>` : ""}
-            <button class="fa-btn fa-remove ${currentAction === "remove" ? "active" : ""}" title="${isEnrichment ? "Don\u2019t add" : "Remove field"}"
+          <td class="field-actions-mini">
+            <button class="fa-btn-x ${currentAction === "remove" ? "active" : ""}" title="${isEnrichment ? "Don\u2019t add" : "Remove field"}"
                     data-entry="${idx}" data-field="${esc(d.field)}" data-action="remove" data-val="">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </td>
         </tr>`;
       }).join("");
 
       diffHTML = `<table class="diff-table">
-        <tr><th>Field</th><th>Your Value</th><th>Suggested</th><th></th></tr>
+        <tr><th>Field</th><th colspan="2">Choose a value</th><th></th></tr>
         ${rows}
       </table>`;
     }
@@ -611,6 +608,82 @@
 
   // ─── Per-field action handlers ────────────────────────────────────
   document.addEventListener("click", (e) => {
+    // Handle pill-original click (select original value)
+    const origPill = e.target.closest(".pill-original");
+    if (origPill) {
+      const idx = parseInt(origPill.dataset.entry);
+      const field = origPill.dataset.field;
+      const val = origPill.dataset.val;
+      const row = origPill.closest(".diff-row");
+
+      if (!fieldEdits[idx]) fieldEdits[idx] = {};
+      fieldEdits[idx][field] = { action: "original", value: val };
+
+      row.querySelectorAll(".pill-original").forEach(p => p.classList.add("active"));
+      row.querySelectorAll(".pill-suggested").forEach(p => p.classList.remove("active"));
+      row.querySelectorAll(".fa-btn-x").forEach(b => b.classList.remove("active"));
+
+      const sugPill = row.querySelector(".pill-suggested");
+      if (sugPill) {
+        sugPill.contentEditable = "false";
+        sugPill.classList.remove("removed");
+      }
+
+      syncRowState(row, "original");
+      syncBulkBtns(row.closest(".entry-card"), idx);
+      updatePreview();
+      return;
+    }
+
+    // Handle pill-suggested click (select suggested value) — only respond to click, not during editing
+    const sugPill = e.target.closest(".pill-suggested");
+    if (sugPill && !sugPill.classList.contains("active")) {
+      const idx = parseInt(sugPill.dataset.entry);
+      const field = sugPill.dataset.field;
+      const val = sugPill.dataset.val;
+      const row = sugPill.closest(".diff-row");
+
+      if (!fieldEdits[idx]) fieldEdits[idx] = {};
+      fieldEdits[idx][field] = { action: "found", value: val };
+
+      row.querySelectorAll(".pill-original").forEach(p => p.classList.remove("active"));
+      sugPill.classList.add("active");
+      sugPill.classList.remove("removed");
+      sugPill.contentEditable = "true";
+      row.querySelectorAll(".fa-btn-x").forEach(b => b.classList.remove("active"));
+
+      syncRowState(row, "found");
+      syncBulkBtns(row.closest(".entry-card"), idx);
+      updatePreview();
+      return;
+    }
+
+    // Handle × button click (remove field)
+    const xBtn = e.target.closest(".fa-btn-x");
+    if (xBtn) {
+      const idx = parseInt(xBtn.dataset.entry);
+      const field = xBtn.dataset.field;
+      const row = xBtn.closest(".diff-row");
+
+      if (!fieldEdits[idx]) fieldEdits[idx] = {};
+      fieldEdits[idx][field] = { action: "remove", value: "" };
+
+      row.querySelectorAll(".pill-original").forEach(p => p.classList.remove("active"));
+      const sug = row.querySelector(".pill-suggested");
+      if (sug) {
+        sug.classList.remove("active");
+        sug.classList.add("removed");
+        sug.contentEditable = "false";
+      }
+      xBtn.classList.add("active");
+
+      syncRowState(row, "remove");
+      syncBulkBtns(row.closest(".entry-card"), idx);
+      updatePreview();
+      return;
+    }
+
+    // Handle old-style fa-btn (for "other fields" section)
     const btn = e.target.closest(".fa-btn");
     if (!btn) return;
     const idx = parseInt(btn.dataset.entry);
@@ -635,16 +708,18 @@
     btn.classList.add("active");
 
     const span = row.querySelector(".found-text");
-    if (action === "found") {
-      span.textContent = foundVal;
-      span.contentEditable = "true";
-    } else if (action === "original") {
-      span.textContent = foundVal;
-      span.contentEditable = "false";
-    } else {
-      span.contentEditable = "false";
+    if (span) {
+      if (action === "found") {
+        span.textContent = foundVal;
+        span.contentEditable = "true";
+      } else if (action === "original") {
+        span.textContent = foundVal;
+        span.contentEditable = "false";
+      } else {
+        span.contentEditable = "false";
+      }
+      span.classList.toggle("removed", action === "remove");
     }
-    span.classList.toggle("removed", action === "remove");
 
     syncRowState(row, action);
     syncBulkBtns(row.closest(".entry-card"), idx);
@@ -652,7 +727,7 @@
   });
 
   document.addEventListener("input", (e) => {
-    const span = e.target.closest(".found-text[contenteditable]");
+    const span = e.target.closest(".found-text[contenteditable], .pill-suggested[contenteditable]");
     if (!span) return;
     const idx = parseInt(span.dataset.entry);
     const field = span.dataset.field;
@@ -661,6 +736,9 @@
 
     const row = span.closest(".diff-row");
     row.querySelectorAll(".fa-btn").forEach(b => b.classList.remove("active"));
+    // For pill UI: mark suggested as active, original as inactive
+    row.querySelectorAll(".pill-original").forEach(p => p.classList.remove("active"));
+    if (span.classList.contains("pill-suggested")) span.classList.add("active");
     syncRowState(row, "custom");
     syncBulkBtns(row.closest(".entry-card"), idx);
     updatePreview();
@@ -676,36 +754,84 @@
     card.querySelectorAll(".diff-row:not(.field-row-plain)").forEach(row => {
       const field = row.dataset.field;
       const target = isAccept ? "found" : "original";
-      const targetBtn = row.querySelector(`.fa-btn[data-action="${target}"]`);
       const isEnc = row.dataset.enrichment === "1";
       const foundVal = decodeURIComponent(row.getAttribute("data-found-val") || "");
 
-      if (targetBtn) {
-        const val = targetBtn.dataset.val;
+      // New pill-based UI
+      const origPill = row.querySelector(".pill-original");
+      const sugPill = row.querySelector(".pill-suggested");
+
+      if (origPill || sugPill) {
         if (!fieldEdits[idx]) fieldEdits[idx] = {};
-        fieldEdits[idx][field] = { action: target, value: val };
 
-        row.querySelectorAll(".fa-btn").forEach(b => b.classList.remove("active"));
-        targetBtn.classList.add("active");
+        if (isAccept) {
+          // Accept suggested
+          if (sugPill) {
+            const val = sugPill.dataset.val;
+            fieldEdits[idx][field] = { action: "found", value: val };
+            if (origPill) origPill.classList.remove("active");
+            sugPill.classList.add("active");
+            sugPill.classList.remove("removed");
+            sugPill.contentEditable = "true";
+            sugPill.textContent = foundVal;
+          }
+        } else {
+          // Keep original
+          if (origPill) {
+            fieldEdits[idx][field] = { action: "original", value: origPill.dataset.val };
+            origPill.classList.add("active");
+            if (sugPill) {
+              sugPill.classList.remove("active");
+              sugPill.classList.remove("removed");
+              sugPill.contentEditable = "false";
+            }
+          } else if (isEnc && sugPill) {
+            // Enrichment row: no original pill
+            fieldEdits[idx][field] = { action: "original", value: foundVal };
+            sugPill.classList.remove("active");
+            sugPill.classList.remove("removed");
+            sugPill.contentEditable = "false";
+            sugPill.textContent = foundVal;
+          }
+        }
 
-        const span = row.querySelector(".found-text");
-        span.textContent = foundVal;
-        span.classList.remove("removed");
-        span.contentEditable = target === "found" ? "true" : "false";
-
+        row.querySelectorAll(".fa-btn-x").forEach(b => b.classList.remove("active"));
         syncRowState(row, target);
-      } else if (!isAccept && isEnc) {
-        if (!fieldEdits[idx]) fieldEdits[idx] = {};
-        fieldEdits[idx][field] = { action: "original", value: foundVal };
+      } else {
+        // Fallback for old-style rows
+        const targetBtn = row.querySelector(`.fa-btn[data-action="${target}"]`);
 
-        row.querySelectorAll(".fa-btn").forEach(b => b.classList.remove("active"));
+        if (targetBtn) {
+          const val = targetBtn.dataset.val;
+          if (!fieldEdits[idx]) fieldEdits[idx] = {};
+          fieldEdits[idx][field] = { action: target, value: val };
 
-        const span = row.querySelector(".found-text");
-        span.textContent = foundVal;
-        span.classList.remove("removed");
-        span.contentEditable = "false";
+          row.querySelectorAll(".fa-btn").forEach(b => b.classList.remove("active"));
+          targetBtn.classList.add("active");
 
-        syncRowState(row, "original");
+          const span = row.querySelector(".found-text");
+          if (span) {
+            span.textContent = foundVal;
+            span.classList.remove("removed");
+            span.contentEditable = target === "found" ? "true" : "false";
+          }
+
+          syncRowState(row, target);
+        } else if (!isAccept && isEnc) {
+          if (!fieldEdits[idx]) fieldEdits[idx] = {};
+          fieldEdits[idx][field] = { action: "original", value: foundVal };
+
+          row.querySelectorAll(".fa-btn").forEach(b => b.classList.remove("active"));
+
+          const span = row.querySelector(".found-text");
+          if (span) {
+            span.textContent = foundVal;
+            span.classList.remove("removed");
+            span.contentEditable = "false";
+          }
+
+          syncRowState(row, "original");
+        }
       }
     });
     syncBulkBtns(card, idx);
