@@ -314,6 +314,7 @@
       }
 
       updateSummary();
+      updateCardStatuses();
       updatePreview();
     }
 
@@ -989,6 +990,68 @@
         }
       }
     });
+
+    // Update card statuses based on whether all diff rows are hidden
+    updateCardStatuses();
+  }
+
+  function updateCardStatuses() {
+    $$(".entry-card").forEach(card => {
+      const idx = parseInt(card.dataset.index);
+      const r = results[idx];
+      if (!r) return;
+      const origStatus = r.status;
+      if (origStatus !== "updated" && origStatus !== "needs_review" && origStatus !== "verified") return;
+
+      // Check if all non-plain diff rows are hidden
+      const diffRows = card.querySelectorAll(".diff-row:not(.field-row-plain)");
+      if (!diffRows.length) return;
+      const allHidden = [...diffRows].every(row => row.classList.contains("author-match-hidden"));
+
+      // Store original status on the card if not already saved
+      if (!card.dataset.origStatus) card.dataset.origStatus = origStatus;
+      const savedStatus = card.dataset.origStatus;
+
+      let effectiveStatus;
+      if (allHidden && (savedStatus === "updated" || savedStatus === "needs_review")) {
+        effectiveStatus = "verified";
+      } else {
+        effectiveStatus = savedStatus;
+      }
+
+      // Update card visuals
+      card.dataset.status = effectiveStatus;
+      card.className = card.className.replace(/status-\S+/, `status-${effectiveStatus}`);
+      const tag = card.querySelector(".status-tag:not(.tag-duplicate)");
+      if (tag) {
+        tag.className = `status-tag tag-${effectiveStatus}`;
+        tag.textContent = statusLabel(effectiveStatus);
+      }
+
+      // Hide/show the diff table and actions if all diffs hidden
+      const diffTable = card.querySelector(".diff-table:not(.fields-table)");
+      if (diffTable) diffTable.style.display = allHidden ? "none" : "";
+      const actions = card.querySelector(".entry-actions");
+      if (actions) actions.style.display = allHidden ? "none" : "";
+    });
+
+    // Recount summary
+    updateDynamicSummary();
+  }
+
+  function updateDynamicSummary() {
+    const c = { verified: 0, updated: 0, needs_review: 0, not_found: 0 };
+    let dupes = 0;
+    $$(".entry-card").forEach(card => {
+      const status = card.dataset.status;
+      c[status] = (c[status] || 0) + 1;
+      if (card.dataset.duplicate === "true") dupes++;
+    });
+    $(".badge-verified").textContent = `Verified: ${c.verified}`;
+    $(".badge-updated").textContent = `Auto-Updated: ${c.updated}`;
+    $(".badge-review").textContent = `Needs Review: ${c.needs_review}`;
+    $(".badge-notfound").textContent = `Not Found: ${c.not_found}`;
+    $(".badge-duplicates").textContent = `Duplicates: ${dupes}`;
   }
 
   // ─── Live preview ────────────────────────────────────────────────
