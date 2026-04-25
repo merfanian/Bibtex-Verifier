@@ -823,6 +823,7 @@ code {
   100% { filter: brightness(1); }
 }
 .diff-row.flash { animation: row-flash 0.3s ease-out; }
+.diff-row.author-match-hidden { display: none; }
 
 .fields-toggle-wrap { margin-top: 0.5rem; }
 .fields-toggle-btn {

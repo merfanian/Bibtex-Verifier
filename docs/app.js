@@ -385,8 +385,9 @@
         // Apply author truncation for display (suggested only)
         const maxA = parseInt(optMaxAuthors.value) || 0;
         const displaySuggestion = (d.field === "author" && maxA > 0 && currentAction !== "custom") ? truncateAuthors(suggestionText, maxA) : suggestionText;
+        const authorMatchHidden = (d.field === "author" && maxA > 0 && displaySuggestion.trim() === (d.original || "").trim());
 
-        return `<tr class="diff-row" data-entry="${idx}" data-field="${esc(d.field)}" data-action="${currentAction}"
+        return `<tr class="diff-row${authorMatchHidden ? " author-match-hidden" : ""}" data-entry="${idx}" data-field="${esc(d.field)}" data-action="${currentAction}"
           data-enrichment="${isEnrichment ? "1" : ""}"
           data-found-val="${foundAttr}"
           data-original-val="${origAttr}">
@@ -970,13 +971,22 @@
 
   function updateAuthorPills() {
     const max = parseInt(optMaxAuthors.value) || 0;
-    // Update suggested author pills only
+    // Update suggested author pills and hide rows where truncated suggestion == original
     $$('.diff-row[data-field="author"]').forEach(row => {
       const foundVal = decodeURIComponent(row.getAttribute("data-found-val") || "");
+      const origVal = decodeURIComponent(row.getAttribute("data-original-val") || "");
 
       const sugPill = row.querySelector(".pill-suggested");
       if (sugPill && row.dataset.action !== "custom") {
-        sugPill.textContent = max > 0 ? truncateAuthors(foundVal, max) : foundVal;
+        const truncated = max > 0 ? truncateAuthors(foundVal, max) : foundVal;
+        sugPill.textContent = truncated;
+
+        // Hide row if truncated suggestion matches original exactly
+        if (truncated.trim() === origVal.trim()) {
+          row.classList.add("author-match-hidden");
+        } else {
+          row.classList.remove("author-match-hidden");
+        }
       }
     });
   }
