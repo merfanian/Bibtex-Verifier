@@ -972,21 +972,106 @@
 
   function updateAuthorPills() {
     const max = parseInt(optMaxAuthors.value) || 0;
-    // Update suggested author pills and hide rows where truncated suggestion == original
-    $$('.diff-row[data-field="author"]').forEach(row => {
-      const foundVal = decodeURIComponent(row.getAttribute("data-found-val") || "");
-      const origVal = decodeURIComponent(row.getAttribute("data-original-val") || "");
 
-      const sugPill = row.querySelector(".pill-suggested");
-      if (sugPill && row.dataset.action !== "custom") {
-        const truncated = max > 0 ? truncateAuthors(foundVal, max) : foundVal;
-        sugPill.textContent = truncated;
+    // For entries WITHOUT an author diff row but where original has > max authors,
+    // inject a virtual author diff row
+    $$(".entry-card").forEach(card => {
+      const idx = parseInt(card.dataset.index);
+      const entry = parsedEntries[idx];
+      if (!entry || !entry.author) return;
 
-        // Hide row if truncated suggestion matches original exactly
-        if (truncated.trim() === origVal.trim()) {
-          row.classList.add("author-match-hidden");
+      const existingRow = card.querySelector('.diff-row[data-field="author"]:not([data-injected])');
+      const injectedRow = card.querySelector('.diff-row[data-field="author"][data-injected]');
+      const authorCount = entry.author.split(/\s+and\s+/i).length;
+
+      if (existingRow) {
+        // Already has an API diff row — update it
+        const foundVal = decodeURIComponent(existingRow.getAttribute("data-found-val") || "");
+        const origVal = decodeURIComponent(existingRow.getAttribute("data-original-val") || "");
+        const sugPill = existingRow.querySelector(".pill-suggested");
+        if (sugPill && existingRow.dataset.action !== "custom") {
+          const truncated = max > 0 ? truncateAuthors(foundVal, max) : foundVal;
+          sugPill.textContent = truncated;
+          if (truncated.trim() === origVal.trim()) {
+            existingRow.classList.add("author-match-hidden");
+          } else {
+            existingRow.classList.remove("author-match-hidden");
+          }
+        }
+      } else if (max > 0 && authorCount > max) {
+        // No API diff for author, but original exceeds max — inject a virtual row
+        if (!injectedRow) {
+          const truncated = truncateAuthors(entry.author, max);
+          if (!fieldEdits[idx]) fieldEdits[idx] = {};
+          if (!fieldEdits[idx].author) {
+            fieldEdits[idx].author = { action: "found", value: truncated };
+          }
+
+          let diffTable = card.querySelector(".diff-table:not(.fields-table)");
+          if (!diffTable) {
+            // Create a diff table if none exists
+            const tableHTML = `<table class="diff-table"><tr><th>Field</th><th>Your Value</th><th>Suggested</th><th></th></tr></table>`;
+            const entryHeader = card.querySelector(".entry-header");
+            const reviewHint = card.querySelector(".review-hint");
+            const insertAfter = reviewHint || entryHeader;
+            insertAfter.insertAdjacentHTML("afterend", tableHTML);
+            diffTable = card.querySelector(".diff-table:not(.fields-table)");
+          }
+
+          const origAttr = encodeURIComponent(entry.author);
+          const foundAttr = encodeURIComponent(truncated);
+          const fe = fieldEdits[idx].author;
+          const action = fe.action;
+          const rowHTML = `<tr class="diff-row" data-entry="${idx}" data-field="author" data-action="${action}"
+            data-enrichment="" data-injected="1"
+            data-found-val="${foundAttr}"
+            data-original-val="${origAttr}">
+            <td class="field-name"><span class="field-name-pill">author</span></td>
+            <td class="val-col val-col-original">
+              <button class="choice-pill pill-original ${action === "original" ? "active" : ""}"
+                      data-entry="${idx}" data-field="author" data-action="original" data-val="${esc(entry.author)}"
+                      title="Keep your value">${esc(entry.author)}</button>
+            </td>
+            <td class="val-col val-col-suggested">
+              <span class="choice-pill pill-suggested ${action === "found" || action === "custom" ? "active" : ""}"
+                      contenteditable="true" spellcheck="false"
+                      data-entry="${idx}" data-field="author" data-action="found" data-val="${esc(truncated)}"
+                      title="Use suggested value (click to select, edit to customize)">${esc(truncated)}</span>
+            </td>
+            <td class="field-actions-mini">
+              <button class="fa-btn-x" title="Remove field"
+                      data-entry="${idx}" data-field="author" data-action="remove" data-val="">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </td>
+          </tr>`;
+          // Insert after the header row
+          const headerRow = diffTable.querySelector("tr");
+          headerRow.insertAdjacentHTML("afterend", rowHTML);
         } else {
-          row.classList.remove("author-match-hidden");
+          // Injected row exists, update the truncated value
+          const truncated = truncateAuthors(entry.author, max);
+          const sugPill = injectedRow.querySelector(".pill-suggested");
+          if (sugPill && injectedRow.dataset.action !== "custom") {
+            sugPill.textContent = truncated;
+            sugPill.dataset.val = truncated;
+            injectedRow.setAttribute("data-found-val", encodeURIComponent(truncated));
+          }
+          if (fieldEdits[idx]?.author?.action === "found") {
+            fieldEdits[idx].author.value = truncated;
+          }
+          injectedRow.style.display = "";
+        }
+      } else if (injectedRow) {
+        // max is 0 or author count <= max — remove the injected row
+        injectedRow.remove();
+        if (fieldEdits[idx]?.author?.action === "found" && !existingRow) {
+          delete fieldEdits[idx].author;
+        }
+        // Remove the diff table if it's now empty (only header row left)
+        const diffTable = card.querySelector(".diff-table:not(.fields-table)");
+        if (diffTable && diffTable.querySelectorAll(".diff-row").length === 0) {
+          diffTable.remove();
         }
       }
     });
@@ -1001,19 +1086,22 @@
       const r = results[idx];
       if (!r) return;
       const origStatus = r.status;
-      if (origStatus !== "updated" && origStatus !== "needs_review" && origStatus !== "verified") return;
-
-      // Check if all non-plain diff rows are hidden
-      const diffRows = card.querySelectorAll(".diff-row:not(.field-row-plain)");
-      if (!diffRows.length) return;
-      const allHidden = [...diffRows].every(row => row.classList.contains("author-match-hidden"));
 
       // Store original status on the card if not already saved
       if (!card.dataset.origStatus) card.dataset.origStatus = origStatus;
       const savedStatus = card.dataset.origStatus;
 
+      // Check all non-plain diff rows (including injected ones)
+      const diffRows = card.querySelectorAll(".diff-row:not(.field-row-plain)");
+      const hasVisibleDiffs = diffRows.length > 0 && ![...diffRows].every(row => row.classList.contains("author-match-hidden"));
+      const hasInjectedRows = card.querySelector('.diff-row[data-injected]') !== null;
+
       let effectiveStatus;
-      if (allHidden && (savedStatus === "updated" || savedStatus === "needs_review")) {
+      if (hasInjectedRows && hasVisibleDiffs && savedStatus === "verified") {
+        // Was verified but now has injected author truncation suggestion
+        effectiveStatus = "updated";
+      } else if (!hasVisibleDiffs && (savedStatus === "updated" || savedStatus === "needs_review")) {
+        // All diffs hidden — promote to verified
         effectiveStatus = "verified";
       } else {
         effectiveStatus = savedStatus;
@@ -1028,11 +1116,11 @@
         tag.textContent = statusLabel(effectiveStatus);
       }
 
-      // Hide/show the diff table and actions if all diffs hidden
+      // Hide/show the diff table and actions
       const diffTable = card.querySelector(".diff-table:not(.fields-table)");
-      if (diffTable) diffTable.style.display = allHidden ? "none" : "";
+      if (diffTable) diffTable.style.display = !hasVisibleDiffs && !hasInjectedRows ? "none" : "";
       const actions = card.querySelector(".entry-actions");
-      if (actions) actions.style.display = allHidden ? "none" : "";
+      if (actions) actions.style.display = !hasVisibleDiffs ? "none" : "";
     });
 
     // Recount summary
@@ -1075,7 +1163,11 @@
       }
 
       if (s.maxAuthors > 0 && out.author) {
-        out.author = truncateAuthors(out.author, s.maxAuthors);
+        // Only truncate if there's an active author edit (found/custom) or it's an injected suggestion
+        const authorEdit = edits.author;
+        if (authorEdit && (authorEdit.action === "found" || authorEdit.action === "custom")) {
+          out.author = truncateAuthors(out.author, s.maxAuthors);
+        }
       }
 
       if (s.preferPublished) {
