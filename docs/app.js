@@ -314,7 +314,7 @@
       }
 
       updateSummary();
-      updateCardStatuses();
+      updateAuthorPills();
       updatePreview();
     }
 
@@ -1000,6 +1000,9 @@
         if (diffTable && diffTable.querySelectorAll(".diff-row").length === 0) {
           diffTable.remove();
         }
+        // Unhide plain author row
+        const plainRow = card.querySelector('.field-row-plain[data-field="author"]');
+        if (plainRow) plainRow.classList.remove("author-match-hidden");
       }
       // Clean up fieldEdits injected entry
       if (fieldEdits[idx]?.author?._injected) {
