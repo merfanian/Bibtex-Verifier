@@ -113,6 +113,35 @@ test("returns empty array for invalid input", () => {
   assert.deepStrictEqual(lib.parseBib(""), []);
 });
 
+test("parses misc with missing closing braces before next field (double-brace typos)", () => {
+  const bib = `@misc{github_copilot_2025,
+  author = {{GitHub},
+  title = {{GitHub Copilot},
+  howpublished = {\\url{https://github.com/features/copilot},
+  year = {2025},
+  note = {Accessed: 2025-06-01},
+}`;
+  const entries = lib.parseBib(bib);
+  assert.strictEqual(entries.length, 1);
+  assert.strictEqual(entries[0].author, "{GitHub}");
+  assert.strictEqual(entries[0].title, "{GitHub Copilot}");
+  assert.ok(entries[0].howpublished.includes("github.com/features/copilot"));
+  assert.strictEqual(entries[0].year, "2025");
+});
+
+test("parses misc Cursor-style malformed braces", () => {
+  const bib = `@misc{cursor_2025,
+  author = {{Anysphere},
+  title = {{Cursor: The AI Code Editor},
+  howpublished = {\\url{https://www.cursor.com},
+  year = {2025},
+}`;
+  const entries = lib.parseBib(bib);
+  assert.strictEqual(entries.length, 1);
+  assert.strictEqual(entries[0].author, "{Anysphere}");
+  assert.strictEqual(entries[0].title, "{Cursor: The AI Code Editor}");
+});
+
 // ═══════════════════════════════════════════════════════════════════════
 console.log("\n── entriesToBib ──");
 
