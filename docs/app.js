@@ -516,8 +516,11 @@
       <a class="search-link" href="https://www.semanticscholar.org/search?q=${searchQuery}" target="_blank" rel="noopener" title="Semantic Scholar">
         <img src="https://www.semanticscholar.org/favicon.ico" width="14" height="14" alt="S2">
       </a>
-      <a class="search-link" href="https://search.crossref.org/?q=${searchQuery}&from_ui=yes" target="_blank" rel="noopener" title="CrossRef">
-        <img src="https://search.crossref.org/favicon.ico" width="14" height="14" alt="CrossRef">
+      <a class="search-link search-link-crossref" href="https://search.crossref.org/?q=${searchQuery}&from_ui=yes" target="_blank" rel="noopener" title="CrossRef">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" focusable="false" class="search-link-svg">
+          <rect width="24" height="24" rx="4" fill="#f89838"/>
+          <path fill="#fff" fill-rule="evenodd" d="M7 8h10v2H7V8zm0 4h10v2H7v-2zm0 4h7v2H7v-2z"/>
+        </svg>
       </a>
       <a class="search-link" href="https://dblp.org/search?q=${searchQuery}" target="_blank" rel="noopener" title="DBLP">
         <img src="https://dblp.org/img/dblp.icon.192x192.png" width="14" height="14" alt="DBLP">
