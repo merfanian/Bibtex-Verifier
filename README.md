@@ -1,117 +1,112 @@
+<div align="center">
+
 # BibTeX Verifier
 
-**Catch errors, hallucinated references, and missing metadata in your bibliography — automatically.**
+**Stop fixing citations by hand.** Paste or upload your `.bib`, compare every entry against real publications, and leave with a bibliography you trust — including catching **AI-hallucinated** references before they ship.
 
-Upload or paste your `.bib` file and BibTeX Verifier checks every entry against [CrossRef](https://www.crossref.org/) and [Semantic Scholar](https://www.semanticscholar.org/). It finds wrong authors, incorrect years, mismatched venues, missing DOIs, duplicate entries, and references that don't exist in any database — a common problem when using AI tools to generate citations.
-
-Runs entirely in the browser. No backend, no sign-up, no data leaves your machine except title lookups to public academic APIs.
-
-[![Live App](https://img.shields.io/badge/Try_it_now-merfanian.github.io-blue?style=for-the-badge)](https://merfanian.github.io/Bibtex-Verifier/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
+[![Live app](https://img.shields.io/badge/Try_it_live-merfanian.github.io-5b8def?style=for-the-badge)](https://merfanian.github.io/Bibtex-Verifier/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-22c55e?style=flat-square)](LICENSE)
 [![CI](https://github.com/merfanian/Bibtex-Verifier/actions/workflows/ci.yml/badge.svg)](https://github.com/merfanian/Bibtex-Verifier/actions)
 
-## Demo
+<br/>
 
-![BibTeX Verifier demo](demo/demo.gif)
+### See it in action
 
-## Why?
+<a href="https://merfanian.github.io/Bibtex-Verifier/" title="Try BibTeX Verifier">
+  <img src="demo/demo.gif" alt="Screen recording: upload or paste a BibTeX file, verify entries against CrossRef and Semantic Scholar, review diffs and live preview, then download the corrected bibliography" width="92%">
+</a>
 
-- **AI-generated bibliographies are unreliable.** LLMs frequently hallucinate paper titles, invent authors, or assign wrong years. BibTeX Verifier flags entries that don't match any real publication so you can catch fabricated references before submission.
-- **Manual checking is tedious.** Comparing 50+ BibTeX entries against Google Scholar one by one takes hours. This tool does it in minutes.
-- **Copy-paste errors are common.** When assembling a `.bib` file from multiple sources (Overleaf, Zotero, Google Scholar, Mendeley), metadata inconsistencies creep in. BibTeX Verifier shows you a field-by-field diff of what needs fixing.
+<p align="center">
+  <sub><strong>Live verification</strong> · pill-style field diffs · GitHub-style BibTeX preview · one-click export</sub>
+</p>
+
+<br/>
+
+</div>
+
+Runs **100% in your browser** — no install, no server, no account. Only paper titles are sent to public APIs ([CrossRef](https://www.crossref.org/), [Semantic Scholar](https://www.semanticscholar.org/)); your `.bib` never leaves your machine.
+
+---
+
+## Why use this?
+
+| Pain | What BibTeX Verifier does |
+|------|---------------------------|
+| ChatGPT invented three papers | Flags **no-match** / weak-match titles so you delete hallucinations |
+| Google Scholar tab × 80 | **Batch lookup** with adaptive rate limiting |
+| “Is this venue name right?” | **Side-by-side** your value vs. database suggestion, accept per field |
+| Overleaf paste chaos | **Paste** directly or upload; **download** a clean `.bib` when done |
+
+---
 
 ## Features
 
-- **Drag-and-drop upload** or paste BibTeX directly from Overleaf
-- **Dual-source verification** against Semantic Scholar and CrossRef for maximum coverage
-- **Hallucination detection** — flags entries whose titles don't match any known publication
-- **Field-by-field diff** showing exactly what differs (authors, year, venue, DOI, pages, etc.)
-- **Inline editing** — accept suggestions, revert to original, edit values, or remove fields per entry
-- **Live BibTeX preview** with GitHub-style diff highlighting, updated in real time as you make changes
-- **Duplicate detection** by title, entry ID, or DOI
-- **DOI enrichment** — fills in missing DOIs, publisher info, and volume/pages
-- **Smart settings** — abbreviate venue names, prefer peer-reviewed over arXiv, remove duplicates or not-found entries
-- **Dark / light theme** with system preference detection
-- **Privacy-first** — your file never leaves the browser; only paper titles are sent to public APIs
-- **Zero install** — works in any modern browser via [GitHub Pages](https://merfanian.github.io/Bibtex-Verifier/)
+- **Drag-and-drop** or **paste** BibTeX from Overleaf
+- **Dual-source** checks (Semantic Scholar + CrossRef)
+- **Hallucination detection** — titles that don’t exist in major indexes
+- **Pill-style diffs** — choose your text vs. suggested metadata per field
+- **Live BibTeX preview** with diff highlighting; **copy** or **download** the final file
+- **Max authors** truncation for long author lists (plus peer-reviewed venue preference, dedup, optional filters)
+- **Dark / light** theme
+- **Quick search shortcuts** on each card (Scholar, CrossRef, DBLP, …)
+
+---
 
 ## How it works
 
 ```
-Upload or paste .bib
-        |
-    Parse entries
-        |
-    For each entry:
-        1. Search Semantic Scholar /match (precise title lookup)
-        2. Enrich with CrossRef (volume, pages, DOI)
-        3. Fall back to CrossRef search / SS general search
-        |
-    Compare fields → Categorize → Show results
-        |
-    Review & edit → Download corrected .bib
+Upload or paste .bib → Parse entries → For each entry:
+    Semantic Scholar match → CrossRef enrich → Fallback search
+→ Compare fields → Verified / Auto-updated / Needs review / Not found
+→ You edit choices → Export corrected .bib
 ```
 
-Results are color-coded:
+**Statuses:** **Verified** (matches online record) · **Auto-updated** (same paper, metadata differs) · **Needs review** (weak title match — possible typo or fake cite) · **Not found** (no index hit).
 
-| Status | Meaning |
-|---|---|
-| **Verified** | Title and all metadata fields match the published record |
-| **Auto-Updated** | Title matches but other fields differ — shows a diff you can accept/reject |
-| **Needs Review** | Title didn't match closely enough — might be a hallucinated or mistyped reference |
-| **Not Found** | No match in CrossRef or Semantic Scholar — could be too new, a workshop paper, or fabricated |
+---
 
 ## Quick start
 
-### Use online (recommended)
+### Online (recommended)
 
-Visit **[https://merfanian.github.io/Bibtex-Verifier/](https://merfanian.github.io/Bibtex-Verifier/)** — no installation needed.
+**[https://merfanian.github.io/Bibtex-Verifier/](https://merfanian.github.io/Bibtex-Verifier/)**
 
-### Run locally
-
-Clone and serve the `docs/` folder with any static file server:
+### Local
 
 ```bash
 git clone https://github.com/merfanian/Bibtex-Verifier.git
 cd Bibtex-Verifier
 npx serve docs
-# or: python -m http.server 8080 -d docs
 ```
 
-Then open [http://localhost:3000](http://localhost:3000) (or `:8080` for Python) in your browser.
+Open the URL shown (often `http://localhost:3000`).
 
-## Project structure
+---
 
-```
-docs/                      Client-side app (deployed to GitHub Pages)
-  index.html               Single-page UI with SEO meta tags
-  style.css                Responsive CSS with dark/light theme support
-  app.js                   UI logic: rendering, API calls, settings, preview
-  lib.js                   Pure logic: parsing, comparison, fuzzy matching (UMD module)
+## Project layout
 
-tests/
-  test_lib.js              Node.js unit tests for lib.js (62 test cases)
+| Path | Role |
+|------|------|
+| `docs/` | GitHub Pages app: `index.html`, `style.css`, `app.js`, `lib.js` |
+| `tests/test_lib.js` | Node tests for `lib.js` |
+| `.github/workflows/` | CI + Pages deploy |
 
-.github/workflows/
-  ci.yml                   CI pipeline (syntax check + tests on push/PR)
-  deploy.yml               GitHub Pages deployment (tests must pass first)
-```
+---
 
 ## Limitations
 
-- **Rate limits** — CrossRef and Semantic Scholar are free APIs with rate limits. For large `.bib` files (100+ entries), verification takes a few minutes. The app uses adaptive throttling with automatic backoff and recovery.
-- **Coverage gaps** — Not every paper is indexed. ArXiv preprints, workshop papers, theses, and very recent publications may show as "Not Found."
-- **Metadata quality** — API metadata isn't always perfect. Venue names may differ in format (e.g., "NeurIPS" vs. "Neural Information Processing Systems"). The diff view lets you judge each change before accepting.
+- **API rate limits** — large files take a few minutes; the app throttles politely.
+- **Not everything is indexed** — some workshops, theses, or brand-new papers won’t appear.
+- **Metadata isn’t perfect** — you always get the final say in the diff UI.
+
+---
 
 ## Contributing
 
-Contributions are welcome! Feel free to open issues or pull requests. Some ideas:
+Issues and PRs welcome — extra APIs (OpenAlex, …), BibLaTeX edge cases, UX polish, etc.
 
-- Add support for additional APIs (OpenAlex, DBLP)
-- Batch processing of multiple `.bib` files
-- BibLaTeX-specific field handling
-- Export to other citation formats
+---
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+[MIT](LICENSE)
