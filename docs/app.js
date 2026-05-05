@@ -165,14 +165,22 @@
   let onboardingOverlayEl = null;
 
   function closeOnboarding() {
+    if (onboardingOverlayEl?._currentStepOnLeave) {
+      onboardingOverlayEl._currentStepOnLeave();
+      onboardingOverlayEl._currentStepOnLeave = null;
+    }
     if (onboardingOverlayEl) {
       const fn = onboardingOverlayEl._kbdEsc;
       if (fn) document.removeEventListener("keydown", fn);
       onboardingOverlayEl.remove();
       onboardingOverlayEl = null;
     }
+    document.body.removeAttribute("data-onboarding-stage");
     document.querySelectorAll(".onboarding-target").forEach(el => el.classList.remove("onboarding-target"));
   }
+
+  let onboardingResumeAfterCurrentRun = false;
+  let pendingOnboardingResumeClick = false;
 
   const uploadZone = $(".upload-zone");
   const fileInput = $("#file-input");
@@ -238,6 +246,13 @@
   });
 
   function startVerificationFromContent(content, statusMsg) {
+    onboardingResumeAfterCurrentRun =
+      pendingOnboardingResumeClick ||
+      document.body.dataset.onboardingStage === "verify" ||
+      document.body.dataset.onboardingStage === "verify-final";
+    pendingOnboardingResumeClick = false;
+    delete document.body.dataset.onboardingStage;
+
     closeOnboarding();
     results = [];
     decisions = {};
@@ -271,6 +286,7 @@
     if (!parsedEntries.length) {
       alert("No BibTeX entries found. Make sure the content contains valid @type{key, ...} entries.");
       floatingBar.classList.remove("visible");
+      onboardingResumeAfterCurrentRun = false;
       return;
     }
 
@@ -333,12 +349,16 @@
 
     barProgressFill.classList.add("done");
     barProgressText.textContent = `Done — ${total} entries verified`;
+    const resumeOnboardingAfterResults = onboardingResumeAfterCurrentRun;
+    onboardingResumeAfterCurrentRun = false;
     setTimeout(() => {
       barProgress.classList.add("fade-out");
       setTimeout(() => {
         barProgress.classList.remove("active", "fade-out");
         btnDownload.classList.remove("hidden");
         btnDownload.classList.add("fade-in");
+        if (resumeOnboardingAfterResults)
+          setTimeout(() => openOnboardingPostVerifyTour(), 450);
       }, 350);
     }, 800);
   }
@@ -1373,7 +1393,7 @@
   // ─── First-visit onboarding tour ───────────────────────────────────
   const ONBOARDING_STORAGE = "bv-onboarding-dismissed";
   const ONBOARDING_VER_KEY = "bv-onboarding-version";
-  const ONBOARDING_VER = "1";
+  const ONBOARDING_VER = "2";
 
   const ONBOARDING_SAMPLE_BIB = `@article{tour_attention2017,
   title = {Attention Is All You Need},
@@ -1405,56 +1425,61 @@
     tabPanels.forEach(p => p.classList.toggle("active", p.id === "tab-paste"));
   }
 
-  function openOnboardingTour({ force = false } = {}) {
-    if (!force && onboardingOverlayEl) return;
+  const introOnboardingSteps = [
+    {
+      title: "Welcome",
+      body: "BibTeX Verifier checks each entry against CrossRef and Semantic Scholar — wrong metadata, missing DOIs, duplicates, and citations that don’t exist online (including AI hallucinations). Your file stays in the browser.",
+      target: null,
+    },
+    {
+      title: "Add your bibliography",
+      body: "Upload a <strong>.bib</strong> file or switch to <strong>Paste BibTeX</strong> and paste from Overleaf or anywhere else.",
+      target: ".input-tabs",
+    },
+    {
+      title: "Sample loaded",
+      body: "We’ve switched to the paste tab and inserted a tiny <strong>two-entry sample</strong>: one famous paper with intentional wrong venue text, and one fake title so you can see how mismatches look.",
+      target: "#bib-paste",
+      onEnter: () => {
+        switchToPasteTab();
+        bibPaste.value = ONBOARDING_SAMPLE_BIB;
+        bibPaste.focus({ preventScroll: true });
+      },
+    },
+    {
+      title: "Run verification",
+      body: "Click <strong>Verify pasted BibTeX</strong> when you’re ready. The app queries CrossRef and Semantic Scholar (a short wait per entry). <strong>When it finishes, the tour continues</strong> and walks through both sample results — updated vs not found — plus settings.",
+      target: "#btn-verify-paste",
+    },
+    {
+      title: "Start with the sample",
+      body: "Use <strong>Verify sample &amp; explore</strong> below to run the demo (same as the real verify button). Or close the tour and paste your own .bib anytime.",
+      target: "#btn-verify-paste",
+      final: true,
+    },
+  ];
+
+  function mountOnboardingTour(steps, variant = "intro") {
     closeOnboarding();
 
     let stepIndex = 0;
-
-    const steps = [
-      {
-        title: "Welcome",
-        body: "BibTeX Verifier checks each entry against CrossRef and Semantic Scholar — wrong metadata, missing DOIs, duplicates, and citations that don’t exist online (including AI hallucinations). Your file stays in the browser.",
-        target: null,
-      },
-      {
-        title: "Add your bibliography",
-        body: "Upload a <strong>.bib</strong> file or switch to <strong>Paste BibTeX</strong> and paste from Overleaf or anywhere else.",
-        target: ".input-tabs",
-      },
-      {
-        title: "Sample loaded",
-        body: "We’ve switched to the paste tab and inserted a tiny <strong>two-entry sample</strong>: one famous paper with intentional wrong venue text, and one fake title so you can see how mismatches look.",
-        target: "#bib-paste",
-        onEnter: () => {
-          switchToPasteTab();
-          bibPaste.value = ONBOARDING_SAMPLE_BIB;
-          bibPaste.focus({ preventScroll: true });
-        },
-      },
-      {
-        title: "Run verification",
-        body: "Click <strong>Verify pasted BibTeX</strong>. The app looks up titles against academic APIs (this takes a short moment per entry). You can also press this anytime after editing the sample.",
-        target: "#btn-verify-paste",
-      },
-      {
-        title: "After results appear",
-        body: "Use the <strong>summary badges</strong> to filter entries. Each card shows field-level suggestions; the right column is a live BibTeX preview. Use the <strong>bottom bar</strong> for settings (gear) and download when verification finishes.",
-        target: "#floating-bar",
-      },
-      {
-        title: "Try it now",
-        body: "Run verification on the sample to explore the UI, or close and use your own bibliography anytime.",
-        target: "#btn-verify-paste",
-        final: true,
-      },
-    ];
+    let lastRenderedStepIndex = -1;
+    const isIntro = variant === "intro";
+    const finalActionsDual = isIntro;
 
     const overlay = document.createElement("div");
     overlay.className = "onboarding-overlay";
     overlay.setAttribute("role", "dialog");
     overlay.setAttribute("aria-modal", "true");
     overlay.setAttribute("aria-labelledby", "onboarding-title");
+    const finalBlock = finalActionsDual
+      ? `<div class="onboarding-actions onboarding-actions-final hidden">
+          <button type="button" class="btn-onboarding secondary" data-action="finish">Close tour</button>
+          <button type="button" class="btn-onboarding primary" data-action="verify-sample">Verify sample &amp; explore</button>
+        </div>`
+      : `<div class="onboarding-actions onboarding-actions-final hidden">
+          <button type="button" class="btn-onboarding primary" data-action="finish">Got it</button>
+        </div>`;
     overlay.innerHTML = `
       <div class="onboarding-backdrop" data-dismiss="1"></div>
       <div class="onboarding-panel glass">
@@ -1468,10 +1493,7 @@
           <button type="button" class="btn-onboarding ghost" data-action="skip">Skip tour</button>
           <button type="button" class="btn-onboarding primary" data-action="next">Next</button>
         </div>
-        <div class="onboarding-actions onboarding-actions-final hidden">
-          <button type="button" class="btn-onboarding secondary" data-action="finish">Close tour</button>
-          <button type="button" class="btn-onboarding primary" data-action="verify-sample">Verify sample &amp; explore</button>
-        </div>
+        ${finalBlock}
       </div>`;
     document.body.appendChild(overlay);
     onboardingOverlayEl = overlay;
@@ -1481,7 +1503,6 @@
     const stepLabel = overlay.querySelector(".onboarding-step-label");
     const dotsWrap = overlay.querySelector(".onboarding-dots");
     const actionsMain = overlay.querySelector(".onboarding-actions-main");
-    const actionsFinal = overlay.querySelector(".onboarding-actions-final");
 
     dotsWrap.innerHTML = steps.map((_, i) =>
       `<span class="onboarding-dot${i === 0 ? " active" : ""}" data-i="${i}"></span>`
@@ -1498,7 +1519,21 @@
     }
 
     function renderStep() {
+      if (lastRenderedStepIndex >= 0) {
+        const prev = steps[lastRenderedStepIndex];
+        if (prev?.onLeave) prev.onLeave();
+      }
+      lastRenderedStepIndex = stepIndex;
+
       const step = steps[stepIndex];
+      overlay._currentStepOnLeave = step.onLeave || null;
+
+      if (isIntro) {
+        if (stepIndex <= 2) document.body.removeAttribute("data-onboarding-stage");
+        else if (stepIndex === 3) document.body.dataset.onboardingStage = "verify";
+        else if (step.final) document.body.dataset.onboardingStage = "verify-final";
+      }
+
       if (step.onEnter) step.onEnter();
 
       titleEl.textContent = step.title;
@@ -1511,7 +1546,7 @@
 
       const isFinal = !!step.final;
       actionsMain.classList.toggle("hidden", isFinal);
-      actionsFinal.classList.toggle("hidden", !isFinal);
+      overlay.querySelector(".onboarding-actions-final").classList.toggle("hidden", !isFinal);
 
       updateHighlight(step.target);
 
@@ -1550,8 +1585,8 @@
         closeOnboarding();
         return;
       }
-      if (act === "verify-sample") {
-        markOnboardingComplete();
+      if (act === "verify-sample" && finalActionsDual) {
+        pendingOnboardingResumeClick = true;
         closeOnboarding();
         const txt = bibPaste.value.trim() || ONBOARDING_SAMPLE_BIB;
         if (!bibPaste.value.trim()) bibPaste.value = ONBOARDING_SAMPLE_BIB;
@@ -1569,6 +1604,51 @@
     document.addEventListener("keydown", onEsc);
 
     renderStep();
+  }
+
+  function openOnboardingPostVerifyTour() {
+    const postSteps = [
+      {
+        title: "First entry — metadata updated",
+        body: "The first row matched a real paper. The sample used a <strong>wrong journal</strong> on purpose — you’ll see suggested venue, DOI, and other fields from CrossRef / Semantic Scholar. Each row compares your original text to the suggestion; accept or revert field by field.",
+        target: ".entry-list .entry-card:nth-child(1)",
+      },
+      {
+        title: "Second entry — not found",
+        body: "The second title is fabricated, so nothing credible matched online. It’s marked <strong>Not found</strong> — the usual outcome for bogus, mistaken, or hallucinated references.",
+        target: ".entry-list .entry-card:nth-child(2)",
+      },
+      {
+        title: "Settings",
+        body: "Click the <strong>gear</strong> to open settings — download options (for example removing not-found entries), author limits, and more. The panel opens here so you can explore; use <strong>Next</strong> when you’re ready to continue.",
+        target: "#settings-toggle",
+        onEnter: () => {
+          settingsPopover.classList.add("open");
+          settingsToggle.classList.add("active");
+        },
+        onLeave: () => {
+          settingsPopover.classList.remove("open");
+          settingsToggle.classList.remove("active");
+        },
+      },
+      {
+        title: "Summary & toolbar",
+        body: "Filter with the <strong>status badges</strong> above the list. The <strong>bottom bar</strong> keeps settings and download once verification has finished.",
+        target: ".summary-bar",
+      },
+      {
+        title: "You’re set",
+        body: "Explore the sample results or replace the paste area with your own BibTeX.",
+        target: "#floating-bar",
+        final: true,
+      },
+    ];
+    mountOnboardingTour(postSteps, "postResults");
+  }
+
+  function openOnboardingTour({ force = false } = {}) {
+    if (!force && onboardingOverlayEl) return;
+    mountOnboardingTour(introOnboardingSteps, "intro");
   }
 
   $("#btn-start-tour")?.addEventListener("click", () => openOnboardingTour({ force: true }));
