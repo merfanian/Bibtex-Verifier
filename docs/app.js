@@ -162,6 +162,18 @@
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => document.querySelectorAll(sel);
 
+  let onboardingOverlayEl = null;
+
+  function closeOnboarding() {
+    if (onboardingOverlayEl) {
+      const fn = onboardingOverlayEl._kbdEsc;
+      if (fn) document.removeEventListener("keydown", fn);
+      onboardingOverlayEl.remove();
+      onboardingOverlayEl = null;
+    }
+    document.querySelectorAll(".onboarding-target").forEach(el => el.classList.remove("onboarding-target"));
+  }
+
   const uploadZone = $(".upload-zone");
   const fileInput = $("#file-input");
   const resultsSection = $(".results-section");
@@ -226,6 +238,7 @@
   });
 
   function startVerificationFromContent(content, statusMsg) {
+    closeOnboarding();
     results = [];
     decisions = {};
     fieldEdits = {};
@@ -1356,6 +1369,213 @@
     a.click();
     URL.revokeObjectURL(url);
   });
+
+  // ─── First-visit onboarding tour ───────────────────────────────────
+  const ONBOARDING_STORAGE = "bv-onboarding-dismissed";
+  const ONBOARDING_VER_KEY = "bv-onboarding-version";
+  const ONBOARDING_VER = "1";
+
+  const ONBOARDING_SAMPLE_BIB = `@article{tour_attention2017,
+  title = {Attention Is All You Need},
+  author = {Vaswani, Ashish and others},
+  journal = {Wrong Venue Placeholder},
+  year = {2017},
+}
+
+@article{tour_fabricated2099,
+  title = {Totally Fabricated Paper Title QZX999},
+  author = {Nobody, N.},
+  journal = {Journal of Nonexistence},
+  year = {2099},
+}`;
+
+  function shouldAutoShowOnboarding() {
+    if (localStorage.getItem(ONBOARDING_VER_KEY) !== ONBOARDING_VER)
+      return true;
+    return !localStorage.getItem(ONBOARDING_STORAGE);
+  }
+
+  function markOnboardingComplete() {
+    localStorage.setItem(ONBOARDING_STORAGE, "1");
+    localStorage.setItem(ONBOARDING_VER_KEY, ONBOARDING_VER);
+  }
+
+  function switchToPasteTab() {
+    inputTabs.forEach(t => t.classList.toggle("active", t.dataset.tab === "paste"));
+    tabPanels.forEach(p => p.classList.toggle("active", p.id === "tab-paste"));
+  }
+
+  function openOnboardingTour({ force = false } = {}) {
+    if (!force && onboardingOverlayEl) return;
+    closeOnboarding();
+
+    let stepIndex = 0;
+
+    const steps = [
+      {
+        title: "Welcome",
+        body: "BibTeX Verifier checks each entry against CrossRef and Semantic Scholar — wrong metadata, missing DOIs, duplicates, and citations that don’t exist online (including AI hallucinations). Your file stays in the browser.",
+        target: null,
+      },
+      {
+        title: "Add your bibliography",
+        body: "Upload a <strong>.bib</strong> file or switch to <strong>Paste BibTeX</strong> and paste from Overleaf or anywhere else.",
+        target: ".input-tabs",
+      },
+      {
+        title: "Sample loaded",
+        body: "We’ve switched to the paste tab and inserted a tiny <strong>two-entry sample</strong>: one famous paper with intentional wrong venue text, and one fake title so you can see how mismatches look.",
+        target: "#bib-paste",
+        onEnter: () => {
+          switchToPasteTab();
+          bibPaste.value = ONBOARDING_SAMPLE_BIB;
+          bibPaste.focus({ preventScroll: true });
+        },
+      },
+      {
+        title: "Run verification",
+        body: "Click <strong>Verify pasted BibTeX</strong>. The app looks up titles against academic APIs (this takes a short moment per entry). You can also press this anytime after editing the sample.",
+        target: "#btn-verify-paste",
+      },
+      {
+        title: "After results appear",
+        body: "Use the <strong>summary badges</strong> to filter entries. Each card shows field-level suggestions; the right column is a live BibTeX preview. Use the <strong>bottom bar</strong> for settings (gear) and download when verification finishes.",
+        target: "#floating-bar",
+      },
+      {
+        title: "Try it now",
+        body: "Run verification on the sample to explore the UI, or close and use your own bibliography anytime.",
+        target: "#btn-verify-paste",
+        final: true,
+      },
+    ];
+
+    const overlay = document.createElement("div");
+    overlay.className = "onboarding-overlay";
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-labelledby", "onboarding-title");
+    overlay.innerHTML = `
+      <div class="onboarding-backdrop" data-dismiss="1"></div>
+      <div class="onboarding-panel glass">
+        <div class="onboarding-meta">
+          <span class="onboarding-step-label"></span>
+          <div class="onboarding-dots"></div>
+        </div>
+        <h2 id="onboarding-title" class="onboarding-title"></h2>
+        <div class="onboarding-body"></div>
+        <div class="onboarding-actions onboarding-actions-main">
+          <button type="button" class="btn-onboarding ghost" data-action="skip">Skip tour</button>
+          <button type="button" class="btn-onboarding primary" data-action="next">Next</button>
+        </div>
+        <div class="onboarding-actions onboarding-actions-final hidden">
+          <button type="button" class="btn-onboarding secondary" data-action="finish">Close tour</button>
+          <button type="button" class="btn-onboarding primary" data-action="verify-sample">Verify sample &amp; explore</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    onboardingOverlayEl = overlay;
+
+    const titleEl = overlay.querySelector(".onboarding-title");
+    const bodyEl = overlay.querySelector(".onboarding-body");
+    const stepLabel = overlay.querySelector(".onboarding-step-label");
+    const dotsWrap = overlay.querySelector(".onboarding-dots");
+    const actionsMain = overlay.querySelector(".onboarding-actions-main");
+    const actionsFinal = overlay.querySelector(".onboarding-actions-final");
+
+    dotsWrap.innerHTML = steps.map((_, i) =>
+      `<span class="onboarding-dot${i === 0 ? " active" : ""}" data-i="${i}"></span>`
+    ).join("");
+
+    function updateHighlight(selector) {
+      document.querySelectorAll(".onboarding-target").forEach(el => el.classList.remove("onboarding-target"));
+      if (!selector) return;
+      const el = document.querySelector(selector);
+      if (el) {
+        el.classList.add("onboarding-target");
+        el.scrollIntoView({ block: "center", behavior: "smooth" });
+      }
+    }
+
+    function renderStep() {
+      const step = steps[stepIndex];
+      if (step.onEnter) step.onEnter();
+
+      titleEl.textContent = step.title;
+      bodyEl.innerHTML = step.body;
+      stepLabel.textContent = `Step ${stepIndex + 1} of ${steps.length}`;
+
+      dotsWrap.querySelectorAll(".onboarding-dot").forEach((d, i) => {
+        d.classList.toggle("active", i === stepIndex);
+      });
+
+      const isFinal = !!step.final;
+      actionsMain.classList.toggle("hidden", isFinal);
+      actionsFinal.classList.toggle("hidden", !isFinal);
+
+      updateHighlight(step.target);
+
+      const nextBtn = overlay.querySelector(".onboarding-actions-main [data-action=\"next\"]");
+      if (nextBtn) nextBtn.textContent = "Next";
+    }
+
+    overlay.addEventListener("click", (e) => {
+      const t = e.target;
+      if (t.closest(".onboarding-panel")) return;
+      if (t.closest(".onboarding-backdrop")) {
+        markOnboardingComplete();
+        closeOnboarding();
+      }
+    });
+
+    overlay.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-action]");
+      if (!btn) return;
+      const act = btn.dataset.action;
+      if (act === "skip") {
+        markOnboardingComplete();
+        closeOnboarding();
+        return;
+      }
+      if (act === "next") {
+        stepIndex++;
+        if (stepIndex >= steps.length) {
+          markOnboardingComplete();
+          closeOnboarding();
+        } else renderStep();
+        return;
+      }
+      if (act === "finish") {
+        markOnboardingComplete();
+        closeOnboarding();
+        return;
+      }
+      if (act === "verify-sample") {
+        markOnboardingComplete();
+        closeOnboarding();
+        const txt = bibPaste.value.trim() || ONBOARDING_SAMPLE_BIB;
+        if (!bibPaste.value.trim()) bibPaste.value = ONBOARDING_SAMPLE_BIB;
+        switchToPasteTab();
+        startVerificationFromContent(txt, "Parsing pasted content...");
+      }
+    });
+
+    function onEsc(ev) {
+      if (ev.key !== "Escape" || !onboardingOverlayEl) return;
+      markOnboardingComplete();
+      closeOnboarding();
+    }
+    overlay._kbdEsc = onEsc;
+    document.addEventListener("keydown", onEsc);
+
+    renderStep();
+  }
+
+  $("#btn-start-tour")?.addEventListener("click", () => openOnboardingTour({ force: true }));
+  $("#footer-start-tour")?.addEventListener("click", () => openOnboardingTour({ force: true }));
+
+  if (shouldAutoShowOnboarding())
+    setTimeout(() => openOnboardingTour({ force: false }), 500);
 
   function esc(str) {
     const d = document.createElement("div");

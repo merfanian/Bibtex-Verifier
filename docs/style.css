@@ -1543,6 +1543,222 @@ code {
   padding-bottom: 2rem;
 }
 
+.footer-tour-link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.footer-tour-link:hover {
+  color: var(--accent-hover);
+}
+
+/* ─── Hero tour button ──────────────────────────────────────────── */
+.btn-tour {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.btn-tour:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.btn-tour svg {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+/* ─── First-visit onboarding tour ───────────────────────────────── */
+.onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 95000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  pointer-events: none;
+}
+
+.onboarding-overlay > * {
+  pointer-events: auto;
+}
+
+.onboarding-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 12, 18, 0.72);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+[data-theme="light"] .onboarding-backdrop {
+  background: rgba(240, 242, 247, 0.82);
+}
+
+.onboarding-panel.glass {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 440px;
+  padding: 1.25rem 1.35rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  box-shadow: var(--shadow-lg);
+}
+
+.onboarding-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.onboarding-step-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.onboarding-dots {
+  display: flex;
+  gap: 5px;
+}
+
+.onboarding-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--border);
+  transition: background 0.2s, transform 0.2s;
+}
+
+.onboarding-dot.active {
+  background: var(--accent);
+  transform: scale(1.15);
+}
+
+.onboarding-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 0.55rem;
+  line-height: 1.3;
+}
+
+.onboarding-body {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  line-height: 1.55;
+  margin-bottom: 1.1rem;
+}
+
+.onboarding-body strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.onboarding-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.onboarding-actions.hidden {
+  display: none;
+}
+
+.btn-onboarding {
+  padding: 0.45rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.btn-onboarding.primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.btn-onboarding.primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.btn-onboarding.secondary {
+  background: var(--surface-alt);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.btn-onboarding.secondary:hover {
+  border-color: var(--text-dim);
+}
+
+.btn-onboarding.ghost {
+  background: transparent;
+  color: var(--text-dim);
+  border-color: transparent;
+  margin-right: auto;
+  padding-left: 0;
+}
+
+.btn-onboarding.ghost:hover {
+  color: var(--text);
+}
+
+.onboarding-target {
+  position: relative !important;
+  z-index: 95100 !important;
+  outline: 3px solid var(--accent) !important;
+  outline-offset: 3px !important;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 24px rgba(91, 141, 239, 0.35);
+}
+
+@media (max-width: 640px) {
+  .onboarding-panel.glass {
+    padding: 1rem 1.1rem;
+  }
+
+  .onboarding-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .btn-onboarding.ghost {
+    margin-right: 0;
+    text-align: center;
+    padding-left: 1rem;
+  }
+}
+
 /* ─── Responsive ───────────────────────────────────────────────── */
 @media (max-width: 1200px) {
   .main-columns.two-col {
