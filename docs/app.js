@@ -172,11 +172,14 @@
     if (onboardingOverlayEl) {
       const fn = onboardingOverlayEl._kbdEsc;
       if (fn) document.removeEventListener("keydown", fn);
+      const bd = onboardingOverlayEl._onboardingBackdrop;
       onboardingOverlayEl.remove();
+      if (bd) bd.remove();
       onboardingOverlayEl = null;
     }
     document.body.removeAttribute("data-onboarding-stage");
     document.querySelectorAll(".onboarding-target").forEach(el => el.classList.remove("onboarding-target"));
+    $("#floating-bar")?.classList.remove("onboarding-target-bar");
   }
 
   let onboardingResumeAfterCurrentRun = false;
@@ -1393,7 +1396,7 @@
   // ─── First-visit onboarding tour ───────────────────────────────────
   const ONBOARDING_STORAGE = "bv-onboarding-dismissed";
   const ONBOARDING_VER_KEY = "bv-onboarding-version";
-  const ONBOARDING_VER = "2";
+  const ONBOARDING_VER = "3";
 
   const ONBOARDING_SAMPLE_BIB = `@article{tour_attention2017,
   title = {Attention Is All You Need},
@@ -1467,11 +1470,17 @@
     const isIntro = variant === "intro";
     const finalActionsDual = isIntro;
 
-    const overlay = document.createElement("div");
-    overlay.className = "onboarding-overlay";
-    overlay.setAttribute("role", "dialog");
-    overlay.setAttribute("aria-modal", "true");
-    overlay.setAttribute("aria-labelledby", "onboarding-title");
+    const backdrop = document.createElement("div");
+    backdrop.className = "onboarding-backdrop onboarding-backdrop-fixed";
+    backdrop.setAttribute("data-dismiss", "1");
+
+    const panelLayer = document.createElement("div");
+    panelLayer.className = "onboarding-panel-layer";
+    panelLayer.setAttribute("role", "dialog");
+    panelLayer.setAttribute("aria-modal", "true");
+    panelLayer.setAttribute("aria-labelledby", "onboarding-title");
+    panelLayer._onboardingBackdrop = backdrop;
+
     const finalBlock = finalActionsDual
       ? `<div class="onboarding-actions onboarding-actions-final hidden">
           <button type="button" class="btn-onboarding secondary" data-action="finish">Close tour</button>
@@ -1480,8 +1489,7 @@
       : `<div class="onboarding-actions onboarding-actions-final hidden">
           <button type="button" class="btn-onboarding primary" data-action="finish">Got it</button>
         </div>`;
-    overlay.innerHTML = `
-      <div class="onboarding-backdrop" data-dismiss="1"></div>
+    panelLayer.innerHTML = `
       <div class="onboarding-panel glass">
         <div class="onboarding-meta">
           <span class="onboarding-step-label"></span>
@@ -1495,23 +1503,30 @@
         </div>
         ${finalBlock}
       </div>`;
-    document.body.appendChild(overlay);
-    onboardingOverlayEl = overlay;
+    document.body.appendChild(backdrop);
+    document.body.appendChild(panelLayer);
+    onboardingOverlayEl = panelLayer;
 
-    const titleEl = overlay.querySelector(".onboarding-title");
-    const bodyEl = overlay.querySelector(".onboarding-body");
-    const stepLabel = overlay.querySelector(".onboarding-step-label");
-    const dotsWrap = overlay.querySelector(".onboarding-dots");
-    const actionsMain = overlay.querySelector(".onboarding-actions-main");
+    const titleEl = panelLayer.querySelector(".onboarding-title");
+    const bodyEl = panelLayer.querySelector(".onboarding-body");
+    const stepLabel = panelLayer.querySelector(".onboarding-step-label");
+    const dotsWrap = panelLayer.querySelector(".onboarding-dots");
+    const actionsMain = panelLayer.querySelector(".onboarding-actions-main");
 
     dotsWrap.innerHTML = steps.map((_, i) =>
       `<span class="onboarding-dot${i === 0 ? " active" : ""}" data-i="${i}"></span>`
     ).join("");
 
-    function updateHighlight(selector) {
+    function updateHighlight(selector, step = {}) {
       document.querySelectorAll(".onboarding-target").forEach(el => el.classList.remove("onboarding-target"));
+      floatingBar?.classList.remove("onboarding-target-bar");
+
+      panelLayer.classList.toggle("onboarding-panel-top", !!step.panelTop);
+
       if (!selector) return;
       const el = document.querySelector(selector);
+      if (floatingBar && el && floatingBar.contains(el))
+        floatingBar.classList.add("onboarding-target-bar");
       if (el) {
         el.classList.add("onboarding-target");
         el.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -1526,7 +1541,7 @@
       lastRenderedStepIndex = stepIndex;
 
       const step = steps[stepIndex];
-      overlay._currentStepOnLeave = step.onLeave || null;
+      panelLayer._currentStepOnLeave = step.onLeave || null;
 
       if (isIntro) {
         if (stepIndex <= 2) document.body.removeAttribute("data-onboarding-stage");
@@ -1546,24 +1561,20 @@
 
       const isFinal = !!step.final;
       actionsMain.classList.toggle("hidden", isFinal);
-      overlay.querySelector(".onboarding-actions-final").classList.toggle("hidden", !isFinal);
+      panelLayer.querySelector(".onboarding-actions-final").classList.toggle("hidden", !isFinal);
 
-      updateHighlight(step.target);
+      updateHighlight(step.target, step);
 
-      const nextBtn = overlay.querySelector(".onboarding-actions-main [data-action=\"next\"]");
+      const nextBtn = panelLayer.querySelector(".onboarding-actions-main [data-action=\"next\"]");
       if (nextBtn) nextBtn.textContent = "Next";
     }
 
-    overlay.addEventListener("click", (e) => {
-      const t = e.target;
-      if (t.closest(".onboarding-panel")) return;
-      if (t.closest(".onboarding-backdrop")) {
-        markOnboardingComplete();
-        closeOnboarding();
-      }
+    backdrop.addEventListener("click", () => {
+      markOnboardingComplete();
+      closeOnboarding();
     });
 
-    overlay.addEventListener("click", (e) => {
+    panelLayer.addEventListener("click", (e) => {
       const btn = e.target.closest("button[data-action]");
       if (!btn) return;
       const act = btn.dataset.action;
@@ -1600,7 +1611,7 @@
       markOnboardingComplete();
       closeOnboarding();
     }
-    overlay._kbdEsc = onEsc;
+    panelLayer._kbdEsc = onEsc;
     document.addEventListener("keydown", onEsc);
 
     renderStep();
@@ -1609,22 +1620,35 @@
   function openOnboardingPostVerifyTour() {
     const postSteps = [
       {
-        title: "First entry — metadata updated",
-        body: "The first row matched a real paper. The sample used a <strong>wrong journal</strong> on purpose — you’ll see suggested venue, DOI, and other fields from CrossRef / Semantic Scholar. Each row compares your original text to the suggestion; accept or revert field by field.",
-        target: ".entry-list .entry-card:nth-child(1)",
+        title: "Summary filters",
+        body: "These <strong>badges</strong> count results by status — verified, updated, needs review, not found. Click one to filter the list below.",
+        target: ".summary-bar",
+        panelTop: true,
       },
       {
-        title: "Second entry — not found",
-        body: "The second title is fabricated, so nothing credible matched online. It’s marked <strong>Not found</strong> — the usual outcome for bogus, mistaken, or hallucinated references.",
+        title: "First entry — metadata updated",
+        body: "This row matched a real paper. The sample used a <strong>wrong journal</strong> on purpose — suggested venue, DOI, and other fields come from CrossRef / Semantic Scholar. Each line compares your text to the suggestion; accept or revert per field.",
+        target: ".entry-list .entry-card:nth-child(1)",
+        panelTop: true,
+      },
+      {
+        title: "Fake entry — not found",
+        body: "This title is <strong>made up</strong>. Nothing credible matched online, so it’s labeled <strong>Not found</strong> — what you’d see for hallucinated or mistaken references.",
         target: ".entry-list .entry-card:nth-child(2)",
+        panelTop: true,
       },
       {
         title: "Settings",
-        body: "Click the <strong>gear</strong> to open settings — download options (for example removing not-found entries), author limits, and more. The panel opens here so you can explore; use <strong>Next</strong> when you’re ready to continue.",
+        body: "Use the <strong>gear</strong> in the bottom bar (above the dimmed area) to open settings: download options (for example removing not-found rows), author limits, and more. Try toggles here; press <strong>Next</strong> when you’re done exploring.",
         target: "#settings-toggle",
+        panelTop: true,
         onEnter: () => {
-          settingsPopover.classList.add("open");
-          settingsToggle.classList.add("active");
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              settingsPopover.classList.add("open");
+              settingsToggle.classList.add("active");
+            });
+          });
         },
         onLeave: () => {
           settingsPopover.classList.remove("open");
@@ -1632,14 +1656,10 @@
         },
       },
       {
-        title: "Summary & toolbar",
-        body: "Filter with the <strong>status badges</strong> above the list. The <strong>bottom bar</strong> keeps settings and download once verification has finished.",
-        target: ".summary-bar",
-      },
-      {
-        title: "You’re set",
-        body: "Explore the sample results or replace the paste area with your own BibTeX.",
+        title: "Bottom bar & download",
+        body: "The <strong>floating bar</strong> stays here for settings and <strong>download verified BibTeX</strong> when you’re ready. Replace the sample with your own bibliography anytime.",
         target: "#floating-bar",
+        panelTop: true,
         final: true,
       },
     ];
