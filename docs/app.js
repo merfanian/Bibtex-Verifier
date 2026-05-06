@@ -418,7 +418,12 @@
 
     let diffHTML = "";
     const hasDiffs = r.field_diffs?.length > 0;
-    const hasSuggestion = r.status === "updated" || r.status === "needs_review";
+    /* Show Suggested column whenever status implies adoptable API/enrichment diffs (includes
+       verified+enrichments-only from compareEntry, not only updated/needs_review). */
+    const hasSuggestion =
+      r.status === "updated" ||
+      r.status === "needs_review" ||
+      (r.status === "verified" && hasDiffs);
 
     if (hasDiffs) {
       const rows = r.field_diffs.map(d => {
@@ -1073,7 +1078,10 @@
       $$(".entry-card").forEach(card => {
         const idx = parseInt(card.dataset.index);
         const entry = parsedEntries[idx];
+        const res = results[idx];
         if (!entry || !entry.author) return;
+        /* No lookup match — don't inject truncation as if it were an API suggestion row */
+        if (res && res.status === "not_found") return;
 
         const existingRow = card.querySelector('.diff-row[data-field="author"]:not(.field-row-plain)');
         if (existingRow) return; // Already has an API diff row
@@ -1222,7 +1230,7 @@
         }
       }
 
-      if (s.maxAuthors > 0 && out.author) {
+      if (s.maxAuthors > 0 && out.author && r.status !== "not_found") {
         out.author = truncateAuthors(out.author, s.maxAuthors);
       }
 
