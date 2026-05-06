@@ -304,11 +304,11 @@ test("needs_review when titles differ significantly", () => {
   assert.strictEqual(result.status, "needs_review");
 });
 
-test("enrichments don't cause updated status", () => {
+test("enrichments mark entry as updated", () => {
   const orig = { title: "Test Paper", year: "2023" };
   const found = { title: "Test Paper", year: "2023", doi: "10.1234/test" };
   const result = lib.compareEntry(orig, found);
-  assert.strictEqual(result.status, "verified");
+  assert.strictEqual(result.status, "updated");
   assert.ok(result.field_diffs.some(d => d.field === "doi"), "should report doi enrichment");
 });
 

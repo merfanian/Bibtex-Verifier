@@ -283,7 +283,10 @@
     }
 
     const allDiffs = fieldDiffs.concat(enrichments);
-    const status = hasDifference ? "updated" : "verified";
+    // Any actionable suggestion (mismatch or enrichment) means the entry is
+    // auto-updated, not verified — "verified" is reserved for entries with
+    // nothing for the user to review.
+    const status = (hasDifference || enrichments.length) ? "updated" : "verified";
     const suggested = {};
     if (hasDifference || enrichments.length)
       for (const d of allDiffs) if (d.found) suggested[d.field] = d.found;
