@@ -87,10 +87,20 @@
   --teal-border: rgba(13, 148, 136, 0.2);
   --glass-bg: rgba(255, 255, 255, 0.82);
   --glass-border: rgba(59, 111, 224, 0.12);
-  --card-attention-review-bg: #fffbeb;
-  --card-attention-review-border: rgba(180, 130, 10, 0.22);
-  --card-attention-notfound-bg: #fef2f2;
-  --card-attention-notfound-border: rgba(185, 28, 28, 0.18);
+  --card-attention-review-bg: linear-gradient(
+    165deg,
+    rgba(251, 191, 36, 0.28) 0%,
+    rgba(254, 243, 199, 0.52) 38%,
+    var(--surface) 72%
+  );
+  --card-attention-review-border: rgba(202, 138, 4, 0.26);
+  --card-attention-notfound-bg: linear-gradient(
+    165deg,
+    rgba(248, 113, 113, 0.14) 0%,
+    rgba(254, 226, 226, 0.62) 38%,
+    var(--surface) 72%
+  );
+  --card-attention-notfound-border: rgba(220, 38, 38, 0.2);
   --shadow: 0 2px 12px rgba(0,0,0,0.06);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.1);
   color-scheme: light;
