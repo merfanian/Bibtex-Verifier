@@ -1031,11 +1031,11 @@
       c[r.status] = (c[r.status] || 0) + 1;
       if (r.duplicate_of) dupes++;
     });
-    $(".badge-verified").textContent = `Verified: ${c.verified}`;
-    $(".badge-updated").textContent = `Auto-Updated: ${c.updated}`;
-    $(".badge-review").textContent = `Needs Review: ${c.needs_review}`;
-    $(".badge-notfound").textContent = `Not Found: ${c.not_found}`;
-    $(".badge-duplicates").textContent = `Duplicates: ${dupes}`;
+    $(".badge-verified .summary-count").textContent = c.verified;
+    $(".badge-updated .summary-count").textContent = c.updated;
+    $(".badge-review .summary-count").textContent = c.needs_review;
+    $(".badge-notfound .summary-count").textContent = c.not_found;
+    $(".badge-duplicates .summary-count").textContent = dupes;
     $$(".summary-badge").forEach(b => b.classList.add("active"));
   }
 
@@ -1218,11 +1218,11 @@
       c[status] = (c[status] || 0) + 1;
       if (card.dataset.duplicate === "true") dupes++;
     });
-    $(".badge-verified").textContent = `Verified: ${c.verified}`;
-    $(".badge-updated").textContent = `Auto-Updated: ${c.updated}`;
-    $(".badge-review").textContent = `Needs Review: ${c.needs_review}`;
-    $(".badge-notfound").textContent = `Not Found: ${c.not_found}`;
-    $(".badge-duplicates").textContent = `Duplicates: ${dupes}`;
+    $(".badge-verified .summary-count").textContent = c.verified;
+    $(".badge-updated .summary-count").textContent = c.updated;
+    $(".badge-review .summary-count").textContent = c.needs_review;
+    $(".badge-notfound .summary-count").textContent = c.not_found;
+    $(".badge-duplicates .summary-count").textContent = dupes;
   }
 
   // ─── Live preview ────────────────────────────────────────────────

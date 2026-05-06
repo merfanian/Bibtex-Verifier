@@ -97,21 +97,41 @@
       <button class="btn-verify-paste" id="btn-verify-paste">Verify pasted BibTeX</button>
     </div>
 
-    <div class="main-columns" id="main-columns">
-      <div class="col-entries">
-        <div class="results-section">
-          <div class="summary-bar">
-            <span class="summary-badge badge-verified active" data-filter="verified">Verified: 0</span>
-            <span class="summary-badge badge-updated active" data-filter="updated">Auto-Updated: 0</span>
-            <span class="summary-badge badge-review active" data-filter="needs_review">Needs Review: 0</span>
-            <span class="summary-badge badge-notfound active" data-filter="not_found">Not Found: 0</span>
-            <span class="summary-badge badge-duplicates active" data-filter="duplicate">Duplicates: 0</span>
-          </div>
-          <div class="entry-list"></div>
-        </div>
+    <div class="results-section">
+      <div class="summary-bar">
+        <button type="button" class="summary-badge badge-verified active" data-filter="verified">
+          <span class="summary-dot"></span>
+          <span class="summary-label">Verified</span>
+          <span class="summary-count">0</span>
+        </button>
+        <button type="button" class="summary-badge badge-updated active" data-filter="updated">
+          <span class="summary-dot"></span>
+          <span class="summary-label">Auto-Updated</span>
+          <span class="summary-count">0</span>
+        </button>
+        <button type="button" class="summary-badge badge-review active" data-filter="needs_review">
+          <span class="summary-dot"></span>
+          <span class="summary-label">Needs Review</span>
+          <span class="summary-count">0</span>
+        </button>
+        <button type="button" class="summary-badge badge-notfound active" data-filter="not_found">
+          <span class="summary-dot"></span>
+          <span class="summary-label">Not Found</span>
+          <span class="summary-count">0</span>
+        </button>
+        <button type="button" class="summary-badge badge-duplicates active" data-filter="duplicate">
+          <span class="summary-dot"></span>
+          <span class="summary-label">Duplicates</span>
+          <span class="summary-count">0</span>
+        </button>
       </div>
 
-      <div class="col-preview" id="col-preview">
+      <div class="main-columns" id="main-columns">
+        <div class="col-entries">
+          <div class="entry-list"></div>
+        </div>
+
+        <div class="col-preview" id="col-preview">
         <div class="preview-panel" id="preview-panel">
           <div class="preview-header">
             <h3>
@@ -138,6 +158,7 @@
           </div>
         </div>
       </div>
+    </div>
     </div>
 
     <section class="how-it-works info-section" id="how-it-works">
