@@ -112,13 +112,17 @@
       </div>
 
       <div class="col-preview" id="col-preview">
-        <div class="preview-panel">
+        <div class="preview-panel" id="preview-panel">
           <div class="preview-header">
             <h3>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
               Live BibTeX Preview
             </h3>
             <div class="preview-actions">
+              <button type="button" class="btn-preview-toggle" id="btn-preview-toggle" aria-expanded="true" aria-controls="preview-body" title="Collapse Live BibTeX preview">
+                <svg class="btn-preview-toggle-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                <span class="btn-preview-toggle-text">Hide</span>
+              </button>
               <button class="btn-copy" id="btn-copy-preview" title="Copy to clipboard">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                 Copy
@@ -128,7 +132,7 @@
               </button>
             </div>
           </div>
-          <div class="preview-body">
+          <div class="preview-body" id="preview-body">
             <div class="preview-placeholder">Results will appear here as entries are verified...</div>
             <code class="preview-code" id="preview-code" style="display:none"></code>
           </div>

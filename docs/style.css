@@ -36,21 +36,30 @@
   --teal-border: rgba(45, 212, 191, 0.22);
   --glass-bg: rgba(21, 26, 35, 0.78);
   --glass-border: rgba(91, 141, 239, 0.12);
+  /* Preview header: subtle strip aligned with status-filter semantics */
+  --preview-header-accent-strip: linear-gradient(
+    105deg,
+    rgba(91, 141, 239, 0.045) 0%,
+    rgba(52, 211, 153, 0.038) 22%,
+    rgba(251, 191, 36, 0.035) 44%,
+    rgba(248, 113, 113, 0.04) 66%,
+    rgba(167, 139, 250, 0.045) 100%
+  );
   /* Entry cards needing scan — caution (needs review) vs danger-adjacent (not found) */
   --card-attention-review-bg: linear-gradient(
     165deg,
-    rgba(234, 179, 8, 0.16) 0%,
-    rgba(180, 130, 10, 0.065) 38%,
-    var(--surface) 72%
+    rgba(234, 179, 8, 0.075) 0%,
+    rgba(234, 179, 8, 0.015) 14%,
+    var(--surface) 28%
   );
-  --card-attention-review-border: rgba(234, 179, 8, 0.34);
+  --card-attention-review-border: rgba(234, 179, 8, 0.26);
   --card-attention-notfound-bg: linear-gradient(
     165deg,
-    rgba(239, 68, 68, 0.12) 0%,
-    rgba(185, 28, 28, 0.055) 38%,
-    var(--surface) 72%
+    rgba(239, 68, 68, 0.058) 0%,
+    rgba(239, 68, 68, 0.015) 14%,
+    var(--surface) 28%
   );
-  --card-attention-notfound-border: rgba(239, 68, 68, 0.3);
+  --card-attention-notfound-border: rgba(239, 68, 68, 0.26);
   --radius: 10px;
   --radius-sm: 6px;
   --shadow: 0 2px 12px rgba(0,0,0,0.3);
@@ -87,20 +96,28 @@
   --teal-border: rgba(13, 148, 136, 0.2);
   --glass-bg: rgba(255, 255, 255, 0.82);
   --glass-border: rgba(59, 111, 224, 0.12);
+  --preview-header-accent-strip: linear-gradient(
+    105deg,
+    rgba(59, 111, 224, 0.06) 0%,
+    rgba(22, 163, 74, 0.05) 22%,
+    rgba(202, 138, 4, 0.045) 44%,
+    rgba(220, 38, 38, 0.05) 66%,
+    rgba(124, 58, 237, 0.055) 100%
+  );
   --card-attention-review-bg: linear-gradient(
     165deg,
-    rgba(251, 191, 36, 0.28) 0%,
-    rgba(254, 243, 199, 0.52) 38%,
-    var(--surface) 72%
+    rgba(251, 191, 36, 0.11) 0%,
+    rgba(251, 191, 36, 0.02) 14%,
+    var(--surface) 28%
   );
-  --card-attention-review-border: rgba(202, 138, 4, 0.26);
+  --card-attention-review-border: rgba(202, 138, 4, 0.22);
   --card-attention-notfound-bg: linear-gradient(
     165deg,
-    rgba(248, 113, 113, 0.14) 0%,
-    rgba(254, 226, 226, 0.62) 38%,
-    var(--surface) 72%
+    rgba(248, 113, 113, 0.065) 0%,
+    rgba(248, 113, 113, 0.018) 14%,
+    var(--surface) 28%
   );
-  --card-attention-notfound-border: rgba(220, 38, 38, 0.2);
+  --card-attention-notfound-border: rgba(220, 38, 38, 0.17);
   --shadow: 0 2px 12px rgba(0,0,0,0.06);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.1);
   color-scheme: light;
@@ -544,13 +561,13 @@ code {
 .entry-card.status-needs_review {
   background: var(--card-attention-review-bg);
   border-color: var(--card-attention-review-border);
-  box-shadow: inset 0 1px 0 rgba(234, 179, 8, 0.12);
+  box-shadow: inset 0 1px 0 rgba(234, 179, 8, 0.06);
 }
 
 .entry-card.status-not_found {
   background: var(--card-attention-notfound-bg);
   border-color: var(--card-attention-notfound-border);
-  box-shadow: inset 0 1px 0 rgba(239, 68, 68, 0.1);
+  box-shadow: inset 0 1px 0 rgba(239, 68, 68, 0.045);
 }
 
 [data-theme="light"] .entry-card.status-needs_review {
@@ -1118,7 +1135,7 @@ code {
   justify-content: space-between;
   padding: 0.65rem 1rem;
   border-bottom: 1px solid var(--border);
-  background: var(--surface-alt);
+  background: var(--preview-header-accent-strip), var(--surface-alt);
   flex-shrink: 0;
 }
 
@@ -1137,6 +1154,51 @@ code {
   display: flex;
   align-items: center;
   gap: 0.35rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.btn-preview-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.55rem;
+  min-height: 32px;
+  border: 1px solid rgba(91, 141, 239, 0.35);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--accent);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+[data-theme="light"] .btn-preview-toggle {
+  border-color: rgba(59, 111, 224, 0.28);
+}
+
+.btn-preview-toggle:hover {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.btn-preview-toggle-icon {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.preview-panel.is-collapsed .btn-preview-toggle-icon {
+  transform: rotate(180deg);
+}
+
+.preview-panel.is-collapsed .preview-body {
+  display: none !important;
+}
+
+.preview-panel.is-collapsed {
+  max-height: none;
 }
 
 .btn-copy {

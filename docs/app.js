@@ -196,8 +196,27 @@
   const btnDownload = $("#btn-download");
   const mainColumns = $("#main-columns");
   const colPreview = $("#col-preview");
+  const previewPanelEl = $("#preview-panel");
+  const btnPreviewToggle = $("#btn-preview-toggle");
   const previewCode = $("#preview-code");
   const previewPlaceholder = $(".preview-placeholder");
+
+  function syncPreviewPanelCollapsed() {
+    if (!previewPanelEl || !btnPreviewToggle) return;
+    const collapsed = sessionStorage.getItem("bv-preview-collapsed") === "1";
+    previewPanelEl.classList.toggle("is-collapsed", collapsed);
+    btnPreviewToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    btnPreviewToggle.title = collapsed ? "Expand Live BibTeX preview" : "Collapse Live BibTeX preview";
+    const lbl = btnPreviewToggle.querySelector(".btn-preview-toggle-text");
+    if (lbl) lbl.textContent = collapsed ? "Show" : "Hide";
+  }
+
+  btnPreviewToggle?.addEventListener("click", () => {
+    const willCollapse = !previewPanelEl.classList.contains("is-collapsed");
+    sessionStorage.setItem("bv-preview-collapsed", willCollapse ? "1" : "0");
+    syncPreviewPanelCollapsed();
+  });
+  syncPreviewPanelCollapsed();
 
   // ─── Tab switching ─────────────────────────────────────────────────
   const inputTabs = $$(".input-tab");
