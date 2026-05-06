@@ -36,15 +36,6 @@
   --teal-border: rgba(45, 212, 191, 0.22);
   --glass-bg: rgba(21, 26, 35, 0.78);
   --glass-border: rgba(91, 141, 239, 0.12);
-  /* Preview header: filter colors — verified → auto-updated → needs review → not found → duplicates */
-  --preview-header-accent-strip: linear-gradient(
-    105deg,
-    rgba(91, 141, 239, 0.26) 0%,
-    rgba(52, 211, 153, 0.22) 22%,
-    rgba(251, 191, 36, 0.14) 44%,
-    rgba(248, 113, 113, 0.15) 66%,
-    rgba(167, 139, 250, 0.24) 100%
-  );
   /* Entry cards needing scan — caution (needs review) vs danger-adjacent (not found) */
   --card-attention-review-bg: linear-gradient(
     165deg,
@@ -117,14 +108,6 @@
   --teal-border: rgba(13, 148, 136, 0.2);
   --glass-bg: rgba(255, 255, 255, 0.82);
   --glass-border: rgba(59, 111, 224, 0.12);
-  --preview-header-accent-strip: linear-gradient(
-    105deg,
-    rgba(59, 111, 224, 0.2) 0%,
-    rgba(22, 163, 74, 0.17) 22%,
-    rgba(202, 138, 4, 0.12) 44%,
-    rgba(220, 38, 38, 0.11) 66%,
-    rgba(124, 58, 237, 0.18) 100%
-  );
   --card-attention-review-bg: linear-gradient(
     165deg,
     rgba(251, 191, 36, 0.11) 0%,
@@ -1248,7 +1231,7 @@ code {
   justify-content: space-between;
   padding: 0.65rem 1rem;
   border-bottom: 1px solid var(--border);
-  background: var(--preview-header-accent-strip), var(--surface-alt);
+  background: var(--surface-alt);
   flex-shrink: 0;
 }
 
