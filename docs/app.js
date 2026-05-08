@@ -360,7 +360,15 @@
 
       const cleanTitle = B.stripLatex(title);
       let found = null;
-      try { found = await lookupPaper(cleanTitle); } catch (err) { console.warn("Lookup failed:", err); }
+      // Tour shortcut: the fabricated sample entry has a unique marker. Skip the
+      // real network lookup so the onboarding flow doesn't stall on a guaranteed
+      // miss; pause briefly so the "not found" status still feels deliberate.
+      const isTourFakeEntry = /QZX999/i.test(cleanTitle);
+      if (isTourFakeEntry) {
+        await sleep(500);
+      } else {
+        try { found = await lookupPaper(cleanTitle); } catch (err) { console.warn("Lookup failed:", err); }
+      }
 
       if (!found) {
         const r = buildResult(entry, i, "not_found", 0, [], {}, null);
