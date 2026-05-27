@@ -124,11 +124,24 @@
           <span class="summary-label">Duplicates</span>
           <span class="summary-count">0</span>
         </button>
+        <div class="entry-search" role="search">
+          <svg class="entry-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="search" id="entry-search-input" class="entry-search-input" placeholder="Search title or key…" aria-label="Search entries by title or BibTeX key" autocomplete="off" spellcheck="false" />
+          <button type="button" class="entry-search-clear" id="entry-search-clear" title="Clear search (Esc)" aria-label="Clear search">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+          <kbd class="entry-search-kbd" aria-hidden="true">/</kbd>
+        </div>
       </div>
 
       <div class="main-columns" id="main-columns">
         <div class="col-entries">
           <div class="entry-list"></div>
+          <div class="entry-empty" id="entry-empty" hidden>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <p class="entry-empty-title">No entries match</p>
+            <p class="entry-empty-hint">Try a different word or clear the search.</p>
+          </div>
         </div>
 
         <div class="col-preview" id="col-preview">

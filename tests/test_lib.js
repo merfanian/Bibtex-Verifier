@@ -536,6 +536,48 @@ test("COMPARED_FIELDS contains expected fields", () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
+console.log("\n── entryMatchesQuery ──");
+
+test("empty / whitespace query matches everything", () => {
+  const e = { title: "Foo", ID: "bar" };
+  assert.strictEqual(lib.entryMatchesQuery(e, ""), true);
+  assert.strictEqual(lib.entryMatchesQuery(e, "   "), true);
+  assert.strictEqual(lib.entryMatchesQuery(e, null), true);
+});
+
+test("case-insensitive substring match on title and key", () => {
+  const e = { title: "Attention Is All You Need", ID: "vaswani2017attention" };
+  assert.strictEqual(lib.entryMatchesQuery(e, "attention"), true);
+  assert.strictEqual(lib.entryMatchesQuery(e, "VASWANI"), true);
+  assert.strictEqual(lib.entryMatchesQuery(e, "transformer"), false);
+});
+
+test("AND-of-tokens: every token must match somewhere", () => {
+  const e = { title: "Attention Is All You Need", ID: "vaswani2017attention" };
+  assert.strictEqual(lib.entryMatchesQuery(e, "attention vaswani"), true);
+  assert.strictEqual(lib.entryMatchesQuery(e, "attention nope"), false);
+});
+
+test("field-qualified tokens scope the match", () => {
+  const e = { title: "Compositional Generation", ID: "liu2022work" };
+  assert.strictEqual(lib.entryMatchesQuery(e, "title:compositional"), true);
+  assert.strictEqual(lib.entryMatchesQuery(e, "title:liu"), false);
+  assert.strictEqual(lib.entryMatchesQuery(e, "id:liu2022"), true);
+  assert.strictEqual(lib.entryMatchesQuery(e, "key:liu2022"), true);
+  assert.strictEqual(lib.entryMatchesQuery(e, "id:compositional"), false);
+});
+
+test("uses entry_id (result shape) when ID is absent", () => {
+  const r = { title: "Foo", entry_id: "smith2020foo" };
+  assert.strictEqual(lib.entryMatchesQuery(r, "smith"), true);
+});
+
+test("strips LaTeX from title before matching", () => {
+  const e = { title: "{Caf\\'e} Studies", ID: "x" };
+  assert.strictEqual(lib.entryMatchesQuery(e, "café"), true);
+});
+
+// ═══════════════════════════════════════════════════════════════════════
 console.log("\n══════════════════════════════════");
 console.log(`Results: ${passed} passed, ${failed} failed`);
 console.log("══════════════════════════════════\n");

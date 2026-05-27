@@ -158,6 +158,7 @@
   let decisions = {};
   let fieldEdits = {};
   let activeFilter = "all";
+  let activeSearch = "";
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => document.querySelectorAll(sel);
@@ -291,7 +292,12 @@
     decisions = {};
     fieldEdits = {};
     activeFilter = "all";
+    activeSearch = "";
+    const searchInputEl = document.getElementById("entry-search-input");
+    if (searchInputEl) searchInputEl.value = "";
+    document.querySelector(".entry-search")?.classList.remove("has-query");
     entryList.innerHTML = "";
+    document.getElementById("entry-empty")?.classList.remove("visible");
     rateState.ssDelay = 500;
     rateState.crDelay = 100;
     rateState.ssConsecutiveOk = 0;
@@ -423,6 +429,48 @@
   // ─── Rendering ────────────────────────────────────────────────────
   function statusLabel(s) {
     return { verified: "Verified", updated: "Auto-Updated", needs_review: "Needs Review", not_found: "Not Found" }[s] || s;
+  }
+
+  function cardMatchesFilter(card) {
+    if (activeFilter === "all") return true;
+    if (activeFilter === "duplicate") return card.dataset.duplicate === "true";
+    return card.dataset.status === activeFilter;
+  }
+
+  function cardMatchesSearch(card) {
+    if (!activeSearch) return true;
+    const hay = card.dataset.searchHay || "";
+    const tokens = activeSearch.split(/\s+/).filter(Boolean);
+    return tokens.every(tok => {
+      if (tok.startsWith("title:")) {
+        const sub = tok.slice(6);
+        return hay.includes(sub);
+      }
+      if (tok.startsWith("id:") || tok.startsWith("key:")) {
+        const sub = tok.slice(tok.indexOf(":") + 1);
+        return hay.split(" ", 1)[0].includes(sub);
+      }
+      return hay.includes(tok);
+    });
+  }
+
+  function applyCardVisibility(card) {
+    const visible = cardMatchesFilter(card) && cardMatchesSearch(card);
+    card.classList.toggle("hidden", !visible);
+  }
+
+  function updateEntryEmptyState() {
+    const empty = $("#entry-empty");
+    if (!empty) return;
+    const cards = $$(".entry-card");
+    if (!cards.length) { empty.classList.remove("visible"); return; }
+    const anyVisible = [...cards].some(c => !c.classList.contains("hidden"));
+    empty.classList.toggle("visible", !anyVisible);
+  }
+
+  function applyAllCardVisibility() {
+    $$(".entry-card").forEach(applyCardVisibility);
+    updateEntryEmptyState();
   }
 
   function renderEntryCard(r) {
@@ -624,15 +672,12 @@
       </div>
     </div>${duplicateHTML}${reviewHintHTML}${notFoundHintHTML}${diffHTML}${actionsHTML}${searchLinks}`;
 
-    if (activeFilter !== "all") {
-      if (activeFilter === "duplicate") {
-        if (!r.duplicate_of) card.classList.add("hidden");
-      } else if (card.dataset.status !== activeFilter) {
-        card.classList.add("hidden");
-      }
-    }
+    // Cache normalized search haystack so search filtering stays cheap.
+    card.dataset.searchHay = `${(r.entry_id || "").toLowerCase()} ${B.stripLatex(r.title || "").toLowerCase()}`;
 
+    applyCardVisibility(card);
     entryList.appendChild(card);
+    updateEntryEmptyState();
   }
 
   // ─── Fields table toggle ─────────────────────────────────────────
@@ -1375,14 +1420,45 @@
     activeFilter = activeFilter === filter ? "all" : filter;
     $$(".summary-badge").forEach(b =>
       b.classList.toggle("active", activeFilter === "all" || b.dataset.filter === activeFilter));
-    $$(".entry-card").forEach(card => {
-      if (activeFilter === "all") { card.classList.remove("hidden"); return; }
-      if (activeFilter === "duplicate") {
-        card.classList.toggle("hidden", card.dataset.duplicate !== "true");
-      } else {
-        card.classList.toggle("hidden", card.dataset.status !== activeFilter);
-      }
-    });
+    applyAllCardVisibility();
+  });
+
+  // ─── Entry search ────────────────────────────────────────────────
+  const entrySearchWrap = $(".entry-search");
+  const entrySearchInput = $("#entry-search-input");
+  const entrySearchClear = $("#entry-search-clear");
+
+  function setSearch(value) {
+    activeSearch = (value || "").trim().toLowerCase();
+    entrySearchWrap?.classList.toggle("has-query", !!activeSearch);
+    applyAllCardVisibility();
+  }
+
+  entrySearchInput?.addEventListener("input", (e) => setSearch(e.target.value));
+  entrySearchInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      entrySearchInput.value = "";
+      setSearch("");
+      entrySearchInput.blur();
+    }
+  });
+  entrySearchClear?.addEventListener("click", () => {
+    if (!entrySearchInput) return;
+    entrySearchInput.value = "";
+    setSearch("");
+    entrySearchInput.focus();
+  });
+
+  // Global "/" hotkey to focus search, unless the user is already typing somewhere.
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey) return;
+    const t = e.target;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+    if (!entrySearchInput || entrySearchInput.offsetParent === null) return;
+    e.preventDefault();
+    entrySearchInput.focus();
+    entrySearchInput.select();
   });
 
   // ─── Settings popover ────────────────────────────────────────────
