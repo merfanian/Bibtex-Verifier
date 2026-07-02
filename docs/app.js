@@ -8,44 +8,32 @@
   const SS_MATCH = "https://api.semanticscholar.org/graph/v1/paper/search/match";
   const SS_SEARCH = "https://api.semanticscholar.org/graph/v1/paper/search";
   const SS_FIELDS = "title,authors,year,venue,publicationVenue,externalIds";
+  const OPENALEX_API = "https://api.openalex.org/works";
+  const OPENALEX_FIELDS = "title,display_name,publication_year,doi,authorships,primary_location,biblio,id";
   const MAX_RETRIES = 4;
   const RETRY_BASE_MS = 1500;
 
   // ─── Adaptive rate controller ──────────────────────────────────────
-  const rateState = {
-    ssDelay: 500,
-    crDelay: 100,
-    ssMin: 300,   ssMax: 3000,
-    crMin: 50,    crMax: 2000,
-    lastSSTime: 0,
-    lastCRTime: 0,
-    ssConsecutiveOk: 0,
-    crConsecutiveOk: 0,
+  // One independent bucket per source: current delay, its clamps, the last
+  // request time, and a run of consecutive successes used to speed back up.
+  const rateBuckets = {
+    ss: { delay: 500, min: 300, max: 3000, last: 0, ok: 0 },
+    cr: { delay: 100, min: 50,  max: 2000, last: 0, ok: 0 },
+    oa: { delay: 100, min: 50,  max: 2000, last: 0, ok: 0 },
   };
 
   function rateBackoff(source) {
-    if (source === "ss") {
-      rateState.ssDelay = Math.min(rateState.ssDelay * 1.3, rateState.ssMax);
-      rateState.ssConsecutiveOk = 0;
-    } else {
-      rateState.crDelay = Math.min(rateState.crDelay * 1.3, rateState.crMax);
-      rateState.crConsecutiveOk = 0;
-    }
+    const b = rateBuckets[source] || rateBuckets.cr;
+    b.delay = Math.min(b.delay * 1.3, b.max);
+    b.ok = 0;
   }
 
   function rateSuccess(source) {
-    if (source === "ss") {
-      rateState.ssConsecutiveOk++;
-      if (rateState.ssConsecutiveOk >= 2) {
-        rateState.ssDelay = Math.max(rateState.ssDelay * 0.85, rateState.ssMin);
-        rateState.ssConsecutiveOk = 0;
-      }
-    } else {
-      rateState.crConsecutiveOk++;
-      if (rateState.crConsecutiveOk >= 2) {
-        rateState.crDelay = Math.max(rateState.crDelay * 0.85, rateState.crMin);
-        rateState.crConsecutiveOk = 0;
-      }
+    const b = rateBuckets[source] || rateBuckets.cr;
+    b.ok++;
+    if (b.ok >= 2) {
+      b.delay = Math.max(b.delay * 0.85, b.min);
+      b.ok = 0;
     }
   }
 
@@ -56,13 +44,13 @@
     const u = new URL(url);
     for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
 
-    const isSS = url.includes("semanticscholar.org");
-    const source = isSS ? "ss" : "cr";
-    const delay = isSS ? rateState.ssDelay : rateState.crDelay;
-    const lastKey = isSS ? "lastSSTime" : "lastCRTime";
-    const elapsed = Date.now() - rateState[lastKey];
-    if (elapsed < delay) await sleep(delay - elapsed);
-    rateState[lastKey] = Date.now();
+    const source = url.includes("semanticscholar.org") ? "ss"
+      : url.includes("openalex.org") ? "oa"
+      : "cr";
+    const bucket = rateBuckets[source];
+    const elapsed = Date.now() - bucket.last;
+    if (elapsed < bucket.delay) await sleep(bucket.delay - elapsed);
+    bucket.last = Date.now();
 
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
@@ -117,6 +105,15 @@
     return (data?.message?.items || []).map(B.crossrefToStandard);
   }
 
+  async function searchOpenAlex(title) {
+    // Title-only query keeps the "only titles leave your machine" guarantee —
+    // no `mailto`, so nothing personally identifying is sent.
+    const data = await fetchJSON(OPENALEX_API, {
+      search: title, per_page: "5", select: OPENALEX_FIELDS,
+    });
+    return (data?.results || []).map(B.openAlexToStandard);
+  }
+
   async function lookupPaper(title) {
     const ssMatch = await searchSSMatch(title);
     if (ssMatch && B.titleSimilarity(title, ssMatch.title || "") >= B.MIN_TITLE_SIM) {
@@ -130,6 +127,10 @@
     const crCandidates = await searchCrossref(title);
     const crMatch = B.bestMatch(crCandidates, title);
     if (crMatch) return crMatch;
+
+    const oaCandidates = await searchOpenAlex(title);
+    const oaMatch = B.bestMatch(oaCandidates, title);
+    if (oaMatch) return oaMatch;
 
     const ssCandidates = await searchSSSearch(title);
     return B.bestMatch(ssCandidates, title);
@@ -298,10 +299,9 @@
     document.querySelector(".entry-search")?.classList.remove("has-query");
     entryList.innerHTML = "";
     document.getElementById("entry-empty")?.classList.remove("visible");
-    rateState.ssDelay = 500;
-    rateState.crDelay = 100;
-    rateState.ssConsecutiveOk = 0;
-    rateState.crConsecutiveOk = 0;
+    rateBuckets.ss.delay = 500; rateBuckets.ss.ok = 0;
+    rateBuckets.cr.delay = 100; rateBuckets.cr.ok = 0;
+    rateBuckets.oa.delay = 100; rateBuckets.oa.ok = 0;
     $$(".info-section").forEach(s => s.style.display = "none");
     resultsSection.style.display = "none";
 
