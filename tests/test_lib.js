@@ -445,6 +445,43 @@ test("prefers publicationVenue.name over venue string", () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
+console.log("\n── openAlexToStandard ──");
+
+test("converts OpenAlex response to standard format", () => {
+  const work = {
+    title: "Attention Is All You Need",
+    publication_year: 2017,
+    doi: "https://doi.org/10.5555/3295222.3295349",
+    authorships: [
+      { author: { display_name: "Ashish Vaswani" } },
+      { author: { display_name: "Noam Shazeer" } },
+    ],
+    primary_location: { source: { display_name: "NeurIPS", host_organization_name: "MIT Press" } },
+    biblio: { volume: "30", issue: "1", first_page: "5998", last_page: "6008" },
+  };
+  const result = lib.openAlexToStandard(work);
+  assert.strictEqual(result.title, "Attention Is All You Need");
+  assert.strictEqual(result.author, "Vaswani, Ashish and Shazeer, Noam");
+  assert.strictEqual(result.year, "2017");
+  assert.strictEqual(result.journal, "NeurIPS");
+  assert.strictEqual(result.volume, "30");
+  assert.strictEqual(result.number, "1");
+  assert.strictEqual(result.pages, "5998-6008");
+  assert.strictEqual(result.doi, "10.5555/3295222.3295349", "DOI URL prefix should be stripped");
+  assert.strictEqual(result.publisher, "MIT Press");
+  assert.strictEqual(result._source, "openalex");
+});
+
+test("falls back to display_name and handles missing fields", () => {
+  const result = lib.openAlexToStandard({ display_name: "A Title", id: "https://openalex.org/W1" });
+  assert.strictEqual(result.title, "A Title");
+  assert.strictEqual(result.author, "");
+  assert.strictEqual(result.year, "");
+  assert.strictEqual(result.doi, "");
+  assert.strictEqual(result.url, "https://openalex.org/W1");
+});
+
+// ═══════════════════════════════════════════════════════════════════════
 console.log("\n── extractLastNames ──");
 
 test("extracts from 'Last, First and Last, First' format", () => {

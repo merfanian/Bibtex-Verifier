@@ -412,6 +412,37 @@
     };
   }
 
+  function openAlexToStandard(work) {
+    const authors = (work.authorships || []).map(a => {
+      const name = (a.author && a.author.display_name) || "";
+      const parts = name.split(/\s+/);
+      if (parts.length >= 2) return `${parts[parts.length - 1]}, ${parts.slice(0, -1).join(" ")}`;
+      return name;
+    }).filter(Boolean);
+
+    const source = (work.primary_location && work.primary_location.source) || {};
+    const biblio = work.biblio || {};
+    const first = biblio.first_page || "";
+    const last = biblio.last_page || "";
+    const pages = first && last ? `${first}-${last}` : (first || last || "");
+    // OpenAlex reports DOIs as full URLs (https://doi.org/10.x); store the bare DOI.
+    const doi = (work.doi || "").replace(/^https?:\/\/(dx\.)?doi\.org\//i, "");
+
+    return {
+      title: work.title || work.display_name || "",
+      author: authors.join(" and "),
+      year: (work.publication_year || "").toString(),
+      journal: source.display_name || "",
+      volume: biblio.volume || "",
+      number: biblio.issue || "",
+      pages,
+      doi,
+      publisher: source.host_organization_name || "",
+      url: doi ? `https://doi.org/${doi}` : (work.id || ""),
+      _source: "openalex",
+    };
+  }
+
   // ─── Paper matching helpers ──────────────────────────────────────────
   function extractLastNames(authorStr) {
     if (!authorStr) return new Set();
@@ -555,6 +586,7 @@
   exports.fieldDiffsForNeedsReview = fieldDiffsForNeedsReview;
   exports.crossrefToStandard = crossrefToStandard;
   exports.ssToStandard = ssToStandard;
+  exports.openAlexToStandard = openAlexToStandard;
   exports.extractLastNames = extractLastNames;
   exports.isSamePaper = isSamePaper;
   exports.mergeMetadata = mergeMetadata;
