@@ -1,4 +1,12 @@
 const assert = require("assert");
+// Load the same fuzzy-matching library the browser pulls from unpkg so the
+// tests exercise the real `token_sort_ratio`, not lib.js's crude fallback.
+// lib.js reads `fuzzball` as a global at call time, so expose it here.
+try {
+  global.fuzzball = require("fuzzball");
+} catch {
+  console.warn("⚠ fuzzball not installed — run `npm install`; tests fall back to the approximate matcher.");
+}
 const lib = require("../docs/lib.js");
 
 let passed = 0;

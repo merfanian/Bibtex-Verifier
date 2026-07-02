@@ -1,0 +1,13 @@
+{
+  "name": "bibtex-verifier",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Verify BibTeX entries against CrossRef and Semantic Scholar, entirely in the browser.",
+  "license": "MIT",
+  "scripts": {
+    "test": "node tests/test_lib.js"
+  },
+  "devDependencies": {
+    "fuzzball": "2.2.3"
+  }
+}
