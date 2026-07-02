@@ -103,7 +103,7 @@ Open the URL shown (often `http://localhost:3000`).
 
 ## Contributing
 
-Issues and PRs welcome — extra APIs (OpenAlex, …), BibLaTeX edge cases, UX polish, etc.
+Issues and PRs welcome — extra APIs, BibLaTeX edge cases, UX polish, etc. See [CONTRIBUTING.md](CONTRIBUTING.md) for the project layout, how to run tests (`npm test`), and the fork-and-PR flow.
 
 ---
 
