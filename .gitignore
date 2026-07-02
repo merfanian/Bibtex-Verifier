@@ -9,3 +9,4 @@ venv/
 *.bib
 !test_refs.bib
 .cursor/
+node_modules/
