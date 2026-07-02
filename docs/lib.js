@@ -156,16 +156,31 @@
 
   function parseBib(content) {
     const entries = [];
-    const re = /@(\w+)\s*\{([^,]*),([^@]*)/g;
+    // An entry header is `@type{key,`. An entry body runs from just after that
+    // header to the start of the next header (or end of input). We must NOT end
+    // the body at the first `@` — field values legitimately contain `@`
+    // (emails in `note`, URLs, etc.), and stopping there silently drops every
+    // field after it. Collect all header positions first, then slice bodies
+    // between them.
+    const headerRe = /@(\w+)\s*\{([^,]*),/g;
+    const headers = [];
     let m;
-    while ((m = re.exec(content)) !== null) {
-      const entryType = m[1].toLowerCase();
-      if (entryType === "string" || entryType === "preamble" || entryType === "comment")
+    while ((m = headerRe.exec(content)) !== null) {
+      headers.push({
+        type: m[1].toLowerCase(),
+        id: m[2].trim(),
+        headerStart: m.index,
+        bodyStart: headerRe.lastIndex,
+      });
+    }
+    for (let h = 0; h < headers.length; h++) {
+      const hdr = headers[h];
+      if (hdr.type === "string" || hdr.type === "preamble" || hdr.type === "comment")
         continue;
-      const id = m[2].trim();
-      let body = m[3];
+      const bodyEnd = h + 1 < headers.length ? headers[h + 1].headerStart : content.length;
+      let body = content.slice(hdr.bodyStart, bodyEnd);
       body = body.replace(/\}\s*$/, "").trim();
-      const entry = { ENTRYTYPE: entryType, ID: id };
+      const entry = { ENTRYTYPE: hdr.type, ID: hdr.id };
       Object.assign(entry, parseEntryFields(body));
       entries.push(entry);
     }

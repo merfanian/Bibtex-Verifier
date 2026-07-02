@@ -129,6 +129,37 @@ test("parses misc with missing closing braces before next field (double-brace ty
   assert.strictEqual(entries[0].year, "2025");
 });
 
+test("keeps fields after an '@' inside a value (email in note)", () => {
+  const bib = `@article{k1,
+  title = {A study of foo},
+  note = {contact author at foo@bar.edu},
+  year = {2020},
+}`;
+  const entries = lib.parseBib(bib);
+  assert.strictEqual(entries.length, 1);
+  assert.strictEqual(entries[0].note, "contact author at foo@bar.edu");
+  assert.strictEqual(entries[0].year, "2020");
+});
+
+test("does not split one entry into two on an '@' in a value", () => {
+  const bib = `@article{k1,
+  title = {First},
+  url = {https://example.com/@handle/post},
+  year = {2020},
+}
+@article{k2,
+  title = {Second},
+  year = {2021},
+}`;
+  const entries = lib.parseBib(bib);
+  assert.strictEqual(entries.length, 2);
+  assert.strictEqual(entries[0].ID, "k1");
+  assert.strictEqual(entries[0].url, "https://example.com/@handle/post");
+  assert.strictEqual(entries[0].year, "2020");
+  assert.strictEqual(entries[1].ID, "k2");
+  assert.strictEqual(entries[1].year, "2021");
+});
+
 test("parses misc Cursor-style malformed braces", () => {
   const bib = `@misc{cursor_2025,
   author = {{Anysphere},
