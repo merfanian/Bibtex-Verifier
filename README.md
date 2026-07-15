@@ -12,19 +12,23 @@
 
 ### See it in action
 
-<a href="https://merfanian.github.io/Bibtex-Verifier/" title="Try BibTeX Verifier">
-  <img src="demo/demo.gif" alt="Screen recording: upload or paste a BibTeX file, verify entries against CrossRef and Semantic Scholar, review diffs and live preview, then download the corrected bibliography" width="92%">
+<a href="demo/bibtex-verifier-linkedin.mp4" title="Watch the BibTeX Verifier product demo">
+  <img src="demo/bibtex-verifier-linkedin-cover.jpg" alt="BibTeX Verifier product demo: catch hallucinated citations and broken metadata before submitting a research paper" width="72%">
 </a>
 
 <p align="center">
-  <sub><strong>Live verification</strong> · pill-style field diffs · GitHub-style BibTeX preview · one-click export</sub>
+  <a href="demo/bibtex-verifier-linkedin.mp4"><strong>▶ Watch the 46-second product demo</strong></a>
+</p>
+
+<p align="center">
+  <sub><strong>Multi-source verification</strong> · hallucination detection · field-level corrections · one-click export</sub>
 </p>
 
 <br/>
 
 </div>
 
-Runs **100% in your browser** — no install, no server, no account. Only paper titles are sent to public APIs ([CrossRef](https://www.crossref.org/), [Semantic Scholar](https://www.semanticscholar.org/)); your `.bib` never leaves your machine.
+Runs **100% in your browser** — no install, no server, no account. Only paper titles are sent to public APIs ([Semantic Scholar](https://www.semanticscholar.org/), [CrossRef](https://www.crossref.org/), and [OpenAlex](https://openalex.org/) as a fallback); your `.bib` never leaves your machine.
 
 ---
 
@@ -42,7 +46,7 @@ Runs **100% in your browser** — no install, no server, no account. Only paper 
 ## Features
 
 - **Drag-and-drop** or **paste** BibTeX from Overleaf
-- **Dual-source** checks (Semantic Scholar + CrossRef)
+- **Multi-source** checks (Semantic Scholar + CrossRef, with OpenAlex fallback)
 - **Hallucination detection** — titles that don’t exist in major indexes
 - **Pill-style diffs** — choose your text vs. suggested metadata per field
 - **Live BibTeX preview** with diff highlighting; **copy** or **download** the final file
@@ -56,7 +60,7 @@ Runs **100% in your browser** — no install, no server, no account. Only paper 
 
 ```
 Upload or paste .bib → Parse entries → For each entry:
-    Semantic Scholar match → CrossRef enrich → Fallback search
+    Semantic Scholar match → CrossRef enrich → OpenAlex fallback
 → Compare fields → Verified / Auto-updated / Needs review / Not found
 → You edit choices → Export corrected .bib
 ```

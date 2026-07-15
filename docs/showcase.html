@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" class="format-portrait">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark" />
+  <title>BibTeX Verifier — Product Showcase</title>
+  <meta name="description" content="A recordable product showcase for the open-source BibTeX Verifier." />
+  <script>if (new URLSearchParams(location.search).get("format") === "landscape") document.documentElement.classList.remove("format-portrait");</script>
+  <link rel="stylesheet" href="showcase.css" />
+</head>
+<body>
+  <main class="recording-frame" aria-label="BibTeX Verifier product showcase">
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+
+    <header class="brand-bar">
+      <a class="brand" href="index.html" aria-label="Open BibTeX Verifier">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-5"/></svg>
+        </span>
+        <span>BibTeX Verifier</span>
+      </a>
+      <div class="brand-meta">
+        <span class="open-source-pill"><span class="pulse-dot"></span> Free &amp; open source</span>
+        <span class="scene-counter"><span id="scene-current">01</span> / <span id="scene-total">08</span></span>
+      </div>
+    </header>
+
+    <section class="slides" aria-live="polite">
+      <article class="slide slide-hook is-active" data-slide="0" data-duration="5600" aria-label="The problem">
+        <div class="hook-copy">
+          <p class="eyebrow reveal">Your AI wrote the bibliography.</p>
+          <h1 class="reveal delay-1">But do the papers<br/><span>actually exist?</span></h1>
+          <p class="hook-sub reveal delay-2">Catch hallucinated citations and broken metadata <strong>before you submit.</strong></p>
+          <div class="source-row reveal delay-3">
+            <span>Verified against</span>
+            <span class="source-logo">Semantic Scholar</span>
+            <span class="source-plus">+</span>
+            <span class="source-logo crossref">Crossref</span>
+            <span class="source-plus">+</span>
+            <span class="source-logo openalex">OpenAlex</span>
+          </div>
+        </div>
+        <div class="citation-stack" aria-hidden="true">
+          <div class="citation-card citation-good">
+            <div class="card-status"><span></span> Verified</div>
+            <h3>Attention Is All You Need</h3>
+            <p>Vaswani et al. · NeurIPS · 2017</p>
+          </div>
+          <div class="citation-card citation-review">
+            <div class="card-status"><span></span> Needs review</div>
+            <h3>Deep Residual Learning for Image Recognition</h3>
+            <p>Year mismatch · Found 2016</p>
+          </div>
+          <div class="citation-card citation-bad">
+            <div class="card-status"><span></span> Not found</div>
+            <h3>Quantum Neural Language Models at Scale</h3>
+            <p>No matching publication in any checked index</p>
+          </div>
+          <svg class="scan-line" viewBox="0 0 460 12"><path d="M2 6h456"/></svg>
+        </div>
+      </article>
+
+      <article class="slide slide-input" data-slide="1" data-duration="5200" aria-label="Paste bibliography">
+        <div class="scene-heading">
+          <span class="step-pill reveal">01 · Add your bibliography</span>
+          <h2 class="reveal delay-1">Paste from Overleaf.<br/>Or drop in any <span>.bib</span> file.</h2>
+          <p class="reveal delay-2">No account. No install. Nothing to configure.</p>
+        </div>
+        <div class="app-window reveal delay-1">
+          <div class="window-chrome"><span></span><span></span><span></span><div class="address">merfanian.github.io/Bibtex-Verifier</div></div>
+          <div class="window-body input-body">
+            <div class="app-mini-head"><strong>BibTeX Verifier</strong><span>★ Star on GitHub</span></div>
+            <div class="tabs"><span>Upload file</span><span class="active">Paste BibTeX</span></div>
+            <div class="editor-shell">
+              <div class="line-numbers">1<br/>2<br/>3<br/>4<br/>5<br/>6<br/>7</div>
+              <pre class="typing-code"><code id="typing-code"></code><span class="caret"></span></pre>
+            </div>
+            <button class="verify-button">Verify pasted BibTeX <span>→</span></button>
+          </div>
+        </div>
+        <div class="fake-cursor cursor-input" aria-hidden="true"><span></span></div>
+      </article>
+
+      <article class="slide slide-scan" data-slide="2" data-duration="5400" aria-label="Verify bibliography">
+        <div class="scene-heading compact">
+          <span class="step-pill reveal">02 · Verify every entry</span>
+          <h2 class="reveal delay-1">Three research sources.<br/><span>One clear answer.</span></h2>
+          <p class="reveal delay-2">Smart title matching finds the real publication, then compares every important field.</p>
+        </div>
+        <div class="pipeline" aria-hidden="true">
+          <div class="pipeline-node source-node reveal delay-1">
+            <div class="node-icon">B<span class="sub">ib</span></div>
+            <strong>Your .bib</strong><span>Parsed locally</span>
+          </div>
+          <div class="pipeline-track track-one"><span class="packet packet-one"></span></div>
+          <div class="api-stack reveal delay-2">
+            <div class="pipeline-node api-node"><span class="api-glyph semantic">S</span><strong>Semantic Scholar</strong><span>Paper matching</span></div>
+            <div class="pipeline-node api-node"><span class="api-glyph cross">C</span><strong>Crossref</strong><span>Metadata enrichment</span></div>
+            <div class="pipeline-node api-node"><span class="api-glyph openalex">O</span><strong>OpenAlex</strong><span>Fallback coverage</span></div>
+          </div>
+          <div class="pipeline-track track-two"><span class="packet packet-two"></span></div>
+          <div class="pipeline-node result-node reveal delay-3">
+            <svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg>
+            <strong>Verified result</strong><span>Field by field</span>
+          </div>
+        </div>
+        <div class="scan-fields reveal delay-3">
+          <span><i style="--delay:0s"></i>Title</span><span><i style="--delay:.25s"></i>Authors</span><span><i style="--delay:.5s"></i>Year</span><span><i style="--delay:.75s"></i>Venue</span><span><i style="--delay:1s"></i>DOI</span>
+        </div>
+      </article>
+
+      <article class="slide slide-results" data-slide="3" data-duration="6000" aria-label="Results dashboard">
+        <div class="scene-heading horizontal-heading">
+          <div><span class="step-pill reveal">03 · Understand the result</span><h2 class="reveal delay-1">Your whole bibliography,<br/><span>at a glance.</span></h2></div>
+          <p class="reveal delay-2">Color-coded results tell you exactly<br/>where your attention is needed.</p>
+        </div>
+        <div class="results-demo reveal delay-1">
+          <div class="summary-row">
+            <div class="summary-chip verified"><span></span>Verified <b data-count="8">8</b></div>
+            <div class="summary-chip updated"><span></span>Auto-updated <b data-count="3">3</b></div>
+            <div class="summary-chip review"><span></span>Needs review <b data-count="1">1</b></div>
+            <div class="summary-chip notfound"><span></span>Not found <b data-count="1">1</b></div>
+            <div class="search-box">⌕&nbsp;&nbsp; Search title or key… <kbd>/</kbd></div>
+          </div>
+          <div class="result-columns">
+            <div class="result-list">
+              <div class="result-card result-verified"><span class="result-number">01</span><div><h3>Attention Is All You Need</h3><p>Vaswani et al. · NeurIPS · 2017</p></div><span class="status-badge">Verified</span></div>
+              <div class="result-card result-updated"><span class="result-number">02</span><div><h3>Deep Residual Learning for Image Recognition</h3><p>He et al. · CVPR · 2016</p></div><span class="status-badge">3 updates</span></div>
+              <div class="result-card result-review"><span class="result-number">03</span><div><h3>BERT: Pre-training of Deep Bidirectional Transformers</h3><p>Possible year mismatch</p></div><span class="status-badge">Review</span></div>
+              <div class="result-card result-notfound"><span class="result-number">04</span><div><h3>Quantum Neural Language Models at Scale</h3><p>No reliable title match</p></div><span class="status-badge">Not found</span></div>
+            </div>
+            <div class="mini-preview">
+              <div class="mini-preview-head"><strong>Live BibTeX Preview</strong><span>Copy</span></div>
+              <pre><span class="syntax-type">@inproceedings</span>{vaswani2017,
+  title   = {Attention Is All You Need},
+  author  = {Vaswani, Ashish and ...},
+  year    = {<span class="syntax-add">2017</span>},
+  booktitle = {NeurIPS},
+  doi     = {<span class="syntax-add">10.5555/3295222.3295349</span>}
+}</pre>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide slide-hallucination" data-slide="4" data-duration="5600" aria-label="Hallucination detection">
+        <div class="warning-copy">
+          <span class="step-pill danger reveal">Hallucination detected</span>
+          <h2 class="reveal delay-1">This paper<br/><span>doesn't exist.</span></h2>
+          <p class="reveal delay-2">No reliable title match was found in Semantic Scholar, Crossref, or OpenAlex.</p>
+          <div class="action-row reveal delay-3"><span>Check manually</span><strong>or remove before submission →</strong></div>
+        </div>
+        <div class="hallucination-card reveal delay-1">
+          <div class="alert-stripe"></div>
+          <div class="hallucination-top"><span class="result-number">13</span><span class="status-badge">Not found</span></div>
+          <h3>Quantum Neural Language Models at Scale</h3>
+          <div class="metadata-grid"><div><span>Author</span><strong>Anderson, James</strong></div><div><span>Year</span><strong>2024</strong></div><div><span>Journal</span><strong>Nature AI</strong></div><div><span>DOI</span><strong>—</strong></div></div>
+          <div class="lookup-log">
+            <div><span class="log-icon fail">×</span><p><strong>Semantic Scholar</strong><br/><small>No matching publication</small></p></div>
+            <div><span class="log-icon fail">×</span><p><strong>Crossref</strong><br/><small>No matching publication</small></p></div>
+            <div><span class="log-icon fail">×</span><p><strong>OpenAlex</strong><br/><small>No matching publication</small></p></div>
+          </div>
+          <div class="confidence"><span>Match confidence</span><div><i></i></div><strong>0%</strong></div>
+        </div>
+        <div class="fake-cursor cursor-hallucination" aria-hidden="true"><span></span></div>
+      </article>
+
+      <article class="slide slide-diff" data-slide="5" data-duration="6500" aria-label="Field comparison">
+        <div class="scene-heading horizontal-heading">
+          <div><span class="step-pill reveal">04 · Fix only what changed</span><h2 class="reveal delay-1">Review metadata<br/><span>field by field.</span></h2></div>
+          <p class="reveal delay-2">Keep yours or accept the verified value.<br/>You always get the final say.</p>
+        </div>
+        <div class="diff-panel reveal delay-1">
+          <div class="diff-head"><div><span class="result-number">02</span><strong>Deep Residual Learning for Image Recognition</strong></div><span class="status-badge">Auto-updated</span></div>
+          <div class="diff-labels"><span>Field</span><span>Your BibTeX</span><span>Verified publication</span></div>
+          <div class="diff-row"><strong>year</strong><button class="value-pill old">2015</button><button class="value-pill new selected"><span>✓</span> 2016</button></div>
+          <div class="diff-row"><strong>booktitle</strong><button class="value-pill old">CVPR Conference</button><button class="value-pill new"><span>+</span> CVPR</button></div>
+          <div class="diff-row"><strong>doi</strong><button class="value-pill old empty">Missing</button><button class="value-pill new"><span>+</span> 10.1109/CVPR.2016.90</button></div>
+          <div class="diff-footer"><span><i></i> 3 suggested updates</span><button>Accept all verified fields</button></div>
+        </div>
+        <div class="fake-cursor cursor-diff" aria-hidden="true"><span></span></div>
+      </article>
+
+      <article class="slide slide-export" data-slide="6" data-duration="5400" aria-label="Export corrected bibliography">
+        <div class="export-copy">
+          <span class="step-pill reveal">05 · Ready to submit</span>
+          <h2 class="reveal delay-1">Clean bibliography.<br/><span>One click away.</span></h2>
+          <p class="reveal delay-2">Copy the live preview or download a corrected <strong>.bib</strong> for Overleaf, LaTeX, or your reference manager.</p>
+          <div class="export-actions reveal delay-3"><button class="copy-action">Copy BibTeX</button><button class="download-action"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"/></svg> Download corrected.bib</button></div>
+        </div>
+        <div class="code-window reveal delay-1">
+          <div class="code-head"><span>corrected.bib</span><span class="saved-indicator"><i></i> All changes saved</span></div>
+          <pre><span class="syntax-type">@inproceedings</span>{he2016deep,
+  title     = {Deep Residual Learning
+               for Image Recognition},
+  author    = {He, Kaiming and Zhang, Xiangyu
+               and Ren, Shaoqing and Sun, Jian},
+  booktitle = {<span class="syntax-add">CVPR</span>},
+  year      = {<span class="syntax-add">2016</span>},
+  doi       = {<span class="syntax-add">10.1109/CVPR.2016.90</span>}
+}</pre>
+          <div class="code-status"><span><b>13</b> entries</span><span><b>4</b> corrections</span><span><b>1</b> citation removed</span></div>
+        </div>
+        <div class="download-toast"><span>✓</span><div><strong>Download complete</strong><small>corrected.bib</small></div></div>
+        <div class="fake-cursor cursor-export" aria-hidden="true"><span></span></div>
+      </article>
+
+      <article class="slide slide-cta" data-slide="7" data-duration="6500" aria-label="Try BibTeX Verifier">
+        <div class="cta-shield reveal" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
+        </div>
+        <p class="eyebrow reveal delay-1">Private by design · Open by default</p>
+        <h2 class="reveal delay-2">Your <span>.bib</span> stays in your browser.</h2>
+        <p class="cta-sub reveal delay-3">Free forever. No sign-up. MIT licensed.</p>
+        <a class="cta-link reveal delay-3" href="https://merfanian.github.io/Bibtex-Verifier/">merfanian.github.io/Bibtex-Verifier <span>↗</span></a>
+        <div class="cta-buttons reveal delay-4"><a href="https://merfanian.github.io/Bibtex-Verifier/">Try it live</a><a class="github-cta" href="https://github.com/merfanian/Bibtex-Verifier"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.66-.22.66-.47v-1.71c-2.78.6-3.37-1.18-3.37-1.18-.45-1.17-1.11-1.48-1.11-1.48-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.64-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.6 9.6 0 0 1 12 6.98a9.6 9.6 0 0 1 2.5.34c1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.69.92.69 1.85v2.62c0 .26.17.57.67.47A10 10 0 0 0 12 2Z"/></svg> Star on GitHub</a></div>
+        <div class="trust-row reveal delay-4"><span>✓ Browser-only</span><span>✓ No tracking</span><span>✓ Community-built</span></div>
+      </article>
+    </section>
+
+    <footer class="playback" aria-label="Slideshow controls">
+      <div class="progress-track"><span id="progress-bar"></span></div>
+      <div class="control-row">
+        <button id="prev-button" title="Previous scene (Left arrow)" aria-label="Previous scene"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
+        <button id="play-button" title="Play or pause (Space)" aria-label="Pause slideshow"><svg class="pause-icon" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg><svg class="play-icon" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7Z"/></svg></button>
+        <button id="next-button" title="Next scene (Right arrow)" aria-label="Next scene"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+        <button id="restart-button" title="Restart (R)" aria-label="Restart slideshow"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></button>
+        <span class="timing"><span id="elapsed">00:00</span> / <span id="total-time">00:46</span></span>
+        <span class="keyboard-tip">Space to pause · <kbd>F</kbd> fullscreen</span>
+        <button id="fullscreen-button" title="Fullscreen (F)" aria-label="Enter fullscreen"><svg viewBox="0 0 24 24"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5m13 5h5v-5"/></svg></button>
+      </div>
+    </footer>
+  </main>
+
+  <script src="showcase.js"></script>
+</body>
+</html>

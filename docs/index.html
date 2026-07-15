@@ -6,8 +6,8 @@
   <meta name="google-site-verification" content="Ec53uaP67xWogWFEI0Asj4FyQZ3RjAtHp6CcQckrWOI" />
 
   <title>BibTeX Verifier — Catch Errors &amp; Hallucinated References in Your Bibliography</title>
-  <meta name="description" content="Free online tool to verify BibTeX entries against CrossRef and Semantic Scholar. Detects hallucinated references from AI, wrong authors, incorrect years, missing DOIs, and duplicate entries. Works in the browser — no install needed." />
-  <meta name="keywords" content="BibTeX, bibliography checker, verify references, hallucinated citations, LaTeX, CrossRef, Semantic Scholar, DOI, citation checker, academic references, .bib file, Overleaf, BibLaTeX, reference manager, paper verification" />
+  <meta name="description" content="Free online tool to verify BibTeX entries against Semantic Scholar and CrossRef, with OpenAlex fallback. Detects hallucinated references from AI, wrong authors, incorrect years, missing DOIs, and duplicate entries. Works in the browser — no install needed." />
+  <meta name="keywords" content="BibTeX, bibliography checker, verify references, hallucinated citations, LaTeX, CrossRef, Semantic Scholar, OpenAlex, DOI, citation checker, academic references, .bib file, Overleaf, BibLaTeX, reference manager, paper verification" />
   <meta name="author" content="merfanian" />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://merfanian.github.io/Bibtex-Verifier/" />
@@ -15,7 +15,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://merfanian.github.io/Bibtex-Verifier/" />
   <meta property="og:title" content="BibTeX Verifier — Catch Errors & Hallucinated References" />
-  <meta property="og:description" content="Free browser-based tool to verify your .bib file against CrossRef and Semantic Scholar. Finds wrong authors, incorrect years, fabricated citations, and missing DOIs." />
+  <meta property="og:description" content="Free browser-based tool to verify your .bib file against Semantic Scholar and CrossRef, with OpenAlex fallback. Finds wrong authors, incorrect years, fabricated citations, and missing DOIs." />
   <meta property="og:site_name" content="BibTeX Verifier" />
 
   <meta name="twitter:card" content="summary_large_image" />
@@ -28,7 +28,7 @@
     "@type": "WebApplication",
     "name": "BibTeX Verifier",
     "url": "https://merfanian.github.io/Bibtex-Verifier/",
-    "description": "Free online tool to verify BibTeX bibliography entries against CrossRef and Semantic Scholar. Catches hallucinated references, wrong authors, incorrect years, and missing DOIs.",
+    "description": "Free online tool to verify BibTeX bibliography entries against Semantic Scholar and CrossRef, with OpenAlex fallback. Catches hallucinated references, wrong authors, incorrect years, and missing DOIs.",
     "applicationCategory": "UtilitiesApplication",
     "operatingSystem": "Any",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
@@ -71,7 +71,8 @@
         <p class="hero-lead">Upload a <code>.bib</code> file or paste directly from Overleaf.
           BibTeX Verifier checks every entry against
           <a href="https://www.crossref.org/" target="_blank">CrossRef</a> and
-          <a href="https://www.semanticscholar.org/" target="_blank">Semantic Scholar</a> to find
+          <a href="https://www.semanticscholar.org/" target="_blank">Semantic Scholar</a>, with
+          <a href="https://openalex.org/" target="_blank">OpenAlex</a> as a fallback, to find
           wrong authors, incorrect years, mismatched venues, missing DOIs, duplicates,
           and <strong>AI-hallucinated citations</strong> that don't exist in any database.
           100% in-browser — your data never leaves your machine.</p>
@@ -185,7 +186,7 @@
         <div class="step">
           <div class="step-num">2</div>
           <h3>Verify</h3>
-          <p>Each entry is looked up by title against Semantic Scholar and CrossRef. Authors, year, venue, DOI, and other fields are compared to the published record. Entries that don't match any real publication are flagged — perfect for catching AI-hallucinated citations.</p>
+          <p>Each entry is looked up by title against Semantic Scholar and CrossRef, with OpenAlex as a fallback. Authors, year, venue, DOI, and other fields are compared to the published record. Entries that don't match any real publication are flagged — perfect for catching AI-hallucinated citations.</p>
         </div>
         <div class="step">
           <div class="step-num">3</div>
@@ -212,8 +213,8 @@
         </div>
         <div class="feature-card">
           <div class="feature-icon">&#128269;</div>
-          <h3>Dual-source verification</h3>
-          <p>Queries both Semantic Scholar and CrossRef to maximize coverage and metadata quality.</p>
+          <h3>Multi-source verification</h3>
+          <p>Uses Semantic Scholar and CrossRef, with OpenAlex fallback, to maximize coverage and metadata quality.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">&#128203;</div>
@@ -242,15 +243,15 @@
       <h2>FAQ</h2>
       <details>
         <summary>Can it detect AI-hallucinated references?</summary>
-        <p>Yes. When a BibTeX entry's title doesn't match any real publication in CrossRef or Semantic Scholar, it's flagged as "Not Found" or "Needs Review." This is how fabricated citations from ChatGPT, Copilot, or other AI tools get caught — the paper simply doesn't exist in any academic database.</p>
+        <p>Yes. When a BibTeX entry's title doesn't match any real publication in Semantic Scholar, CrossRef, or the OpenAlex fallback, it's flagged as "Not Found" or "Needs Review." This is how fabricated citations from ChatGPT, Copilot, or other AI tools get caught — the paper simply doesn't exist in any checked academic database.</p>
       </details>
       <details>
         <summary>Is my data safe?</summary>
-        <p>Yes. Your <code>.bib</code> file is parsed entirely in your browser using JavaScript. The only network requests made are title lookups to the public CrossRef and Semantic Scholar APIs. No file content is sent to any server.</p>
+        <p>Yes. Your <code>.bib</code> file is parsed entirely in your browser using JavaScript. The only network requests made are title lookups to the public Semantic Scholar, CrossRef, and OpenAlex APIs. No file content is sent to any server.</p>
       </details>
       <details>
         <summary>Why are some entries "Not Found"?</summary>
-        <p>Not every paper is indexed in CrossRef or Semantic Scholar. ArXiv preprints, workshop papers, theses, and very recent publications may not be found. The tool flags these so you can verify them manually — or remove them if they're fabricated.</p>
+        <p>Not every paper is indexed in Semantic Scholar, CrossRef, or OpenAlex. ArXiv preprints, workshop papers, theses, and very recent publications may not be found. The tool flags these so you can verify them manually — or remove them if they're fabricated.</p>
       </details>
       <details>
         <summary>Why does verification take a while?</summary>

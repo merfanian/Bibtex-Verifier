@@ -2,10 +2,11 @@
   "name": "bibtex-verifier",
   "version": "0.0.0",
   "private": true,
-  "description": "Verify BibTeX entries against CrossRef and Semantic Scholar, entirely in the browser.",
+  "description": "Verify BibTeX entries against Semantic Scholar and CrossRef with OpenAlex fallback, entirely in the browser.",
   "license": "MIT",
   "scripts": {
-    "test": "node tests/test_lib.js"
+    "test": "node tests/test_lib.js",
+    "render:showcase": "node demo/render_showcase_video.js"
   },
   "devDependencies": {
     "fuzzball": "2.2.3"
