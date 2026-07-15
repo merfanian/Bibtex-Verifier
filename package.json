@@ -5,8 +5,7 @@
   "description": "Verify BibTeX entries against Semantic Scholar and CrossRef with OpenAlex fallback, entirely in the browser.",
   "license": "MIT",
   "scripts": {
-    "test": "node tests/test_lib.js",
-    "render:showcase": "node demo/render_showcase_video.js"
+    "test": "node tests/test_lib.js"
   },
   "devDependencies": {
     "fuzzball": "2.2.3"

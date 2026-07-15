@@ -12,13 +12,9 @@
 
 ### See it in action
 
-<a href="demo/bibtex-verifier-linkedin.mp4" title="Watch the BibTeX Verifier product demo">
-  <img src="demo/bibtex-verifier-linkedin-cover.jpg" alt="BibTeX Verifier product demo: catch hallucinated citations and broken metadata before submitting a research paper" width="72%">
+<a href="https://merfanian.github.io/Bibtex-Verifier/" title="Try BibTeX Verifier">
+  <img src="demo/bibtex-verifier-demo.gif" alt="BibTeX Verifier product demo: catch hallucinated citations and broken metadata before submitting a research paper" width="92%">
 </a>
-
-<p align="center">
-  <a href="demo/bibtex-verifier-linkedin.mp4"><strong>▶ Watch the 46-second product demo</strong></a>
-</p>
 
 <p align="center">
   <sub><strong>Multi-source verification</strong> · hallucination detection · field-level corrections · one-click export</sub>
