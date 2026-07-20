@@ -351,6 +351,23 @@ test("enrichments mark entry as updated", () => {
   assert.ok(result.field_diffs.some(d => d.field === "doi"), "should report doi enrichment");
 });
 
+test("does not suggest the older year when found is a preprint", () => {
+  // User has the published venue year (2021); the arXiv record is from 2020.
+  const orig = { title: "Great Paper", year: "2021", journal: "NeurIPS" };
+  const found = { title: "Great Paper", year: "2020", journal: "arXiv" };
+  const result = lib.compareEntry(orig, found);
+  assert.ok(!result.field_diffs.some(d => d.field === "year"),
+    "should not flag the preprint's earlier year");
+});
+
+test("still flags a genuine year mismatch for non-preprint records", () => {
+  const orig = { title: "Great Paper", year: "2021", journal: "NeurIPS" };
+  const found = { title: "Great Paper", year: "2019", journal: "NeurIPS" };
+  const result = lib.compareEntry(orig, found);
+  assert.ok(result.field_diffs.some(d => d.field === "year"),
+    "non-preprint year mismatch should still be reported");
+});
+
 // ═══════════════════════════════════════════════════════════════════════
 console.log("\n── fieldDiffsForNeedsReview ──");
 
@@ -444,6 +461,18 @@ test("prefers publicationVenue.name over venue string", () => {
   assert.strictEqual(result.journal, "Full Venue Name");
 });
 
+test("falls back to arXiv venue for preprint-only records", () => {
+  const paper = {
+    title: "A Preprint",
+    year: 2020,
+    authors: [{ name: "Alice Smith" }],
+    externalIds: { ArXiv: "2001.00001" },
+  };
+  const result = lib.ssToStandard(paper);
+  assert.strictEqual(result.journal, "arXiv");
+  assert.strictEqual(lib.isPreprint(result), true);
+});
+
 // ═══════════════════════════════════════════════════════════════════════
 console.log("\n── openAlexToStandard ──");
 
@@ -521,6 +550,29 @@ test("different years returns false", () => {
   assert.strictEqual(lib.isSamePaper(a, b), false);
 });
 
+test("treats preprint and published years within tolerance as the same paper", () => {
+  const preprint = { title: "Attention Is All You Need", year: "2016", author: "Vaswani, Ashish" };
+  const published = { title: "Attention Is All You Need", year: "2017", author: "Vaswani, Ashish" };
+  assert.strictEqual(lib.isSamePaper(preprint, published), true);
+});
+
+// ════════════════════════════════════════════════════════════════
+console.log("\n── isPreprint ──");
+
+test("detects arXiv by venue, DOI, and URL", () => {
+  assert.strictEqual(lib.isPreprint({ journal: "arXiv" }), true);
+  assert.strictEqual(lib.isPreprint({ journal: "arXiv.org" }), true);
+  assert.strictEqual(lib.isPreprint({ doi: "10.48550/arXiv.1706.03762" }), true);
+  assert.strictEqual(lib.isPreprint({ url: "https://arxiv.org/abs/1706.03762" }), true);
+  assert.strictEqual(lib.isPreprint({ journal: "CoRR" }), true);
+});
+
+test("does not flag published venues as preprints", () => {
+  assert.strictEqual(lib.isPreprint({ journal: "NeurIPS", doi: "10.5555/x" }), false);
+  assert.strictEqual(lib.isPreprint({}), false);
+  assert.strictEqual(lib.isPreprint(null), false);
+});
+
 // ═══════════════════════════════════════════════════════════════════════
 console.log("\n── mergeMetadata ──");
 
@@ -540,6 +592,15 @@ test("fills empty fields from secondary", () => {
   const merged = lib.mergeMetadata(primary, secondary);
   assert.strictEqual(merged.doi, "10.1234");
   assert.strictEqual(merged.volume, "5");
+});
+
+test("published record wins bibliographic fields over a preprint primary", () => {
+  const preprint = { title: "A", year: "2020", journal: "arXiv", _source: "semantic_scholar" };
+  const published = { title: "A", year: "2021", journal: "NeurIPS", doi: "10.1/x", _source: "crossref" };
+  const merged = lib.mergeMetadata(preprint, published);
+  assert.strictEqual(merged.year, "2021", "published year should win");
+  assert.strictEqual(merged.journal, "NeurIPS", "published venue should win");
+  assert.strictEqual(merged.doi, "10.1/x");
 });
 
 // ═══════════════════════════════════════════════════════════════════════
