@@ -276,6 +276,7 @@
     if (original.booktitle && !original.journal && foundJournal)
       found.booktitle = foundJournal;
 
+    const foundIsPreprint = isPreprint(found);
     const fieldDiffs = [], enrichments = [];
     let hasDifference = false;
 
@@ -289,6 +290,14 @@
         continue;
       }
       if (origVal.trim() && !foundVal.trim()) continue;
+
+      // The found record is a preprint (e.g. arXiv), whose `year` is the
+      // submission year. If the user's year is the same or newer, it's the
+      // peer-reviewed publication year — keep it instead of suggesting the
+      // older preprint year.
+      if (field === "year" && foundIsPreprint && isNewerOrSamePublicationYear(origVal, foundVal)) {
+        continue;
+      }
 
       const score = compareField(field, origVal, foundVal);
       if (score < 100) {
@@ -397,7 +406,10 @@
 
     const ext = paper.externalIds || {};
     const pv = paper.publicationVenue;
-    const venue = (pv && typeof pv === "object" ? pv.name : null) || paper.venue || "";
+    let venue = (pv && typeof pv === "object" ? pv.name : null) || paper.venue || "";
+    // Surface arXiv-only records so downstream logic can treat them as
+    // preprints — their `year` is the submission year, not the published one.
+    if (!venue && ext.ArXiv) venue = "arXiv";
 
     return {
       title: paper.title || "",
@@ -456,9 +468,49 @@
     return names;
   }
 
+  // ─── Preprint awareness ──────────────────────────────────────────────
+  // Fields where the peer-reviewed record should win when merged with a
+  // preprint version of the same paper.
+  const PUBLISHED_PREFERRED_FIELDS = ["year", "journal", "volume", "number", "pages", "publisher", "doi"];
+  // Preprint and published versions of the same paper rarely differ by more
+  // than a couple of years; allow this gap when cross-referencing sources.
+  const PREPRINT_YEAR_TOLERANCE = 2;
+
+  /**
+   * True when a standard record looks like an arXiv (or similar) preprint.
+   * Preprints report the submission year, which is usually earlier than the
+   * peer-reviewed publication year.
+   */
+  function isPreprint(record) {
+    if (!record) return false;
+    const doi = (record.doi || "").toLowerCase();
+    if (doi.startsWith("10.48550/arxiv")) return true;
+    const venue = (record.journal || "").toLowerCase().trim();
+    if (/\barxiv\b/.test(venue)) return true;
+    if (venue === "corr" || venue.includes("computing research repository")) return true;
+    const url = (record.url || "").toLowerCase();
+    if (url.includes("arxiv.org")) return true;
+    return false;
+  }
+
+  /**
+   * True when `origYear` is the same as, or a little newer than, `foundYear` —
+   * i.e. the user's year plausibly reflects the published version of a paper
+   * whose `found` record is an earlier preprint.
+   */
+  function isNewerOrSamePublicationYear(origYear, foundYear) {
+    const oy = parseInt(origYear, 10), fy = parseInt(foundYear, 10);
+    if (!Number.isFinite(oy) || !Number.isFinite(fy)) return false;
+    return oy >= fy && oy - fy <= PREPRINT_YEAR_TOLERANCE + 1;
+  }
+
   function isSamePaper(a, b) {
     if (titleSimilarity(a.title || "", b.title || "") < 85) return false;
-    if (a.year && b.year && a.year !== b.year) return false;
+    if (a.year && b.year) {
+      const ya = parseInt(a.year, 10), yb = parseInt(b.year, 10);
+      if (Number.isFinite(ya) && Number.isFinite(yb) &&
+          Math.abs(ya - yb) > PREPRINT_YEAR_TOLERANCE) return false;
+    }
     const aa = extractLastNames(a.author), ba = extractLastNames(b.author);
     if (aa.size && ba.size) {
       let inter = 0; for (const n of aa) if (ba.has(n)) inter++;
@@ -472,6 +524,14 @@
     for (const [k, v] of Object.entries(secondary)) {
       if (k.startsWith("_")) continue;
       if (!merged[k] && v) merged[k] = v;
+    }
+    // When a preprint (primary) is merged with its published version
+    // (secondary), trust the published venue for bibliographic fields —
+    // above all `year`, which on a preprint is the earlier submission year.
+    if (isPreprint(primary) && !isPreprint(secondary)) {
+      for (const f of PUBLISHED_PREFERRED_FIELDS) {
+        if (secondary[f]) merged[f] = secondary[f];
+      }
     }
     merged._source = `${primary._source || ""}+${secondary._source || ""}`;
     return merged;
@@ -588,6 +648,7 @@
   exports.ssToStandard = ssToStandard;
   exports.openAlexToStandard = openAlexToStandard;
   exports.extractLastNames = extractLastNames;
+  exports.isPreprint = isPreprint;
   exports.isSamePaper = isSamePaper;
   exports.mergeMetadata = mergeMetadata;
   exports.bestMatch = bestMatch;
