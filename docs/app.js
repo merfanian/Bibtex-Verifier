@@ -13,6 +13,14 @@
   const MAX_RETRIES = 4;
   const RETRY_BASE_MS = 1500;
 
+  // Raised when a lookup can't be completed because a source kept failing
+  // transiently (HTTP 429/5xx or network errors) after all retries. It lets
+  // callers tell "the API was unreachable" apart from "the paper doesn't
+  // exist", so a rate-limited request is never mistaken for a real miss.
+  class TransientLookupError extends Error {
+    constructor(message) { super(message); this.name = "TransientLookupError"; }
+  }
+
   // ─── Adaptive rate controller ──────────────────────────────────────
   // One independent bucket per source: current delay, its clamps, the last
   // request time, and a run of consecutive successes used to speed back up.
@@ -60,17 +68,22 @@
           return resp.json();
         }
         if (resp.status === 404 && is404Ok) return null;
-        if (resp.status === 429) {
+        // 429 (rate limit) and 5xx (server) are transient: back off, retry, and
+        // ultimately surface as an error so a miss is never faked from congestion.
+        if (resp.status === 429 || resp.status >= 500) {
           rateBackoff(source);
           if (attempt < retries) {
             const wait = RETRY_BASE_MS * Math.pow(2, attempt);
-            console.warn(`Rate limited (429) on attempt ${attempt + 1}, retrying in ${wait}ms...`);
+            console.warn(`Transient ${resp.status} on attempt ${attempt + 1}, retrying in ${wait}ms...`);
             await sleep(wait);
             continue;
           }
+          throw new TransientLookupError(`HTTP ${resp.status} after ${retries + 1} attempts`);
         }
+        // Other 4xx responses are a definitive negative (e.g. empty query).
         return null;
       } catch (err) {
+        if (err instanceof TransientLookupError) throw err;
         rateBackoff(source);
         if (attempt < retries) {
           const wait = RETRY_BASE_MS * Math.pow(2, attempt);
@@ -78,8 +91,7 @@
           await sleep(wait);
           continue;
         }
-        console.warn(`Request failed after ${retries + 1} attempts:`, err.message);
-        return null;
+        throw new TransientLookupError(`Network error after ${retries + 1} attempts: ${err.message}`);
       }
     }
     return null;
@@ -115,25 +127,42 @@
   }
 
   async function lookupPaper(title) {
-    const ssMatch = await searchSSMatch(title);
+    // Each source is attempted independently: a transient failure in one is
+    // recorded but doesn't stop us from trying the others. Only if nothing
+    // matches AND at least one source failed transiently do we report the
+    // lookup as inconclusive (so the caller retries instead of giving up).
+    let transient = false;
+    const attemptStep = async (fn) => {
+      try { return await fn(); }
+      catch (err) {
+        if (err instanceof TransientLookupError) { transient = true; return null; }
+        throw err;
+      }
+    };
+
+    const ssMatch = await attemptStep(() => searchSSMatch(title));
     if (ssMatch && B.titleSimilarity(title, ssMatch.title || "") >= B.MIN_TITLE_SIM) {
-      const crCandidates = await searchCrossref(title);
+      const crCandidates = (await attemptStep(() => searchCrossref(title))) || [];
       const crMatch = B.bestMatch(crCandidates, title);
       if (crMatch && B.isSamePaper(ssMatch, crMatch))
         return B.mergeMetadata(ssMatch, crMatch);
       return ssMatch;
     }
 
-    const crCandidates = await searchCrossref(title);
+    const crCandidates = (await attemptStep(() => searchCrossref(title))) || [];
     const crMatch = B.bestMatch(crCandidates, title);
     if (crMatch) return crMatch;
 
-    const oaCandidates = await searchOpenAlex(title);
+    const oaCandidates = (await attemptStep(() => searchOpenAlex(title))) || [];
     const oaMatch = B.bestMatch(oaCandidates, title);
     if (oaMatch) return oaMatch;
 
-    const ssCandidates = await searchSSSearch(title);
-    return B.bestMatch(ssCandidates, title);
+    const ssCandidates = (await attemptStep(() => searchSSSearch(title))) || [];
+    const ssSearchMatch = B.bestMatch(ssCandidates, title);
+    if (ssSearchMatch) return ssSearchMatch;
+
+    if (transient) throw new TransientLookupError("inconclusive lookup");
+    return null;
   }
 
   // ─── Theme ─────────────────────────────────────────────────────────
@@ -338,6 +367,9 @@
   async function runVerification() {
     const total = parsedEntries.length;
     const seenTitles = new Map();
+    // Entry indices whose lookup was inconclusive (a source failed transiently);
+    // re-checked in a second pass once rate-limit pressure eases.
+    const pendingRetry = [];
 
     for (let i = 0; i < total; i++) {
       const entry = parsedEntries[i];
@@ -365,7 +397,7 @@
       }
 
       const cleanTitle = B.stripLatex(title);
-      let found = null;
+      let found = null, inconclusive = false;
       // Tour shortcut: the fabricated sample entry has a unique marker. Skip the
       // real network lookup so the onboarding flow doesn't stall on a guaranteed
       // miss; pause briefly so the "not found" status still feels deliberate.
@@ -373,26 +405,58 @@
       if (isTourFakeEntry) {
         await sleep(500);
       } else {
-        try { found = await lookupPaper(cleanTitle); } catch (err) { console.warn("Lookup failed:", err); }
+        try {
+          found = await lookupPaper(cleanTitle);
+        } catch (err) {
+          if (err instanceof TransientLookupError) inconclusive = true;
+          else console.warn("Lookup failed:", err);
+        }
       }
 
-      if (!found) {
-        const r = buildResult(entry, i, "not_found", 0, [], {}, null);
-        results.push(r);
-        renderEntryCard(r);
-      } else {
-        const cmp = B.compareEntry(entry, found);
-        let fieldDiffs = cmp.field_diffs;
-        if (cmp.status === "needs_review" && found)
-          fieldDiffs = B.fieldDiffsForNeedsReview(entry, found);
-        const r = buildResult(entry, i, cmp.status, cmp.title_score, fieldDiffs, cmp.suggested, found);
-        results.push(r);
-        renderEntryCard(r);
-      }
+      const r = buildFoundResult(entry, i, found);
+      if (inconclusive) { r._inconclusive = true; pendingRetry.push(i); }
+      results.push(r);
+      renderEntryCard(r);
 
       updateSummary();
       updateAuthorPills();
       updatePreview();
+    }
+
+    // Second pass: some entries came back inconclusive because a source was
+    // rate-limited or briefly unreachable during the busy first pass. Re-check
+    // them now that the adaptive limiter has recovered, so real papers aren't
+    // left flagged as "not found" (the flakiness users saw across reruns).
+    if (pendingRetry.length) {
+      barProgressText.textContent =
+        `Re-checking ${pendingRetry.length} ${pendingRetry.length === 1 ? "entry" : "entries"}…`;
+      await sleep(1200);
+      for (let round = 0; round < 2 && pendingRetry.length; round++) {
+        const stillPending = [];
+        for (const i of pendingRetry) {
+          const entry = parsedEntries[i];
+          const retryTitle = B.stripLatex(entry.title || "");
+          let found = null, inconclusive = false;
+          try {
+            found = await lookupPaper(retryTitle);
+          } catch (err) {
+            if (err instanceof TransientLookupError) inconclusive = true;
+            else console.warn("Retry lookup failed:", err);
+          }
+          // Keep deferring only while still inconclusive and a round remains.
+          if (inconclusive && round === 0) { stillPending.push(i); continue; }
+          const r = buildFoundResult(entry, i, found);
+          const at = results.findIndex(x => x.index === i);
+          if (at >= 0) results[at] = r; else results.push(r);
+          renderEntryCard(r);
+          updateSummary();
+          updateAuthorPills();
+          updatePreview();
+        }
+        pendingRetry.length = 0;
+        pendingRetry.push(...stillPending);
+        if (pendingRetry.length) await sleep(1500);
+      }
     }
 
     barProgressFill.classList.add("done");
@@ -424,6 +488,16 @@
       found_title: found ? (found.title || "") : "",
       duplicate_of: entry._duplicateOf || null,
     };
+  }
+
+  // Turn a lookup outcome into a result object: a genuine miss becomes
+  // "not_found", otherwise the entry is compared against the found record.
+  function buildFoundResult(entry, index, found) {
+    if (!found) return buildResult(entry, index, "not_found", 0, [], {}, null);
+    const cmp = B.compareEntry(entry, found);
+    let fieldDiffs = cmp.field_diffs;
+    if (cmp.status === "needs_review") fieldDiffs = B.fieldDiffsForNeedsReview(entry, found);
+    return buildResult(entry, index, cmp.status, cmp.title_score, fieldDiffs, cmp.suggested, found);
   }
 
   // ─── Rendering ────────────────────────────────────────────────────
@@ -676,7 +750,11 @@
     card.dataset.searchHay = `${(r.entry_id || "").toLowerCase()} ${B.stripLatex(r.title || "").toLowerCase()}`;
 
     applyCardVisibility(card);
-    entryList.appendChild(card);
+    // Replace an existing card for this index (used by the retry pass) so the
+    // entry keeps its original position instead of jumping to the end.
+    const existing = entryList.querySelector(`.entry-card[data-index="${r.index}"]`);
+    if (existing) entryList.replaceChild(card, existing);
+    else entryList.appendChild(card);
     updateEntryEmptyState();
   }
 
