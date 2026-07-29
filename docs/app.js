@@ -1394,7 +1394,7 @@
           }
         }
       }
-      return out;
+      return s.cleanNotes ? B.cleanEntryNotes(out) : out;
     }).filter(Boolean);
 
     if (s.removeDuplicates) {
@@ -1544,6 +1544,7 @@
   const settingsPopover = $("#settings-popover");
   const optRemoveDuplicates = $("#opt-remove-duplicates");
   const optRemoveNotFound = $("#opt-remove-notfound");
+  const optCleanNotes = $("#opt-clean-notes");
   const optMaxAuthors = $("#opt-max-authors");
   const optPreferPublished = $("#opt-prefer-published");
   const dedupCriteriaWrap = $("#dedup-criteria-wrap");
@@ -1566,7 +1567,7 @@
     updatePreview();
   });
 
-  [optRemoveNotFound, optPreferPublished].forEach(el =>
+  [optRemoveNotFound, optCleanNotes, optPreferPublished].forEach(el =>
     el.addEventListener("change", updatePreview));
   optMaxAuthors.addEventListener("change", () => {
     updateAuthorPills();
@@ -1580,6 +1581,7 @@
       removeDuplicates: optRemoveDuplicates.checked,
       dedupBy: (document.querySelector('input[name="dedup-criteria"]:checked') || {}).value || "title",
       removeNotFound: optRemoveNotFound.checked,
+      cleanNotes: optCleanNotes.checked,
       maxAuthors: parseInt(optMaxAuthors.value) || 0,
       preferPublished: optPreferPublished.checked,
     };

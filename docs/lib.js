@@ -603,6 +603,85 @@
     return name;
   }
 
+  // ─── Note cleaning ───────────────────────────────────────────────────
+  // Reference managers (Zotero, Mendeley, Scopus exports, …) dump their own
+  // bookkeeping into `note` / `annote`. It is never part of the citation and
+  // shows up verbatim in the compiled bibliography, so offer to strip it.
+  // Keys are matched case-insensitively; `_` also matches the LaTeX-escaped
+  // `\_` that managers write, and a space matches any run of whitespace.
+  const NOTE_JUNK_KEYS = [
+    "read_status_date",
+    "read_status",
+    "citation key",
+    "kerkocite.itemalsoknownas",
+    "zscc",
+    "mag id",
+    "tex.ids",
+    "export date",
+    "cited by",
+    "cited references",
+    "correspondence address",
+    "art. no",
+    "coden",
+  ];
+
+  function escapeRegExp(s) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  const NOTE_JUNK_KEY_RE = new RegExp(
+    "(?:^|(?<=[\\s;,]))(?:" +
+      NOTE_JUNK_KEYS.map(k => escapeRegExp(k).replace(/_/g, "\\\\?_").replace(/ /g, "\\s+")).join("|") +
+      ")\\s*:",
+    "gi"
+  );
+
+  /**
+   * Strip reference-manager bookkeeping (`Read_Status: Read`, `ZSCC: 0`, …)
+   * from a note value, keeping any prose the user actually wrote. A junk
+   * value ends at the next junk key, the next newline, or the end of the note
+   * — whichever comes first — because BibTeX parsing may have collapsed the
+   * manager's line breaks into spaces.
+   */
+  function cleanNote(note) {
+    if (!note) return "";
+    const text = String(note);
+    NOTE_JUNK_KEY_RE.lastIndex = 0;
+    const starts = [];
+    let m;
+    while ((m = NOTE_JUNK_KEY_RE.exec(text)) !== null) starts.push(m.index);
+    if (!starts.length) return text.trim();
+
+    let kept = "";
+    let cursor = 0;
+    for (let i = 0; i < starts.length; i++) {
+      const start = starts[i];
+      if (start < cursor) continue;
+      const limit = i + 1 < starts.length ? starts[i + 1] : text.length;
+      const nl = text.indexOf("\n", start);
+      const end = nl !== -1 && nl < limit ? nl : limit;
+      kept += text.slice(cursor, start);
+      cursor = end;
+    }
+    kept += text.slice(cursor);
+    return kept.replace(/[\s;,]+/g, " ").trim().replace(/^[;,]+|[;,]+$/g, "").trim();
+  }
+
+  /**
+   * Return a copy of an entry with note-like fields cleaned; fields left empty
+   * by the cleaning are dropped entirely.
+   */
+  function cleanEntryNotes(entry) {
+    const out = { ...entry };
+    for (const field of ["note", "annote"]) {
+      if (!(field in out)) continue;
+      const cleaned = cleanNote(out[field]);
+      if (cleaned) out[field] = cleaned;
+      else delete out[field];
+    }
+    return out;
+  }
+
   // ─── Search ──────────────────────────────────────────────────────────
   /**
    * Case-insensitive AND-of-tokens substring match against an entry's title
@@ -654,6 +733,9 @@
   exports.bestMatch = bestMatch;
   exports.abbreviateVenue = abbreviateVenue;
   exports.expandVenue = expandVenue;
+  exports.cleanNote = cleanNote;
+  exports.cleanEntryNotes = cleanEntryNotes;
+  exports.NOTE_JUNK_KEYS = NOTE_JUNK_KEYS;
   exports.entryMatchesQuery = entryMatchesQuery;
 
 })(typeof module !== "undefined" && module.exports ? module.exports : (window.BibLib = {}));
