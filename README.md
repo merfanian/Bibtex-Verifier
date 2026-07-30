@@ -47,6 +47,7 @@ Runs **100% in your browser** — no install, no server, no account. Only paper 
 - **Pill-style diffs** — choose your text vs. suggested metadata per field
 - **Live BibTeX preview** with diff highlighting; **copy** or **download** the final file
 - **Max authors** truncation for long author lists (plus peer-reviewed venue preference, dedup, optional filters)
+- **Clean notes** — strip reference-manager bookkeeping (`Read_Status`, `ZSCC`, …) from `note` / `annote`
 - **Dark / light** theme
 - **Quick search shortcuts** on each card (Scholar, CrossRef, DBLP, …)
 

@@ -673,6 +673,66 @@ test("COMPARED_FIELDS contains expected fields", () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
+console.log("\n── cleanNote ──");
+
+test("returns empty for falsy input", () => {
+  assert.strictEqual(lib.cleanNote(""), "");
+  assert.strictEqual(lib.cleanNote(null), "");
+  assert.strictEqual(lib.cleanNote(undefined), "");
+});
+
+test("keeps a note the user actually wrote", () => {
+  const note = "Cited in the related work section.";
+  assert.strictEqual(lib.cleanNote(note), note);
+});
+
+test("strips Zotero read-status bookkeeping", () => {
+  const note = "Read\\_Status: Read\nRead\\_Status\\_Date: 2023-06-27T01:46:48.348Z";
+  assert.strictEqual(lib.cleanNote(note), "");
+});
+
+test("strips bookkeeping after the parser collapsed newlines to spaces", () => {
+  const note = "Read\\_Status: Read Read\\_Status\\_Date: 2023-06-27T01:46:48.348Z";
+  assert.strictEqual(lib.cleanNote(note), "");
+});
+
+test("keeps prose and drops the bookkeeping around it", () => {
+  const note = "Read\\_Status: Read\nGreat SymCC paper.\nZSCC: 0000123";
+  assert.strictEqual(lib.cleanNote(note), "Great SymCC paper.");
+});
+
+test("is case-insensitive and tolerates unescaped underscores", () => {
+  assert.strictEqual(lib.cleanNote("read_status: read"), "");
+});
+
+test("leaves unknown key-value notes alone", () => {
+  const note = "PMID: 12345678";
+  assert.strictEqual(lib.cleanNote(note), note);
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+console.log("\n── cleanEntryNotes ──");
+
+test("drops a note that was pure bookkeeping", () => {
+  const entry = { ID: "poeplau2020", title: "SymCC", note: "Read\\_Status: Read" };
+  const out = lib.cleanEntryNotes(entry);
+  assert.ok(!("note" in out));
+  assert.strictEqual(out.title, "SymCC");
+});
+
+test("cleans annote too and does not mutate the input", () => {
+  const entry = { ID: "x", annote: "ZSCC: 0000123\nWorth re-reading." };
+  const out = lib.cleanEntryNotes(entry);
+  assert.strictEqual(out.annote, "Worth re-reading.");
+  assert.strictEqual(entry.annote, "ZSCC: 0000123\nWorth re-reading.");
+});
+
+test("leaves entries without notes untouched", () => {
+  const entry = { ID: "x", title: "Foo" };
+  assert.deepStrictEqual(lib.cleanEntryNotes(entry), entry);
+});
+
+// ═══════════════════════════════════════════════════════════════════════
 console.log("\n── entryMatchesQuery ──");
 
 test("empty / whitespace query matches everything", () => {
