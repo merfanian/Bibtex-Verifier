@@ -77,10 +77,10 @@ Upload or paste .bib → Parse entries → For each entry:
 ```bash
 git clone https://github.com/merfanian/Bibtex-Verifier.git
 cd Bibtex-Verifier
-npx serve docs
+npm start        # serves src/ with `npx serve`
 ```
 
-Open the URL shown (often `http://localhost:3000`).
+Open the URL shown (often `http://localhost:3000`). Any static server works; the app uses ES modules, so opening `index.html` via `file://` won't.
 
 ---
 
@@ -88,8 +88,10 @@ Open the URL shown (often `http://localhost:3000`).
 
 | Path | Role |
 |------|------|
-| `docs/` | GitHub Pages app: `index.html`, `style.css`, `app.js`, `lib.js` |
-| `tests/test_lib.js` | Node tests for `lib.js` |
+| `src/` | The static app deployed to GitHub Pages: `index.html`, `style.css` |
+| `src/lib/` | Pure logic (parsing, matching, comparison, export) — no DOM, no network |
+| `src/app/` | Browser UI and network code (ES modules, entry point `main.js`) |
+| `tests/` | Node tests (`npm test`) |
 | `.github/workflows/` | CI + Pages deploy |
 
 ---

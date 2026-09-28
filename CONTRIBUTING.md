@@ -7,43 +7,53 @@ metadata sources, BibLaTeX edge cases, and UX polish are all fair game.
 
 | Path | Role |
 |------|------|
-| `docs/index.html` | Page markup; loads `lib.js`, `app.js`, and `fuzzball` from a CDN |
-| `docs/lib.js` | **Pure logic** — parsing, normalization, fuzzy matching, field comparison, API-response converters. No DOM, no network. Runs in both the browser (`window.BibLib`) and Node. |
-| `docs/app.js` | Everything with side effects — DOM rendering, network calls, rate limiting, UI state. |
-| `docs/style.css` | Styles. |
-| `tests/test_lib.js` | Node tests for `lib.js`. |
-| `.github/workflows/` | CI (`ci.yml`) and GitHub Pages deploy (`deploy.yml`). |
+| `src/index.html` | Page markup; loads `fuzzball` from a CDN and `app/main.js` as an ES module |
+| `src/style.css` | Styles. |
+| `src/lib/` | **Pure logic** — no DOM, no network, runs unchanged in the browser and Node. `index.js` re-exports everything. |
+| `src/lib/bibtex.js`, `latex.js` | Parsing / serializing `.bib`, LaTeX stripping |
+| `src/lib/similarity.js`, `matching.js`, `compare.js` | Fuzzy matching, same-paper / preprint logic, field-by-field comparison |
+| `src/lib/sources.js` | API-response converters to the standard record shape |
+| `src/lib/results.js`, `export.js`, `diff.js` | Result objects, building the exported entries, preview line diff |
+| `src/lib/notes.js`, `venues.js`, `search.js` | Note cleaning, venue abbreviations, entry search |
+| `src/app/` | Everything with side effects. `main.js` wires the modules; `api.js` does rate-limited lookups; `verify.js` runs a verification; `cards.js`, `field-actions.js`, `authors.js`, `filters.js`, `preview.js`, `settings.js`, `input.js`, `onboarding.js` own their part of the UI; `state.js` holds shared run state. |
+| `tests/*.test.js` | Node tests (`node:test`) for `src/lib` and `src/app/api.js`. |
+| `.github/workflows/` | CI (`ci.yml`) and GitHub Pages deploy (`deploy.yml`, reuses CI). |
 
-The app is **100% client-side** — it is served as static files from `docs/`.
-There is no build step: edit the files in `docs/` and open `docs/index.html`
-in a browser (or run any static server from the repo root).
+The app is **100% client-side** — it is served as static files from `src/`.
+There is no build step: edit the files in `src/` and run `npm start` (or any
+static server). ES modules don't load over `file://`, so use a server.
 
 ## Getting started
 
 ```bash
 npm install     # installs the test-only fuzzball dependency
-npm test        # runs tests/test_lib.js
+npm test        # runs tests/*.test.js with node:test
+npm run check   # syntax-checks every module
+npm start       # serves src/ locally
 ```
 
 `fuzzball` is the same fuzzy-matching library the browser loads from unpkg. The
-tests load it so they exercise the **real** `token_sort_ratio`, not the crude
-fallback baked into `lib.js` — keep it that way so test scores match production.
+tests load it so they exercise the **real** `token_sort_ratio`. `lib/similarity.js`
+has a fallback that mirrors it (used if the CDN script fails); a test keeps the
+two in agreement. If you bump the fuzzball version, update both `package.json`
+and the `<script>` tag in `src/index.html`, including its `integrity` hash.
 
 ## Where code goes
 
-- Anything **testable and side-effect-free** belongs in `lib.js`, with a matching
-  test in `tests/test_lib.js`. This is the bar for logic changes: if it can be a
+- Anything **testable and side-effect-free** belongs in `src/lib/`, with a
+  matching test in `tests/`. This is the bar for logic changes: if it can be a
   pure function, it should be, and it should have a test.
-- Anything touching the DOM or the network belongs in `app.js`.
+- Anything touching the DOM or the network belongs in `src/app/`.
 
 ### Adding a metadata source
 
-1. Add a `<source>ToStandard(...)` converter in `lib.js` that maps the API's
-   JSON into the standard record shape (`title`, `author`, `year`, `journal`,
-   `volume`, `number`, `pages`, `doi`, `publisher`, `url`, `_source`). Export it
-   and add a converter test.
-2. In `app.js`, add a `search<Source>(title)` function and a rate-limit bucket
-   in `rateBuckets`, then wire it into `lookupPaper`.
+1. Add a `<source>ToStandard(...)` converter in `src/lib/sources.js` that maps
+   the API's JSON into the standard record shape (`title`, `author`, `year`,
+   `journal`, `volume`, `number`, `pages`, `doi`, `publisher`, `url`, `_source`).
+   Add a converter test in `tests/sources.test.js`.
+2. In `src/app/api.js`, add a `search<Source>(title)` function and a rate-limit
+   bucket in `RATE_DEFAULTS`, then wire it into `lookupPaper` (and cover it in
+   `tests/api.test.js`).
 3. **Privacy rule:** send only the paper title. Do not attach emails,
    `mailto` parameters, or any part of the user's `.bib` — the promise is that
    only titles ever leave the machine.
@@ -52,9 +62,8 @@ See `openAlexToStandard` / `searchOpenAlex` for a worked example.
 
 ## Before you open a PR
 
-- `npm test` passes.
-- `node -c docs/lib.js && node -c docs/app.js` (CI runs these).
-- New logic in `lib.js` has a test.
+- `npm test` and `npm run check` pass (CI runs both).
+- New logic in `src/lib/` has a test.
 - Commits use a single short imperative line describing what changed.
 
 ## Pull request flow

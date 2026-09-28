@@ -3,6 +3,7 @@ name: CI
 on:
   pull_request:
     branches: [main]
+  workflow_call:
 
 jobs:
   test:
@@ -23,9 +24,7 @@ jobs:
         run: npm ci
 
       - name: Syntax check
-        run: |
-          node -c docs/lib.js
-          node -c docs/app.js
+        run: npm run check
 
       - name: Run tests
         run: npm test
