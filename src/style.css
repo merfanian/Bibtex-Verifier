@@ -700,13 +700,6 @@ code {
   line-height: 1;
 }
 
-.search-highlight {
-  background: var(--yellow-bg);
-  color: var(--yellow);
-  border-radius: 3px;
-  padding: 0 1px;
-}
-
 .entry-empty {
   display: none;
   flex-direction: column;
@@ -888,12 +881,6 @@ code {
   opacity: 0.85;
 }
 
-.entry-meta {
-  font-size: 0.8rem;
-  color: var(--text-dim);
-  margin-top: 0.25rem;
-}
-
 .status-tag {
   font-size: 0.75rem;
   font-weight: 600;
@@ -971,34 +958,6 @@ code {
   letter-spacing: 0.02em;
 }
 
-/* ── Original & Suggested value columns ── */
-.diff-table .val-original {
-  color: var(--text);
-  opacity: 0.7;
-  word-break: break-word;
-  max-width: 250px;
-  font-size: 0.8rem;
-  transition: opacity 0.2s, text-decoration 0.2s;
-}
-
-.diff-table .val-original .empty-val {
-  color: var(--text-dim);
-  font-style: italic;
-}
-
-.diff-table .val-suggested {
-  color: var(--green);
-  word-break: break-word;
-  max-width: 250px;
-  transition: opacity 0.2s;
-}
-
-.diff-table .val-choices {
-  word-break: break-word;
-}
-
-.diff-table .score-val { color: var(--text-dim); text-align: right; white-space: nowrap; }
-
 /* ── Value columns for pills ── */
 .val-col {
   vertical-align: middle;
@@ -1023,13 +982,6 @@ code {
 }
 
 /* ── Choice pills (original & suggested as clickable values) ── */
-.choice-pills {
-  display: flex;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-  align-items: flex-start;
-}
-
 .choice-pill {
   display: inline-block;
   padding: 0.3rem 0.6rem;
@@ -1195,69 +1147,6 @@ code {
 .fields-chevron { transition: transform 0.2s; }
 .fields-toggle-wrap.collapsed .fields-chevron { transform: rotate(-90deg); }
 .fields-toggle-wrap.collapsed .fields-table { display: none; }
-.fields-table .current-val { color: var(--text); }
-.field-row-plain .found-text { color: var(--text); }
-
-.found-text {
-  display: block;
-  padding: 0.15rem 0.3rem;
-  border-radius: 3px;
-  border: 1px solid transparent;
-  outline: none;
-  min-height: 1.3em;
-  transition: border-color 0.15s, background 0.15s;
-  word-break: break-word;
-}
-
-.found-text[contenteditable="true"]:hover {
-  border-color: var(--border);
-  background: var(--surface-alt);
-}
-
-.found-text[contenteditable="true"]:focus {
-  border-color: var(--accent);
-  background: var(--surface-alt);
-}
-
-/* Editable suggestion text */
-.found-text.removed {
-  opacity: 0.3;
-  text-decoration: line-through;
-  pointer-events: none;
-}
-
-.field-actions {
-  white-space: nowrap;
-  text-align: right;
-  width: 60px;
-}
-
-.fa-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: transparent;
-  color: var(--text-dim);
-  cursor: pointer;
-  padding: 0;
-  margin-left: 2px;
-  transition: all 0.12s;
-  vertical-align: middle;
-}
-
-.fa-btn:hover {
-  background: var(--surface-alt);
-  color: var(--text);
-  border-color: var(--text-dim);
-}
-
-.fa-btn.fa-use-found.active { background: var(--green-bg); border-color: var(--green); color: var(--green); }
-.fa-btn.fa-revert.active { background: var(--yellow-bg); border-color: var(--yellow); color: var(--yellow); }
-.fa-btn.fa-remove.active { background: var(--red-bg); border-color: var(--red); color: var(--red); }
 
 /* ─── Entry actions (segmented toggle) ─────────────────────────── */
 .entry-actions {
@@ -1566,17 +1455,6 @@ code {
   content: " ";
 }
 
-.diff-sep {
-  display: block;
-  padding: 0.15rem 0.75rem;
-  font-size: 0.7rem;
-  color: var(--accent);
-  background: var(--accent-bg);
-  border-left: 3px solid var(--accent);
-  user-select: none;
-  opacity: 0.7;
-}
-
 @keyframes highlight-pulse {
   0%   { background: var(--yellow-bg); box-shadow: inset 0 0 0 1px var(--yellow-border); }
   100% { background: transparent; box-shadow: none; }
@@ -1632,8 +1510,6 @@ code {
   border-radius: 14px;
   box-shadow: var(--shadow-lg);
 }
-
-.download-bar { display: none; }
 
 /* ─── Settings popover ─────────────────────────────────────────── */
 .settings-anchor {
