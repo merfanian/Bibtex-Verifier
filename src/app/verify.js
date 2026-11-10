@@ -1,5 +1,7 @@
 // Verification run: parse the .bib, look up each entry, render results as they arrive.
-import { buildResult, findDuplicateTitles, parseBib, stripLatex } from "../lib/index.js";
+import {
+  applyPublishedPreference, buildResult, findDuplicateTitles, parseBib, setVenueIndex, stripLatex,
+} from "../lib/index.js";
 import { lookupPaper, resetRateLimits, sleep, TransientLookupError } from "./api.js";
 import { updateAuthorPills } from "./authors.js";
 import { clearCards, renderEntryCard } from "./cards.js";
@@ -8,6 +10,7 @@ import { resetFilters } from "./filters.js";
 import { beginVerificationRun, openPostVerifyTour } from "./onboarding.js";
 import { resetPreview, updatePreview } from "./preview.js";
 import { resetRunState, state } from "./state.js";
+import { getSettings } from "./settings.js";
 
 const resultsSection = $(".results-section");
 const floatingBar = $("#floating-bar");
@@ -50,6 +53,38 @@ function showResult(r) {
   renderEntryCard(r);
   updateAuthorPills();
   updatePreview();
+}
+
+/**
+ * "Prefer peer-reviewed" changed: entries whose only issue is citing a
+ * preprint move between Auto-Updated and Needs Review. Their untouched rows
+ * take the new defaults; choices the user made are kept.
+ */
+export function reclassifyPublishedOnly(preferPublished) {
+  let changed = false;
+  state.results.forEach((r, i) => {
+    if (!r?.published_only) return;
+    const next = applyPublishedPreference(r, preferPublished);
+    if (next.status === r.status) return;
+    const edits = state.fieldEdits[i] || {};
+    for (const field of Object.keys(edits)) if (edits[field]?._auto) delete edits[field];
+    state.results[i] = next;
+    renderEntryCard(next);
+    changed = true;
+  });
+  if (changed) updateAuthorPills();
+  updatePreview();
+}
+
+// dblp venue index, fetched once on the first run. Without it venue checks
+// still work, only stricter (more "different venue" reviews, never fewer).
+let venueIndexLoad = null;
+function loadVenueIndex() {
+  venueIndexLoad ??= fetch("data/venues.json")
+    .then(r => (r.ok ? r.json() : null))
+    .then(index => { if (index) setVenueIndex(index); })
+    .catch(err => console.warn("Venue index unavailable:", err));
+  return venueIndexLoad;
 }
 
 /** Look up one entry. `inconclusive` means a source failed transiently. */
@@ -98,6 +133,7 @@ async function runVerification(resumeTour) {
   const duplicateOf = findDuplicateTitles(entries);
   // Indices whose lookup was inconclusive; re-checked once rate-limit pressure eases.
   const pendingRetry = [];
+  await loadVenueIndex();
 
   for (let i = 0; i < total; i++) {
     const entry = entries[i];
@@ -112,7 +148,7 @@ async function runVerification(resumeTour) {
 
     const { found, inconclusive } = await lookupEntry(entry);
     if (inconclusive) pendingRetry.push(i);
-    showResult(buildResult(entry, i, found, duplicateOf[i]));
+    showResult(buildResult(entry, i, found, duplicateOf[i], getSettings()));
   }
 
   if (pendingRetry.length) {
@@ -125,7 +161,7 @@ async function runVerification(resumeTour) {
         const { found, inconclusive } = await lookupEntry(entries[i]);
         // Keep deferring only while still inconclusive and a round remains.
         if (inconclusive && round === 0) { stillPending.push(i); continue; }
-        showResult(buildResult(entries[i], i, found, duplicateOf[i]));
+        showResult(buildResult(entries[i], i, found, duplicateOf[i], getSettings()));
       }
       pendingRetry.splice(0, pendingRetry.length, ...stillPending);
       if (pendingRetry.length) await sleep(1500);

@@ -8,6 +8,7 @@ const optRemoveNotFound = $("#opt-remove-notfound");
 const optCleanNotes = $("#opt-clean-notes");
 const optMaxAuthors = $("#opt-max-authors");
 const optPreferPublished = $("#opt-prefer-published");
+const optApplyMinor = $("#opt-apply-minor");
 const dedupCriteriaWrap = $("#dedup-criteria-wrap");
 
 export function getSettings() {
@@ -18,6 +19,7 @@ export function getSettings() {
     cleanNotes: optCleanNotes.checked,
     maxAuthors: parseInt(optMaxAuthors.value) || 0,
     preferPublished: optPreferPublished.checked,
+    applyMinor: optApplyMinor.checked,
   };
 }
 
@@ -27,9 +29,11 @@ export function setSettingsOpen(open) {
 }
 
 /**
- * @param {{ onChange: () => void, onMaxAuthorsChange: () => void }} handlers
+ * @param {{ onChange: () => void, onMaxAuthorsChange: () => void,
+ *   onApplyMinorChange: (on: boolean) => void, onPreferPublishedChange: (on: boolean) => void }} handlers
  */
-export function initSettings({ onChange, onMaxAuthorsChange }) {
+export function initSettings({ onChange, onMaxAuthorsChange, onApplyMinorChange, onPreferPublishedChange }) {
+  optApplyMinor.addEventListener("change", () => onApplyMinorChange(optApplyMinor.checked));
   settingsToggle.addEventListener("click", (e) => {
     e.stopPropagation();
     setSettingsOpen(!settingsPopover.classList.contains("open"));
@@ -43,8 +47,9 @@ export function initSettings({ onChange, onMaxAuthorsChange }) {
     dedupCriteriaWrap.classList.toggle("visible", optRemoveDuplicates.checked);
     onChange();
   });
-  [optRemoveNotFound, optCleanNotes, optPreferPublished].forEach(el =>
+  [optRemoveNotFound, optCleanNotes].forEach(el =>
     el.addEventListener("change", onChange));
+  optPreferPublished.addEventListener("change", () => onPreferPublishedChange(optPreferPublished.checked));
   optMaxAuthors.addEventListener("change", onMaxAuthorsChange);
   $$('input[name="dedup-criteria"]').forEach(el => el.addEventListener("change", onChange));
 }

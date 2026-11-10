@@ -123,6 +123,16 @@ describe("buildExportEntries", () => {
     assert.equal(buildExportEntries(e, stillPreprint, {}, { ...DEFAULT_SETTINGS, preferPublished: true })[0].booktitle,
       "arXiv preprint");
   });
+
+  it("preferPublished leaves needs-review entries and explicit choices alone", () => {
+    const e = [{ ID: "p", booktitle: "arXiv preprint" }];
+    const on = { ...DEFAULT_SETTINGS, preferPublished: true };
+    const review = [{ status: "needs_review", suggested: { journal: "ICML" } }];
+    assert.equal(buildExportEntries(e, review, {}, on)[0].booktitle, "arXiv preprint");
+    const updated = [{ status: "updated", suggested: { journal: "ICML" } }];
+    const kept = { 0: { booktitle: { action: "original", value: "arXiv preprint" } } };
+    assert.equal(buildExportEntries(e, updated, kept, on)[0].booktitle, "arXiv preprint");
+  });
 });
 
 describe("diffLines", () => {

@@ -43,7 +43,8 @@ Runs **100% in your browser** — no install, no server, no account. Only paper 
 
 - **Drag-and-drop** or **paste** BibTeX from Overleaf
 - **Multi-source** checks (Semantic Scholar + CrossRef, with OpenAlex fallback)
-- **Hallucination detection** — titles that don’t exist in major indexes
+- **Hallucination detection** — titles that don’t exist in major indexes, plus wrong authors, venues and years on real titles
+- **Focus on what matters** — formatting fixes are applied automatically (toggle in settings); only real conflicts ask for your review
 - **Pill-style diffs** — choose your text vs. suggested metadata per field
 - **Live BibTeX preview** with diff highlighting; **copy** or **download** the final file
 - **Max authors** truncation for long author lists (plus peer-reviewed venue preference, dedup, optional filters)
@@ -62,7 +63,9 @@ Upload or paste .bib → Parse entries → For each entry:
 → You edit choices → Export corrected .bib
 ```
 
-**Statuses:** **Verified** (matches online record) · **Auto-updated** (same paper, metadata differs) · **Needs review** (weak title match — possible typo or fake cite) · **Not found** (no index hit).
+**Statuses:** **Verified** (matches online record) · **Auto-updated** (same paper; only formatting fixes or missing fields, applied for you) · **Needs review** (something that matters differs — authors, venue, year, DOI, pages — or the title match is weak; nothing is changed until you decide) · **Not found** (no index hit).
+
+The results open on **To check**: only the entries that need a decision. Differences are triaged so that formatting (venue abbreviations, name formats, page dashes, online vs. print year) never hides a real problem: venues count as the same only on positive evidence — an exact name, a full abbreviation, an acronym that covers the whole name, or the [dblp](https://dblp.org/) venue index — and anything unproven goes to review.
 
 ---
 

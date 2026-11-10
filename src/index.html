@@ -100,27 +100,35 @@
 
     <div class="results-section">
       <div class="summary-bar">
-        <button type="button" class="summary-badge badge-verified active" data-filter="verified">
+        <div class="view-switch" role="group" aria-label="Which entries to show">
+          <button type="button" class="view-btn active" data-filter="attention" title="Entries that need your decision: needs review, not found, duplicates">
+            To check <span class="view-count" id="count-attention">0</span>
+          </button>
+          <button type="button" class="view-btn" data-filter="all" title="Every entry, including verified and auto-fixed ones">
+            All <span class="view-count" id="count-all">0</span>
+          </button>
+        </div>
+        <button type="button" class="summary-badge badge-verified" data-filter="verified">
           <span class="summary-dot"></span>
           <span class="summary-label">Verified</span>
           <span class="summary-count">0</span>
         </button>
-        <button type="button" class="summary-badge badge-updated active" data-filter="updated">
+        <button type="button" class="summary-badge badge-updated" data-filter="updated">
           <span class="summary-dot"></span>
           <span class="summary-label">Auto-Updated</span>
           <span class="summary-count">0</span>
         </button>
-        <button type="button" class="summary-badge badge-review active" data-filter="needs_review">
+        <button type="button" class="summary-badge badge-review" data-filter="needs_review">
           <span class="summary-dot"></span>
           <span class="summary-label">Needs Review</span>
           <span class="summary-count">0</span>
         </button>
-        <button type="button" class="summary-badge badge-notfound active" data-filter="not_found">
+        <button type="button" class="summary-badge badge-notfound" data-filter="not_found">
           <span class="summary-dot"></span>
           <span class="summary-label">Not Found</span>
           <span class="summary-count">0</span>
         </button>
-        <button type="button" class="summary-badge badge-duplicates active" data-filter="duplicate">
+        <button type="button" class="summary-badge badge-duplicates" data-filter="duplicate">
           <span class="summary-dot"></span>
           <span class="summary-label">Duplicates</span>
           <span class="summary-count">0</span>
@@ -138,6 +146,11 @@
       <div class="main-columns" id="main-columns">
         <div class="col-entries">
           <div class="entry-list"></div>
+          <div class="hidden-summary" id="hidden-summary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            <span class="hidden-summary-text"></span>
+            <button type="button" class="hidden-summary-btn" data-filter="all">Show them</button>
+          </div>
           <div class="entry-empty" id="entry-empty" hidden>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <p class="entry-empty-title">No entries match</p>
@@ -288,6 +301,14 @@
         </button>
         <div class="settings-popover" id="settings-popover">
           <div class="popover-arrow"></div>
+          <div class="settings-row">
+            <svg class="setting-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+            <label class="option-toggle" title="Formatting-only differences: capitalization, venue abbreviations, name formats, page dashes, online vs. print year. Off keeps your text; you can still adopt each one by hand.">
+              <input type="checkbox" id="opt-apply-minor" checked />
+              <span>Auto-apply formatting fixes</span>
+            </label>
+          </div>
+          <div class="settings-divider"></div>
           <div class="settings-row">
             <svg class="setting-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="17.5" y1="14" x2="17.5" y2="21"/><line x1="14" y1="17.5" x2="21" y2="17.5"/></svg>
             <label class="option-toggle">

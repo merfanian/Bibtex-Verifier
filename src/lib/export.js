@@ -51,7 +51,11 @@ export function buildExportEntries(entries, results, fieldEdits, settings) {
       out.author = truncateAuthors(out.author, s.maxAuthors);
     }
 
-    if (s.preferPublished && r.suggested) {
+    // Never override a needs-review entry or a venue the user chose explicitly.
+    const venueField = out.journal ? "journal" : "booktitle";
+    const venueEdit = fieldEdits[i]?.[venueField];
+    const userChoseVenue = venueEdit && !venueEdit._auto;
+    if (s.preferPublished && r.suggested && r.status !== "needs_review" && !userChoseVenue) {
       const venue = (out.journal || out.booktitle || "").toLowerCase();
       const foundVenue = r.suggested.journal || r.suggested.booktitle || "";
       if (isPreprintVenue(venue) && foundVenue && !isPreprintVenue(foundVenue.toLowerCase())) {

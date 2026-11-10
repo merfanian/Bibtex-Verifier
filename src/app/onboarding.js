@@ -104,14 +104,14 @@ const introOnboardingSteps = [
 
 const postVerifySteps = [
   {
-    title: "Summary filters",
-    body: "These <strong>badges</strong> count results by status — verified, updated, needs review, not found. Click one to filter the list below.",
+    title: "What needs you",
+    body: "The list opens on <strong>To check</strong>: only entries that need a decision (needs review, not found, duplicates). Verified and auto-fixed entries are counted in one line below the list; switch to <strong>All</strong> or click a status badge to see them.",
     target: ".summary-bar",
     panelTop: true,
   },
   {
-    title: "First entry — metadata updated",
-    body: "This row matched a real paper. The sample used a <strong>wrong journal</strong> on purpose — suggested venue, DOI, and other fields come from Semantic Scholar / CrossRef / OpenAlex. Each line compares your text to the suggestion; accept or revert per field.",
+    title: "First entry — needs your attention",
+    body: "This row matched a real paper, but the sample used a <strong>wrong journal</strong> on purpose. Differences that matter (venue, authors, year, DOI) are flagged and <strong>keep your value until you pick the suggestion</strong>; formatting fixes and missing fields like the DOI are applied for you. Accept or revert per field.",
     target: ".entry-list .entry-card:nth-child(1)",
     panelTop: true,
   },

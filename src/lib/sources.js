@@ -33,6 +33,24 @@ export function crossrefToStandard(item) {
   };
 }
 
+// Semantic Scholar venue entities that were merged with an unrelated venue of
+// the same acronym. Corrected only when the DOI confirms the real venue.
+const SS_VENUE_FIXES = [
+  {
+    // ITCS (Innovations in Theoretical Computer Science): ACM 2010–2016, LIPIcs since 2017.
+    wrong: "information technology convergence and services",
+    right: "Innovations in Theoretical Computer Science",
+    doi: /^10\.(1145\/|4230\/lipics\.itcs\.)/i,
+  },
+];
+
+function fixSSVenue(venue, doi) {
+  const v = (venue || "").toLowerCase().trim();
+  for (const fix of SS_VENUE_FIXES)
+    if (v === fix.wrong && fix.doi.test(doi || "")) return fix.right;
+  return venue;
+}
+
 export function ssToStandard(paper) {
   const authors = (paper.authors || []).map(a => lastFirst(a.name || "")).filter(Boolean);
 
@@ -41,6 +59,7 @@ export function ssToStandard(paper) {
   let venue = (pv && typeof pv === "object" ? pv.name : null) || paper.venue || "";
   // Surface arXiv-only records as preprints so their submission year isn't trusted.
   if (!venue && ext.ArXiv) venue = "arXiv";
+  venue = fixSSVenue(venue, ext.DOI);
 
   return {
     title: paper.title || "",

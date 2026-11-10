@@ -90,7 +90,7 @@ function undoRemoveField(xBtn, row, idx, field) {
   const foundVal = decodeURIComponent(row.getAttribute("data-found-val") || "");
   const origVal = decodeURIComponent(row.getAttribute("data-original-val") || "");
   const isEnrichment = row.dataset.enrichment === "1";
-  const defaultAction = state.results[idx]?.status === "updated" ? "found" : "original";
+  const defaultAction = row.dataset.default || "original";
   xBtn.classList.remove("active");
 
   const valPill = row.querySelector(".pill-value");
@@ -167,6 +167,42 @@ function onInlineEdit(pill) {
   row.querySelectorAll(".pill-original").forEach(p => p.classList.remove("active"));
   if (pill.classList.contains("pill-suggested")) pill.classList.add("active");
   afterRowChange(row, "custom");
+}
+
+/**
+ * After the "Auto-apply formatting fixes" setting changes, move every minor
+ * row the user hasn't touched to the new default. Rows the user chose,
+ * edited or removed are left alone.
+ */
+export function reapplyMinorDefaults(applyMinor) {
+  const action = applyMinor ? "found" : "original";
+  const changedCards = new Set();
+  // Rows marked keep-yours stay on the user's value whatever the setting.
+  for (const row of document.querySelectorAll(".diff-row.severity-minor:not([data-keep-yours])")) {
+    const idx = parseInt(row.dataset.entry);
+    const field = row.dataset.field;
+    const edits = editsFor(idx);
+    if (edits[field] && !edits[field]._auto) continue;
+    // Entries that need review keep every original value regardless.
+    const result = state.results[idx];
+    if (!result || result.status === "needs_review" || result.status === "not_found") continue;
+
+    row.dataset.default = action;
+    if (row.dataset.action === action) continue;
+    const origPill = row.querySelector(".pill-original");
+    const sugPill = row.querySelector(".pill-suggested");
+    edits[field] = {
+      action,
+      value: action === "found" ? (sugPill?.dataset.val || "") : (origPill?.dataset.val || ""),
+      _auto: true,
+    };
+    origPill?.classList.toggle("active", action === "original");
+    setSuggestedPill(sugPill, { active: action === "found", editable: action === "found" });
+    row.dataset.action = action;
+    changedCards.add(row.closest(".entry-card"));
+  }
+  changedCards.forEach(syncBulkBtns);
+  updatePreview();
 }
 
 export function initFieldActions() {
