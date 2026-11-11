@@ -43,7 +43,10 @@ function alignVenue(original, found) {
   const aligned = { ...found };
   if (original.booktitle && !original.journal && aligned.journal) {
     aligned.booktitle = aligned.journal;
-    delete aligned.journal;  // the venue moved; don't also suggest a journal field
+    // The venue moved; don't also suggest a journal field. A journal of
+    // "arXiv" may be the record's only preprint signal, so keep that.
+    aligned._preprint = isPreprint(found);
+    delete aligned.journal;
   }
   return aligned;
 }

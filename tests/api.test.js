@@ -81,6 +81,15 @@ describe("lookupPaper", () => {
     assert.ok(found._preprint);
   });
 
+  it("retries instead of settling on a re-upload after a transient failure", async () => {
+    const posted = { ...crItem, type: "posted-content", DOI: "10.1/posted" };
+    mockFetch({
+      ss: () => json(503, {}),
+      cr: () => json(200, { message: { items: [posted] } }),
+    });
+    await assert.rejects(lookupPaper("Attention Is All You Need"), TransientLookupError);
+  });
+
   it("only sends the title to the APIs", async () => {
     mockFetch();
     await lookupPaper("Some Title");

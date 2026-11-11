@@ -578,10 +578,11 @@ export function normalizeDoi(d) {
     .replace(/^https?:\/\/(dx\.)?doi\.org\//, "").replace(/^doi:\s*/, "");
 }
 
-function classifyDoi(orig, found) {
+function classifyDoi(orig, found, record = {}) {
   const a = normalizeDoi(orig), b = normalizeDoi(found);
   if (a === b) return minor("formatting");
-  const ap = a.startsWith("10.48550/arxiv"), bp = b.startsWith("10.48550/arxiv");
+  // A repository re-upload (record._preprint) is no more published than arXiv.
+  const ap = a.startsWith("10.48550/arxiv"), bp = b.startsWith("10.48550/arxiv") || !!record?._preprint;
   if (ap && !bp) return major(PUBLISHED_VERSION);
   // Never trade your published DOI for the arXiv one; and it can't be confirmed either.
   if (!ap && bp) return major("DOI not confirmed (database only has the preprint)");
@@ -660,7 +661,7 @@ export function classifyDiff(diff, original = {}, record = {}) {
     case "journal":
     case "booktitle": return classifyVenue(o, f);
     case "publisher": return classifyPublisher(o, f);
-    case "doi": return classifyDoi(o, f);
+    case "doi": return classifyDoi(o, f, record);
     case "pages": return classifyPages(o, f);
     case "year": return classifyYear(o, f, original, record);
     case "title": return classifyTitle(o, f);

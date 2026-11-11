@@ -184,7 +184,9 @@ export async function lookupPaper(title) {
 
   const ssSearchMatch = bestMatch((await attempt(() => searchSSSearch(title))) || [], title);
   if (ssSearchMatch) return ssSearchMatch;
-  if (cr.posted) return cr.posted;
+  // After a transient failure a better record may still exist: retry later
+  // instead of settling on a re-upload.
+  if (cr.posted && !transient) return cr.posted;
 
   if (transient) throw new TransientLookupError("inconclusive lookup");
   return null;
