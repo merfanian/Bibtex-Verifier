@@ -30,6 +30,9 @@ export function crossrefToStandard(item) {
     publisher: item.publisher || "",
     url: item.URL || "",
     _source: "crossref",
+    // "posted-content" is a preprint or a re-upload to a repository (SSRN,
+    // Research Square, …), never the version of record.
+    _preprint: item.type === "posted-content",
   };
 }
 

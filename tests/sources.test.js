@@ -21,6 +21,11 @@ describe("crossrefToStandard", () => {
     assert.equal(result._source, "crossref");
   });
 
+  it("marks repository uploads as preprints", () => {
+    assert.ok(isPreprint(crossrefToStandard({ title: ["X"], type: "posted-content" })));
+    assert.ok(!isPreprint(crossrefToStandard({ title: ["X"], type: "journal-article" })));
+  });
+
   it("handles missing fields gracefully", () => {
     const result = crossrefToStandard({});
     assert.equal(result.title, "");

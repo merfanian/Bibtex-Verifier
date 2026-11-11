@@ -106,6 +106,13 @@ describe("compareEntry", () => {
     assert.ok(!("booktitle" in found));
   });
 
+  it("doesn't suggest a journal field for a conference paper", () => {
+    const result = compareEntry({ title: "Test Paper", booktitle: "Advances in NeurIPS" },
+      { title: "Test Paper", journal: "NeurIPS" });
+    assert.ok(!result.field_diffs.some(d => d.field === "journal"));
+    assert.ok(result.field_diffs.some(d => d.field === "booktitle"));
+  });
+
   it("does not suggest the older year when found is a preprint", () => {
     const orig = { title: "Great Paper", year: "2021", journal: "NeurIPS" };
     const found = { title: "Great Paper", year: "2020", journal: "arXiv" };

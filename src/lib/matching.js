@@ -14,6 +14,7 @@ const PREPRINT_YEAR_TOLERANCE = 2;
  */
 export function isPreprint(record) {
   if (!record) return false;
+  if (record._preprint) return true;
   const doi = (record.doi || "").toLowerCase();
   if (doi.startsWith("10.48550/arxiv")) return true;
   const venue = (record.journal || "").toLowerCase().trim();

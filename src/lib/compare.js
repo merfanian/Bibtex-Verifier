@@ -41,8 +41,10 @@ function titleScore(original, found) {
 // A conference paper's venue arrives as `journal`; compare it against the user's `booktitle`.
 function alignVenue(original, found) {
   const aligned = { ...found };
-  if (original.booktitle && !original.journal && aligned.journal)
+  if (original.booktitle && !original.journal && aligned.journal) {
     aligned.booktitle = aligned.journal;
+    delete aligned.journal;  // the venue moved; don't also suggest a journal field
+  }
   return aligned;
 }
 
