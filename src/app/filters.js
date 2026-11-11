@@ -7,9 +7,22 @@ const entrySearchWrap = $(".entry-search");
 const entrySearchInput = $("#entry-search-input");
 const entrySearchClear = $("#entry-search-clear");
 
+const ATTENTION_FILTERS = new Set(["needs_review", "not_found", "duplicate"]);
+
+// The view switch shows "To check" or "All"; a status badge narrows further.
+// Badges light up for every status the current view includes.
 function syncBadges() {
-  $$(".summary-badge").forEach(b =>
-    b.classList.toggle("active", state.activeFilter === "all" || b.dataset.filter === state.activeFilter));
+  const f = state.activeFilter;
+  const view = f === "all" || f === "attention" ? f : null;
+  $$(".view-btn").forEach(b => b.classList.toggle("active", b.dataset.filter === view));
+  $$(".summary-badge").forEach(b => b.classList.toggle("active",
+    b.dataset.filter === f || f === "all" || (f === "attention" && ATTENTION_FILTERS.has(b.dataset.filter))));
+}
+
+function setFilter(filter) {
+  state.activeFilter = filter;
+  syncBadges();
+  applyAllCardVisibility();
 }
 
 function setSearch(value) {
@@ -19,7 +32,7 @@ function setSearch(value) {
 }
 
 export function resetFilters() {
-  state.activeFilter = "all";
+  state.activeFilter = "attention";
   state.activeSearch = "";
   entrySearchInput.value = "";
   entrySearchWrap.classList.remove("has-query");
@@ -28,12 +41,12 @@ export function resetFilters() {
 
 export function initFilters() {
   document.addEventListener("click", (e) => {
+    const viewBtn = e.target.closest(".view-btn, .hidden-summary-btn");
+    if (viewBtn) return setFilter(viewBtn.dataset.filter);
     const badge = e.target.closest(".summary-badge");
     if (!badge) return;
-    const filter = badge.dataset.filter;
-    state.activeFilter = state.activeFilter === filter ? "all" : filter;
-    syncBadges();
-    applyAllCardVisibility();
+    // Clicking the badge that is already the filter goes back to "To check".
+    setFilter(state.activeFilter === badge.dataset.filter ? "attention" : badge.dataset.filter);
   });
 
   entrySearchInput.addEventListener("input", (e) => setSearch(e.target.value));

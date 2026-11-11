@@ -6,7 +6,8 @@ export const state = {
   results: [],
   // fieldEdits[i][field] = { action: "original" | "found" | "custom" | "remove", value }
   fieldEdits: {},
-  activeFilter: "all",
+  // "attention" (default: entries needing a decision), "all", a status, or "duplicate".
+  activeFilter: "attention",
   activeSearch: "",
 };
 

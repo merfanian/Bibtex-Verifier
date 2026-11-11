@@ -9,6 +9,7 @@ export * from "./sources.js";
 export * from "./venues.js";
 export * from "./notes.js";
 export * from "./search.js";
+export * from "./severity.js";
 export * from "./results.js";
 export * from "./export.js";
 export * from "./diff.js";

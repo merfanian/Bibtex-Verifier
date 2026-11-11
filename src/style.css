@@ -716,6 +716,82 @@ code {
 }
 
 .entry-empty.visible { display: flex; }
+.entry-empty.all-clear { border-style: solid; border-color: var(--green-border); background: var(--green-bg); }
+.entry-empty.all-clear svg { display: none; }
+.entry-empty.all-clear .entry-empty-title { color: var(--green); }
+
+/* ─── View switch: "To check" vs "All" ─────────────────────────── */
+.view-switch {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.view-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.view-btn:hover { color: var(--text); }
+.view-btn.active { background: var(--accent-bg); color: var(--accent); }
+
+.view-count {
+  min-width: 1.3rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: var(--surface-alt);
+  color: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/* One line standing in for every entry that needs nothing. */
+.hidden-summary {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--green-border);
+  border-radius: var(--radius);
+  background: var(--green-bg);
+  color: var(--green);
+  font-size: 0.85rem;
+}
+
+.hidden-summary.visible { display: flex; }
+.hidden-summary-text { flex: 1; color: var(--text); }
+
+.hidden-summary-btn {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--green-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--green);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hidden-summary-btn:hover { background: var(--surface); }
 .entry-empty svg { color: var(--text-dim); opacity: 0.6; margin-bottom: 0.2rem; }
 .entry-empty-title { font-weight: 600; color: var(--text); margin: 0; }
 .entry-empty-hint { margin: 0; font-size: 0.85rem; }
@@ -1146,7 +1222,8 @@ code {
 .fields-toggle-btn:hover { color: var(--text); }
 .fields-chevron { transition: transform 0.2s; }
 .fields-toggle-wrap.collapsed .fields-chevron { transform: rotate(-90deg); }
-.fields-toggle-wrap.collapsed .fields-table { display: none; }
+.fields-toggle-wrap.collapsed .fields-table,
+.fields-toggle-wrap.collapsed .minor-diff-table { display: none; }
 
 /* ─── Entry actions (segmented toggle) ─────────────────────────── */
 .entry-actions {
@@ -1190,6 +1267,24 @@ code {
 }
 
 .review-hint strong { color: var(--text); }
+
+/* Why a field differs; major differences stand out, cosmetic ones recede. */
+.diff-reason {
+  display: block;
+  margin-top: 0.3rem;
+  max-width: 11rem;
+  font-size: 0.68rem;
+  line-height: 1.3;
+  color: var(--text-dim);
+}
+.diff-reason-major { color: var(--yellow); font-weight: 600; }
+
+.unchecked-hint {
+  margin-top: 0.5rem;
+  font-size: 0.76rem;
+  color: var(--text-dim);
+}
+.diff-row.severity-minor .val-col { opacity: 0.75; }
 .review-hint .review-hint-match { color: var(--accent); word-break: break-word; }
 
 .not-found-hint {

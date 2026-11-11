@@ -114,10 +114,31 @@ describe("compareEntry", () => {
   });
 
   it("still flags a genuine year mismatch for non-preprint records", () => {
-    const orig = { title: "Great Paper", year: "2021", journal: "NeurIPS" };
+    const orig = { title: "Great Paper", year: "2022", journal: "NeurIPS" };
     const found = { title: "Great Paper", year: "2019", journal: "NeurIPS" };
     assert.ok(compareEntry(orig, found).field_diffs.some(d => d.field === "year"),
       "non-preprint year mismatch should still be reported");
+    const older = { title: "Great Paper", year: "2018", journal: "NeurIPS" };
+    assert.ok(compareEntry(older, found).field_diffs.some(d => d.field === "year"),
+      "a user year older than the database's is reported");
+  });
+
+  it("ignores a user year one newer than the database's (online-first) year, not two", () => {
+    const found = { title: "Great Paper", year: "2019", journal: "NeurIPS" };
+    const oneLater = { title: "Great Paper", year: "2020", journal: "NeurIPS" };
+    assert.ok(!compareEntry(oneLater, found).field_diffs.some(d => d.field === "year"));
+    const twoLater = { title: "Great Paper", year: "2021", journal: "NeurIPS" };
+    assert.ok(compareEntry(twoLater, found).field_diffs.some(d => d.field === "year"));
+  });
+
+  it("reports a swapped first author or a different given name", () => {
+    const found = { title: "Great Paper", author: "Smith, John and Doe, Jane" };
+    const swapped = { title: "Great Paper", author: "Doe, Jane and Smith, John" };
+    assert.ok(compareEntry(swapped, found).field_diffs.some(d => d.field === "author"));
+    const renamed = { title: "Great Paper", author: "Smith, Wei and Doe, Jane" };
+    assert.ok(compareEntry(renamed, found).field_diffs.some(d => d.field === "author"));
+    const reformatted = { title: "Great Paper", author: "John Smith and J. Doe" };
+    assert.ok(!compareEntry(reformatted, found).field_diffs.some(d => d.field === "author"));
   });
 });
 

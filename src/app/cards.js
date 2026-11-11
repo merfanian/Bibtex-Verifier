@@ -1,11 +1,15 @@
 // Entry cards: rendering, status/summary badges, and filter/search visibility.
-import { COMPARED_FIELDS, entryMatchesQuery, stripLatex, truncateAuthors } from "../lib/index.js";
+import { adoptsByDefault, COMPARED_FIELDS, entryMatchesQuery, stripLatex, truncateAuthors } from "../lib/index.js";
 import { $, $$, esc } from "./dom.js";
 import { getSettings } from "./settings.js";
 import { state } from "./state.js";
 
 const entryList = $(".entry-list");
 const entryEmpty = $("#entry-empty");
+const entryEmptyTitle = entryEmpty.querySelector(".entry-empty-title");
+const entryEmptyHint = entryEmpty.querySelector(".entry-empty-hint");
+const hiddenSummary = $("#hidden-summary");
+const hiddenSummaryText = hiddenSummary.querySelector(".hidden-summary-text");
 
 const STATUS_LABELS = {
   verified: "Verified",
@@ -30,8 +34,15 @@ export function removeFieldButton(idx, field, currentAction, title = "Remove fie
 }
 
 // ─── Visibility (filter + search) ────────────────────────────────────
+/** Entries the user has to look at: undecided matches, misses and duplicates. */
+export function needsAttention(card) {
+  return card.dataset.status === "needs_review" || card.dataset.status === "not_found" ||
+    card.dataset.duplicate === "true";
+}
+
 function cardMatchesFilter(card) {
   if (state.activeFilter === "all") return true;
+  if (state.activeFilter === "attention") return needsAttention(card);
   if (state.activeFilter === "duplicate") return card.dataset.duplicate === "true";
   return card.dataset.status === state.activeFilter;
 }
@@ -46,10 +57,28 @@ function applyCardVisibility(card) {
 }
 
 function updateEntryEmptyState() {
-  const cards = $$(".entry-card");
-  if (!cards.length) { entryEmpty.classList.remove("visible"); return; }
-  const anyVisible = [...cards].some(c => !c.classList.contains("hidden"));
-  entryEmpty.classList.toggle("visible", !anyVisible);
+  const cards = [...$$(".entry-card")];
+  const anyVisible = cards.some(c => !c.classList.contains("hidden"));
+
+  // In the "To check" view, the entries that need nothing are one line, not a list.
+  const settled = cards.filter(c => !needsAttention(c)).length;
+  const showSettled = state.activeFilter === "attention" && settled > 0 && !state.activeSearch;
+  hiddenSummary.classList.toggle("visible", showSettled);
+  if (showSettled) {
+    hiddenSummaryText.textContent =
+      `${settled} ${settled === 1 ? "entry was" : "entries were"} verified or fixed automatically.`;
+  }
+
+  if (!cards.length || anyVisible) { entryEmpty.classList.remove("visible"); return; }
+  const allClear = state.activeFilter === "attention" && !state.activeSearch;
+  entryEmptyTitle.textContent = allClear ? "Nothing needs your attention" : "No entries match";
+  entryEmptyHint.textContent = allClear
+    ? (state.parsedEntries.length > state.results.length
+      ? "So far, every checked entry is verified or was fixed automatically."
+      : "Every entry is verified or was fixed automatically. Download the corrected file below.")
+    : "Try a different word or clear the search.";
+  entryEmpty.classList.toggle("all-clear", allClear);
+  entryEmpty.classList.add("visible");
 }
 
 export function applyAllCardVisibility() {
@@ -60,6 +89,7 @@ export function applyAllCardVisibility() {
 export function clearCards() {
   entryList.innerHTML = "";
   entryEmpty.classList.remove("visible");
+  hiddenSummary.classList.remove("visible");
 }
 
 // ─── Summary + effective status ──────────────────────────────────────
@@ -75,6 +105,11 @@ export function updateSummary() {
   $(".badge-review .summary-count").textContent = c.needs_review;
   $(".badge-notfound .summary-count").textContent = c.not_found;
   $(".badge-duplicates .summary-count").textContent = dupes;
+  const cards = [...$$(".entry-card")];
+  $("#count-attention").textContent = cards.filter(needsAttention).length;
+  $("#count-all").textContent = cards.length;
+  // Statuses change after rendering (author truncation), so re-apply the view.
+  applyAllCardVisibility();
 }
 
 /**
@@ -115,13 +150,17 @@ export function updateCardStatuses() {
 }
 
 // ─── Rendering ───────────────────────────────────────────────────────
-function renderDiffRow(r, idx, d, hasSuggestion, maxAuthors) {
+function renderDiffRow(r, idx, d, hasSuggestion, settings) {
+  const { maxAuthors } = settings;
   const edits = state.fieldEdits[idx];
   const isEnrichment = !(d.original || "").trim();
-  // Enrichments and "updated" entries adopt the suggestion by default.
-  const defaultAction = (isEnrichment || r.status === "updated") ? "found" : "original";
+  // Safe changes adopt the suggestion; major differences wait for the user.
+  const defaultAction = adoptsByDefault(r, d, settings) ? "found" : "original";
 
-  if (!edits[d.field]) edits[d.field] = { action: defaultAction, value: d.found || "" };
+  // `_auto` marks a choice the user hasn't made, so settings may still change it.
+  if (!edits[d.field]) edits[d.field] = {
+    action: defaultAction, value: defaultAction === "found" ? (d.found || "") : (d.original || ""), _auto: true,
+  };
   const fe = edits[d.field];
   const currentAction = fe.action;
 
@@ -130,11 +169,15 @@ function renderDiffRow(r, idx, d, hasSuggestion, maxAuthors) {
     ? truncateAuthors(suggestionText, maxAuthors) : suggestionText;
   const authorMatchHidden = d.field === "author" && maxAuthors > 0 && displaySuggestion.trim() === (d.original || "").trim();
 
-  return `<tr class="diff-row${authorMatchHidden ? " author-match-hidden" : ""}" data-entry="${idx}" data-field="${esc(d.field)}" data-action="${currentAction}"
-      data-enrichment="${isEnrichment ? "1" : ""}"
+  const severity = d.severity || "";
+  const reasonHTML = d.reason && !isEnrichment
+    ? `<span class="diff-reason diff-reason-${esc(severity)}" title="${esc(d.reason)}">${esc(d.reason)}</span>` : "";
+
+  return `<tr class="diff-row${authorMatchHidden ? " author-match-hidden" : ""}${severity ? ` severity-${esc(severity)}` : ""}" data-entry="${idx}" data-field="${esc(d.field)}" data-action="${currentAction}"
+      data-enrichment="${isEnrichment ? "1" : ""}" data-default="${defaultAction}"${d.prefer === "original" ? ' data-keep-yours="1"' : ""}
       data-found-val="${encodeURIComponent(d.found || "")}"
       data-original-val="${encodeURIComponent(d.original || "")}">
-      <td class="field-name"><span class="field-name-pill">${esc(d.field)}</span></td>
+      <td class="field-name"><span class="field-name-pill">${esc(d.field)}</span>${reasonHTML}</td>
       <td class="val-col val-col-original">
         ${!isEnrichment ? `<button class="choice-pill pill-original ${currentAction === "original" ? "active" : ""}"
                 data-entry="${idx}" data-field="${esc(d.field)}" data-action="original" data-val="${esc(d.original || "")}"
@@ -177,11 +220,25 @@ function renderHints(r) {
   if (r.duplicate_of)
     html += `<div class="duplicate-row">Duplicate of <strong>${esc(r.duplicate_of)}</strong></div>`;
 
-  if (r.status === "needs_review" && r.found_title) {
+  if (r.review_reason === "different_work") {
+    html += `<div class="review-hint">The database record has this title but <strong>none of your authors</strong>
+      (<strong class="review-hint-match">${esc(r.suggested?.author || "")}</strong>) — probably a different work
+      that shares the name, such as another book with a generic title. Nothing was changed; adopt values only if they're right.</div>`;
+  } else if (r.review_reason === "fields") {
+    const major = (r.field_diffs || []).filter(d => d.severity === "major");
+    html += `<div class="review-hint review-hint-fields">Matched the paper, but ${major.length === 1 ? "one field differs" : `${major.length} fields differ`}
+      in a way worth checking: ${major.map(d => `<strong>${esc(d.field)}</strong> (${esc(d.reason)})`).join(", ")}.
+      Nothing has been changed yet: every field keeps your value until you pick a suggestion${
+        r.published_only ? ` (or turn on <strong>Prefer peer-reviewed over arXiv</strong> in settings to adopt the published version)` : ""}.</div>`;
+  } else if (r.status === "needs_review" && r.found_title) {
     html += `<div class="review-hint">The closest database record may not be the paper you meant
       (<strong>${esc(String(r.title_score))}%</strong> title similarity to
       <strong class="review-hint-match">${esc(r.found_title)}</strong>).
       Review the suggestions below and use the checkmark on each row to adopt a value, or keep your original text.</div>`;
+  }
+
+  if ((r.status === "updated" || r.status === "verified") && r.unchecked?.length) {
+    html += `<div class="unchecked-hint">Not checked: ${r.unchecked.map(esc).join(", ")} — the database record has no value to compare.</div>`;
   }
 
   if (r.status === "not_found") {
@@ -234,12 +291,29 @@ export function renderEntryCard(r) {
 
   let diffHTML = "";
   if (hasDiffs) {
-    const maxAuthors = getSettings().maxAuthors;
-    const rows = r.field_diffs.map(d => renderDiffRow(r, idx, d, hasSuggestion, maxAuthors)).join("");
+    const settings = getSettings();
+    const row = (d) => renderDiffRow(r, idx, d, hasSuggestion, settings);
+    // In a card that needs review, lead with what needs a decision; minor
+    // differences (all kept as your value) fold away.
+    const foldMinor = r.status === "needs_review" && r.field_diffs.some(d => d.severity === "major");
+    const lead = foldMinor ? r.field_diffs.filter(d => d.severity === "major" || d.field === "title") : r.field_diffs;
+    const rest = foldMinor ? r.field_diffs.filter(d => !lead.includes(d)) : [];
     diffHTML = `<table class="diff-table">
       ${DIFF_TABLE_HEADER}
-      ${rows}
+      ${lead.map(row).join("")}
     </table>`;
+    if (rest.length) {
+      diffHTML += `<div class="fields-toggle-wrap collapsed minor-diffs-wrap">
+        <button class="fields-toggle-btn" type="button">
+          <svg class="fields-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          ${rest.length} minor ${rest.length === 1 ? "difference" : "differences"} (your values kept)
+        </button>
+        <table class="diff-table minor-diff-table">
+          ${DIFF_TABLE_HEADER}
+          ${rest.map(row).join("")}
+        </table>
+      </div>`;
+    }
   }
 
   const diffFields = new Set((r.field_diffs || []).map(d => d.field));

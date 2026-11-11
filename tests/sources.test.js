@@ -29,6 +29,24 @@ describe("crossrefToStandard", () => {
   });
 });
 
+describe("ssToStandard venue fixes", () => {
+  const paper = (doi) => ({
+    title: "Inherent Trade-Offs", year: 2017,
+    publicationVenue: { name: "Information Technology Convergence and Services" },
+    externalIds: doi ? { DOI: doi } : {},
+  });
+
+  it("corrects the ITCS mix-up when the DOI confirms it", () => {
+    assert.equal(ssToStandard(paper("10.4230/LIPIcs.ITCS.2017.43")).journal, "Innovations in Theoretical Computer Science");
+    assert.equal(ssToStandard(paper("10.1145/2090236.2090255")).journal, "Innovations in Theoretical Computer Science");
+  });
+
+  it("leaves the venue alone without confirming DOI", () => {
+    assert.equal(ssToStandard(paper("")).journal, "Information Technology Convergence and Services");
+    assert.equal(ssToStandard(paper("10.1007/978-1")).journal, "Information Technology Convergence and Services");
+  });
+});
+
 describe("ssToStandard", () => {
   it("converts Semantic Scholar response to standard format", () => {
     const result = ssToStandard({

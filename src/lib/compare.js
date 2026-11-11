@@ -1,9 +1,16 @@
 import { COMPARED_FIELDS, TITLE_MATCH_THRESHOLD } from "./constants.js";
 import { normalizeTitle } from "./latex.js";
-import { isNewerOrSamePublicationYear, isPreprint } from "./matching.js";
+import { isPreprint } from "./matching.js";
+import { authorListsAgree } from "./severity.js";
 import { normalizeAuthorSet, normalizePages, normalizeText, tokenSortRatio } from "./similarity.js";
 
 const round1 = (n) => Math.round(n * 10) / 10;
+
+// Same year, or `origYear` later than `foundYear` by at most `max` years.
+function isNewerYearWithin(origYear, foundYear, max) {
+  const oy = parseInt(origYear, 10), fy = parseInt(foundYear, 10);
+  return Number.isFinite(oy) && Number.isFinite(fy) && oy >= fy && oy - fy <= max;
+}
 
 export function compareAuthors(a, b) {
   const sa = normalizeAuthorSet(a), sb = normalizeAuthorSet(b);
@@ -21,7 +28,10 @@ export function compareField(field, a, b) {
   if (field === "year" || field === "doi") return na === nb ? 100 : 0;
   if (field === "author") return compareAuthors(a, b);
   if (field === "pages") return normalizePages(na) === normalizePages(nb) ? 100 : tokenSortRatio(na, nb);
-  return tokenSortRatio(na, nb);
+  // Token-sort ignores word order ("Data Mining and Knowledge Discovery" vs
+  // "Data Discovery and Knowledge Mining" score 100); only identical text is a
+  // match, everything else goes to the severity classifier.
+  return na === nb ? 100 : Math.min(tokenSortRatio(na, nb), 99);
 }
 
 function titleScore(original, found) {
@@ -56,10 +66,17 @@ function diffComparedFields(original, found, { preprintAware = false } = {}) {
     if (origVal.trim() && !foundVal.trim()) continue;
 
     // A preprint's year is its submission year; keep the user's same-or-newer publication year.
-    if (field === "year" && foundIsPreprint && isNewerOrSamePublicationYear(origVal, foundVal))
+    // A preprint's year is its submission year; publication follows within two years.
+    if (field === "year" && foundIsPreprint && isNewerYearWithin(origVal, foundVal, 2))
+      continue;
+    // Databases often keep the online-first year; a user year one later is the print year.
+    if (field === "year" && preprintAware && isNewerYearWithin(origVal, foundVal, 1))
       continue;
 
-    const score = compareField(field, origVal, foundVal);
+    // compareField scores authors as an unordered set of surnames; a swapped
+    // first author or a different given name must still surface as a diff.
+    let score = compareField(field, origVal, foundVal);
+    if (field === "author" && score === 100 && !authorListsAgree(origVal, foundVal)) score = 99;
     if (score < 100)
       fieldDiffs.push({ field, original: origVal, found: foundVal, score: round1(score) });
   }

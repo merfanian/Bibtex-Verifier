@@ -1,13 +1,13 @@
 // Entry point: wires the UI modules together.
 import { updateAuthorPills } from "./authors.js";
 import { $ } from "./dom.js";
-import { initFieldActions } from "./field-actions.js";
+import { initFieldActions, reapplyMinorDefaults } from "./field-actions.js";
 import { initFilters } from "./filters.js";
 import { initInput } from "./input.js";
 import { initOnboarding } from "./onboarding.js";
 import { initPreview, updatePreview } from "./preview.js";
 import { initSettings } from "./settings.js";
-import { startVerificationFromContent } from "./verify.js";
+import { reclassifyPublishedOnly, startVerificationFromContent } from "./verify.js";
 
 function initTheme() {
   const root = document.documentElement;
@@ -59,6 +59,8 @@ initSettings({
     updateAuthorPills();
     updatePreview();
   },
+  onApplyMinorChange: (applyMinor) => reapplyMinorDefaults(applyMinor),
+  onPreferPublishedChange: (preferPublished) => reclassifyPublishedOnly(preferPublished),
 });
 initInput({ onContent: startVerificationFromContent });
 initOnboarding({ onVerifySample: startVerificationFromContent });
