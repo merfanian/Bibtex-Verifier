@@ -28,7 +28,10 @@ export function compareField(field, a, b) {
   if (field === "year" || field === "doi") return na === nb ? 100 : 0;
   if (field === "author") return compareAuthors(a, b);
   if (field === "pages") return normalizePages(na) === normalizePages(nb) ? 100 : tokenSortRatio(na, nb);
-  return tokenSortRatio(na, nb);
+  // Token-sort ignores word order ("Data Mining and Knowledge Discovery" vs
+  // "Data Discovery and Knowledge Mining" score 100); only identical text is a
+  // match, everything else goes to the severity classifier.
+  return na === nb ? 100 : Math.min(tokenSortRatio(na, nb), 99);
 }
 
 function titleScore(original, found) {

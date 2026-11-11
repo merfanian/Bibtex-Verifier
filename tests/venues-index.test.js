@@ -36,6 +36,17 @@ describe("dblp venue index", () => {
     assert.ok(sameVenue("FAccT", "FAT"));
   });
 
+  it("organizers must agree even when the index matches the name", () => {
+    assert.equal(sameVenue("ACM International Conference on Data Engineering",
+      "IEEE International Conference on Data Engineering"), false);
+  });
+
+  it("indexes proceedings whose record closes on the same line the next opens", () => {
+    // dblp writes "</proceedings><inproceedings …>"; SoCG 1987 was lost before.
+    assert.ok(sameVenue("Proceedings of the Third Annual Symposium on Computational Geometry, Waterloo, Ontario, Canada, June 8-10, 1987",
+      "SCG '87"));
+  });
+
   it("separates different venues", () => {
     assert.equal(sameVenue("ICML", "ICLR"), false);
     assert.equal(sameVenue("SIGMOD", "PODS"), false);

@@ -65,6 +65,55 @@ describe("classifyDiff: authors", () => {
   });
 });
 
+describe("PR #13 review fixes", () => {
+  const status = (e, f) => buildResult({ ID: "k", ENTRYTYPE: "article", title: "A Paper", ...e }, 0, { title: "A Paper", ...f });
+
+  it("reordered venue words are a diff, not a perfect match", () => {
+    const r = status({ journal: "Data Mining and Knowledge Discovery" }, { journal: "Data Discovery and Knowledge Mining" });
+    assert.equal(r.status, "needs_review");
+  });
+
+  it("different full given names are different people", () => {
+    assert.equal(status({ author: "Smith, John and Doe, Jane" }, { author: "Smith, James and Doe, Jane" }).status, "needs_review");
+    assert.equal(sev("author", "Li, Yuanzhi", "Li, Yuan-Fang"), SEVERITY.MAJOR);
+  });
+
+  it("initials, hyphenated initials and shortened given names still match", () => {
+    assert.equal(sev("author", "Hsu, W-L and Lee, DT", "Hsu, Wen-Lian and Lee, D.") === SEVERITY.MAJOR, false);
+    assert.notEqual(status({ author: "Zhang, Kai and Shen, Xiao Jun" }, { author: "Zhang, Kaichao and Shen, Xiao-Jun" }).status, "needs_review");
+    assert.notEqual(status({ author: "B{\\l}asiok, Jaros{\\l}aw" }, { author: "Błasiok, Jarosław" }).status, "needs_review");
+  });
+
+  it("'and others' must be a prefix of the full list", () => {
+    assert.equal(sev("author", "Doe, Jane and others", "Smith, John and Doe, Jane"), SEVERITY.MAJOR);
+    assert.equal(sev("author", "Smith, John and Lee, Ann and others", "Smith, John and Doe, Jane and Lee, Ann"), SEVERITY.MAJOR);
+    assert.equal(sev("author", "Smith, John and others", "Smith, John and Doe, Jane"), SEVERITY.MINOR);
+  });
+
+  it("comma-separated venue name parts are kept", () => {
+    assert.equal(sameVenue("AAAI/ACM Conference on AI, Ethics, and Society, 2024",
+      "AAAI/ACM Conference on AI, Medicine, and Society, 2024"), false);
+  });
+
+  it("singular 'ICDE Workshop' is not ICDE without the index", () => {
+    assert.equal(sameVenue("ICDE Workshop", "ICDE"), false);
+  });
+
+  it("a published DOI is never traded for the arXiv DOI", () => {
+    const r = status({ doi: "10.1145/3580305.3599000" }, { doi: "10.48550/arXiv.2301.00001", journal: "arXiv" });
+    assert.equal(r.status, "needs_review");
+    for (const d of r.field_diffs) assert.equal(adoptsByDefault(r, d), false, d.field);
+  });
+
+  it("three-part 'Last, Jr, First' names parse", () => {
+    assert.equal(sev("author", "Massey, Jr., Frank J.", "Frank J. Massey"), SEVERITY.MINOR);
+  });
+
+  it("JMLR is a journal acronym", () => {
+    assert.equal(sev("journal", "JMLR", "Journal of Machine Learning Research"), SEVERITY.MINOR);
+  });
+});
+
 describe("classifyDiff: venues", () => {
   it("year, ordinal, organizer and acronym noise is minor", () => {
     assert.equal(sev("booktitle", "2019 IEEE 35th International Conference on Data Engineering (ICDE)",

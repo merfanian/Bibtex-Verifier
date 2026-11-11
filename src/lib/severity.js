@@ -28,7 +28,8 @@ function fold(s) {
     .replace(/\\([_&%$#])/g, "$1")
     .replace(/['’`]/g, "");                                // O'Brien, Daum'e
   return stripLatex(pre)
-    .replace(/ı/g, "i")
+    // Letters NFD doesn't decompose: Turkish ı, Polish ł, Nordic ø, đ.
+    .replace(/ı/g, "i").replace(/[łŁ]/g, "l").replace(/[øØ]/g, "o").replace(/[đĐ]/g, "d")
     .normalize("NFD").replace(/[̀-ͯ]/g, "")
     .toLowerCase();
 }
@@ -60,7 +61,10 @@ export function parseAuthors(authorStr) {
     if (ETAL_RE.test(part.replace(/[{}]/g, ""))) { truncated = true; continue; }
     let last, first;
     if (part.includes(",")) {
-      [last, first] = [part.slice(0, part.indexOf(",")), part.slice(part.indexOf(",") + 1)];
+      // "Last, First" or BibTeX's three-part "Last, Jr, First" (the middle part is the suffix).
+      const pieces = part.split(",");
+      last = pieces[0];
+      first = pieces.length >= 3 ? pieces.slice(2).join(",") : pieces[1];
     } else {
       const t = part.split(/\s+/);
       while (t.length > 1 && NAME_SUFFIXES.has(looseText(t[t.length - 1]))) t.pop();
@@ -68,12 +72,12 @@ export function parseAuthors(authorStr) {
       first = t.slice(0, -1).join(" ");
     }
     const lastTokens = looseText(last).split(" ").filter(w => w && !NAME_SUFFIXES.has(w));
-    const firstTokens = looseText(first).split(" ").filter(Boolean);
+    const firstTokens = looseText(first).split(" ").filter(w => w && !NAME_SUFFIXES.has(w));
     people.push({
       // Compound surnames ("van der Maaten") compare on their final word.
       last: lastTokens[lastTokens.length - 1] || "",
       tokens: new Set([...lastTokens, ...firstTokens]),
-      firstRaw: firstTokens,
+      given: givenNames(first),
     });
   }
   return { people, truncated };
@@ -89,11 +93,47 @@ function samePerson(a, b) {
     [...a.tokens].every(t => b.tokens.has(t) || [...b.tokens].some(u => u[0] === t[0]));
 }
 
-// Same surname is not enough: "Zhang, Wei" is not "Zhang, Yongfeng". With
-// given names on both sides, the first given-name initial must agree.
+/**
+ * Given names as `{ words, initialOnly }`: `words` are lowercase given names,
+ * and `initialOnly[i]` marks those written as an initial ("J.", "A C", "HV"
+ * which is two initials). Suffixes ("Jr.") are dropped.
+ */
+function givenNames(first) {
+  const words = [], initialOnly = [];
+  const raw = String(first ?? "").replace(/[{}]/g, "");
+  for (const tok of raw.split(/\s+/).filter(Boolean)) {
+    const plain = looseText(tok).replace(/ /g, "");
+    if (!plain || NAME_SUFFIXES.has(plain)) continue;
+    const letters = tok.replace(/[^\p{L}]/gu, "");
+    // "H.V.", "HV", "AC", "W-L", "J.-P.": dotted, hyphenated or all-capital
+    // short tokens are initials, one per letter.
+    const pieces = tok.split(/[.\-‐–]+/).filter(Boolean);
+    if (/^(\p{Lu}\.)+\p{Lu}?\.?$/u.test(tok) || (/^\p{Lu}{2,3}$/u.test(letters) && letters === tok) ||
+        (pieces.length > 1 && pieces.every(p => /^\p{Lu}$/u.test(p)))) {
+      for (const ch of plain) { words.push(ch); initialOnly.push(true); }
+      continue;
+    }
+    // "Wen-Yue" stays one given name ("wenyue"), matching "Wenyue".
+    words.push(plain);
+    initialOnly.push(plain.length === 1);
+  }
+  return { words, initialOnly };
+}
+
+// Same surname is not enough: "Zhang, Wei" is not "Zhang, Yongfeng", and
+// "Smith, John" is not "Smith, James". The first given name must agree: by
+// initial when either side abbreviates it, in full when both spell it out.
 function initialsCompatible(a, b) {
-  if (!a.firstRaw.length || !b.firstRaw.length) return true;
-  return a.firstRaw[0][0] === b.firstRaw[0][0];
+  const ga = a.given, gb = b.given;
+  if (!ga.words.length || !gb.words.length) return true;
+  const [x, y] = [ga.words[0], gb.words[0]];
+  if (ga.initialOnly[0] || gb.initialOnly[0]) return x[0] === y[0];
+  if (x === y) return true;
+  // Databases often shorten given names ("Kai" for "Kaichao", "Xiao" for
+  // "Xiao-Jun", "Harri" for "Harrison"); a shared prefix of 3+ letters is the
+  // same name, while "John"/"James" or "Yuanzhi"/"Yuan-Fang" are not.
+  const [short, long] = x.length <= y.length ? [x, y] : [y, x];
+  return short.length >= 3 && long.startsWith(short);
 }
 
 /**
@@ -134,9 +174,11 @@ function classifyAuthors(orig, found) {
     return major(notInRecord === o.people.length
       ? NO_COMMON_AUTHORS
       : `${notInRecord} of your authors ${notInRecord === 1 ? "is" : "are"} not in the database record`);
-  // Your list ends in "and others" and is a prefix of the full list.
   if (missingFromYours > 0 && !o.truncated)
     return major(`${missingFromYours} author${missingFromYours === 1 ? "" : "s"} missing from your entry`);
+  // "…and others" is formatting only if your authors are the start of the full list.
+  if (o.truncated && !o.people.every((p, i) => f.people[i] && samePerson(p, f.people[i])))
+    return major("your authors aren't the first authors of the database record");
   // A different first author changes how the paper is cited; a reshuffle
   // further down is more often the database's mistake than the user's.
   if (!inOrder) return samePerson(o.people[0], f.people[0])
@@ -160,7 +202,7 @@ const VENUE_FILLER = new Set([
 // Organizers: may be missing on one side, but two different ones conflict.
 const VENUE_ORGS = new Set(["ieee", "acm", "cvf", "usenix", "siam", "ifip", "ifaai", "springer", "sigplan", "sigops", "sigarch"]);
 // Organizer acronyms that say nothing about which venue it is.
-const ORG_ACRONYMS = new Set([...VENUE_ORGS, "lncs", "ccis", "ceur", "lipics", "pmlr", "jmlr", "ws"]);
+const ORG_ACRONYMS = new Set([...VENUE_ORGS, "lncs", "ccis", "ceur", "lipics", "pmlr", "ws"]);
 
 const MONTH_RE = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+\d/i;
 
@@ -174,10 +216,11 @@ function venueMain(v) {
   // "…Conference on Big Data (Big Data)": the parenthetical only repeats the name.
   const paren = s.match(/\(([^()]+)\)\s*$/);
   if (paren && looseText(s.slice(0, paren.index)).includes(looseText(paren[1]))) s = s.slice(0, paren.index);
+  // Cut at the first comma-segment carrying a year or date ("…, ACL 2020, Online,
+  // July 5-10, 2020"); segments before it are part of the name ("AI, Ethics, and Society").
   const parts = s.split(",");
-  if (parts.length > 1 && parts.slice(1).some(p => /\b(19|20)\d{2}\b/.test(p) || MONTH_RE.test(p)))
-    return parts[0];
-  return s;
+  const dated = parts.findIndex((p, i) => i > 0 && (/\b(19|20)\d{2}\b/.test(p) || MONTH_RE.test(p)));
+  return dated > 0 ? parts.slice(0, dated).join(",") : s;
 }
 
 const QUALIFIERS = [
@@ -414,6 +457,10 @@ export function sameVenue(a, b) {
   const qa = venueQualifier(a), qb = venueQualifier(b);
   if (qa !== qb && !standaloneWorkshopPair(a, b) && !standaloneWorkshopPair(b, a)) return false;
 
+  const ta = venueTokens(a), tb = venueTokens(b);
+  // "ACM … Data Engineering" is not "IEEE … Data Engineering", whatever the index says.
+  if (!orgsCompatible(ta.orgs, tb.orgs)) return false;
+
   const aOnly = isAcronymOnly(a), bOnly = isAcronymOnly(b);
   const ra = resolveVenue(a), rb = resolveVenue(b);
   // "…Data Engineering (ICDM)": the name and its own acronym are different
@@ -425,8 +472,6 @@ export function sameVenue(a, b) {
   if (sa.size === 1 && sb.size === 1) return [...sa][0] === [...sb][0];
   if (sa.size && sb.size && disjoint(sa, sb)) return false;
 
-  const ta = venueTokens(a), tb = venueTokens(b);
-  if (!orgsCompatible(ta.orgs, tb.orgs)) return false;
   // Declared acronyms must agree with the other side: "…(ICDE)" ≠ "…(ICDM)",
   // and "…Data Engineering (ICDM)" ≠ "Conference on Data Engineering".
   const la = [...declaredAcronyms(a)].filter(x => x.length >= 3);
@@ -456,7 +501,9 @@ function selfConsistent(v, acronymOnly, r) {
 
 // `w` names a standalone workshop ("Workshop on …") and `acr` is acronym-only.
 function standaloneWorkshopPair(w, acr) {
-  return venueQualifier(w) === "workshop" && venueQualifier(acr) === null && isAcronymOnly(acr);
+  // "ICDE Workshop" vs "ICDE" must not pass when the index is unavailable.
+  return venueQualifier(w) === "workshop" && !isAcronymOnly(w) &&
+    venueQualifier(acr) === null && isAcronymOnly(acr);
 }
 
 // The curated abbreviation table, matched on the exact core name.
@@ -536,7 +583,8 @@ function classifyDoi(orig, found) {
   if (a === b) return minor("formatting");
   const ap = a.startsWith("10.48550/arxiv"), bp = b.startsWith("10.48550/arxiv");
   if (ap && !bp) return major(PUBLISHED_VERSION);
-  if (!ap && bp) return minor("database only has the preprint DOI");
+  // Never trade your published DOI for the arXiv one; and it can't be confirmed either.
+  if (!ap && bp) return major("DOI not confirmed (database only has the preprint)");
   return major("conflicting DOI");
 }
 

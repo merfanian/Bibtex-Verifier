@@ -89,36 +89,48 @@ function addName(title, series) {
 }
 
 let rec = null, records = 0;
-const input = fs.createReadStream(xmlPath).pipe(zlib.createGunzip());
-const lines = readline.createInterface({ input, crlfDelay: Infinity });
 
-for await (const line of lines) {
-  const open = line.match(/<(proceedings|inproceedings)\s[^>]*key="(conf\/[^"]+)"/);
-  if (open) rec = { type: open[1], key: open[2], title: null, booktitle: null };
-  if (!rec) continue;
-  const t = line.match(/<title>(.*)<\/title>/);
-  if (t && rec.title === null) rec.title = decode(t[1]);
-  const b = line.match(/<booktitle>(.*)<\/booktitle>/);
-  if (b && rec.booktitle === null) rec.booktitle = decode(b[1]);
-  if (!line.includes(`</${rec.type}>`)) continue;
-
-  const stream = rec.key.split("/").slice(0, 2).join("/");
-  const bq = venueQualifier(rec.booktitle || "");
-  if (rec.booktitle) {
-    const ak = acronymKey(rec.booktitle);
+function finishRecord(r) {
+  const stream = r.key.split("/").slice(0, 2).join("/");
+  const bq = venueQualifier(r.booktitle || "");
+  if (r.booktitle) {
+    const ak = acronymKey(r.booktitle);
     if (ak) {
       const k = `${ak}\t${stream}\t${bq || ""}`;
       acronymEntries.set(k, (acronymEntries.get(k) || 0) + 1);
     }
   }
-  if (rec.type === "proceedings" && rec.title) {
+  if (r.type === "proceedings" && r.title) {
     // A proceedings title may carry the qualifier ("…Data Engineering Workshops").
-    const q = bq || venueQualifier(rec.title.split(",")[0]);
-    nameEntries.push([rec.title, stream, q]);
+    const q = bq || venueQualifier(r.title.split(",")[0]);
+    nameEntries.push([r.title, stream, q]);
     if (!q) streamsWithMain.add(stream);
   }
-  rec = null;
   if (++records % 500000 === 0) console.error(`${records} records…`);
+}
+
+// Feed one piece of a line to the current record; returns true when it closes.
+function feed(r, text) {
+  const t = text.match(/<title>(.*)<\/title>/);
+  if (t && r.title === null) r.title = decode(t[1]);
+  const b = text.match(/<booktitle>(.*)<\/booktitle>/);
+  if (b && r.booktitle === null) r.booktitle = decode(b[1]);
+  return text.includes(`</${r.type}>`);
+}
+
+const input = fs.createReadStream(xmlPath).pipe(zlib.createGunzip());
+const lines = readline.createInterface({ input, crlfDelay: Infinity });
+
+for await (const line of lines) {
+  // A line may close one record and open the next ("</proceedings><inproceedings …>"):
+  // finish the current record on the text before the new opening tag.
+  const open = line.match(/<(proceedings|inproceedings)\s[^>]*key="(conf\/[^"]+)"/);
+  const before = open ? line.slice(0, open.index) : line;
+  if (rec && feed(rec, before)) { finishRecord(rec); rec = null; }
+  if (!open) continue;
+  if (rec) finishRecord(rec);  // unclosed record (malformed input): keep what it had
+  rec = { type: open[1], key: open[2], title: null, booktitle: null };
+  if (feed(rec, line.slice(open.index))) { finishRecord(rec); rec = null; }
 }
 
 // A qualifier splits off its own series only where the dblp series also holds
@@ -146,8 +158,9 @@ for (const [key, set] of nameSeries) {
   if (set.size === 1) names[key] = idOf([...set][0]);
   else ambiguousNames++;
 }
+// VENUE_DEBUG="icml,computational geometry waterloo" prints the series behind acronym and name keys.
 for (const key of (process.env.VENUE_DEBUG || "").split(",").filter(Boolean))
-  console.error("debug", key, JSON.stringify([...(acronymUses.get(key) || [])]));
+  console.error("debug", key, JSON.stringify([...(acronymUses.get(key) || [])]), JSON.stringify([...(nameSeries.get(key) || [])]));
 for (const [key, uses] of acronymUses) {
   // One series must account for nearly all uses; a few stray papers in another
   // series ("ICML" once in conf/imcl) are dblp typos, a real split (ITCS) is ambiguous.
