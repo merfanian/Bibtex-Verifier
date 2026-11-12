@@ -1,3 +1,8 @@
+// Field names may carry hyphens, dots and colons ("date-added", "bdsk-url-1").
+const FIELD_NAME = "[A-Za-z][\\w.:+-]*";
+const FIELD_START_RE = new RegExp(`^(${FIELD_NAME})\\s*=\\s*`);
+const NEXT_FIELD_RE = new RegExp(`^\\s*(?:\\r?\\n\\s*)?${FIELD_NAME}\\s*=`);
+
 function skipWhitespace(str, i) {
   while (i < str.length && /\s/.test(str[i])) i++;
   return i;
@@ -43,7 +48,7 @@ function extractBracedFieldValue(str, start) {
       }
     } else if (depth === 1 && c === ",") {
       const tail = str.slice(i + 1);
-      if (/^\s*(?:\r?\n\s*)?\w+\s*=/.test(tail)) {
+      if (NEXT_FIELD_RE.test(tail)) {
         const inner = str.slice(start + 1, i);
         return {
           value: balanceClosingBraces(inner),
@@ -91,13 +96,26 @@ function extractNumberFieldValue(str, start) {
   return { value: m[1], next };
 }
 
+// A bare word is a @string macro or a month ("month = may"); it is written
+// back without braces.
+function extractBareFieldValue(str, start) {
+  const m = /^[A-Za-z][\w.:+-]*/.exec(str.slice(start));
+  if (!m) return null;
+  let next = skipWhitespace(str, start + m[0].length);
+  if (str[next] === "#") return null;  // concatenation isn't supported
+  if (str[next] === ",") next = skipWhitespace(str, next + 1);
+  return { value: m[0], next };
+}
+
 function parseEntryFields(body) {
   const fields = {};
+  const bare = [];
   let i = skipWhitespace(body, 0);
   while (i < body.length) {
-    const nameMatch = /^(\w+)\s*=\s*/.exec(body.slice(i));
+    const nameMatch = FIELD_START_RE.exec(body.slice(i));
     if (!nameMatch) break;
     const key = nameMatch[1].toLowerCase();
+    const fieldStart = i;
     i += nameMatch[0].length;
     i = skipWhitespace(body, i);
     if (i >= body.length) break;
@@ -106,12 +124,20 @@ function parseEntryFields(body) {
     if (body[i] === "{") ext = extractBracedFieldValue(body, i);
     else if (body[i] === '"') ext = extractQuotedFieldValue(body, i);
     else if (/\d/.test(body[i])) ext = extractNumberFieldValue(body, i);
-    else break;
+    else {
+      ext = extractBareFieldValue(body, i);
+      if (!ext) { i = fieldStart; break; }
+      bare.push(key);
+    }
 
     fields[key] = ext.value.replace(/\s*\n\s*/g, " ").trim();
     i = ext.next;
     i = skipWhitespace(body, i);
   }
+  if (bare.length) fields._bare = bare;
+  // Anything left before the entry's closing brace was not understood.
+  const rest = body.slice(i).replace(/^[\s,]+/, "");
+  if (rest && !rest.startsWith("}")) fields._unparsed = rest.slice(0, 40).replace(/\s+/g, " ").trim();
   return fields;
 }
 
@@ -152,7 +178,8 @@ export function entriesToBib(entries) {
     lines.push(`@${type}{${id},`);
     for (const [k, v] of Object.entries(entry)) {
       if (k === "ENTRYTYPE" || k === "ID" || k.startsWith("_")) continue;
-      lines.push(`  ${k} = {${v}},`);
+      const isBare = entry._bare?.includes(k) && /^[A-Za-z][\w.:+-]*$/.test(v);
+      lines.push(isBare ? `  ${k} = ${v},` : `  ${k} = {${v}},`);
     }
     lines.push("}\n");
   }

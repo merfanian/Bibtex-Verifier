@@ -16,6 +16,7 @@ const STATUS_LABELS = {
   updated: "Auto-Updated",
   needs_review: "Needs Review",
   not_found: "Not Found",
+  unverifiable: "Can’t Check",
 };
 
 export function statusLabel(s) {
@@ -34,16 +35,21 @@ export function removeFieldButton(idx, field, currentAction, title = "Remove fie
 }
 
 // ─── Visibility (filter + search) ────────────────────────────────────
-/** Entries the user has to look at: undecided matches, misses and duplicates. */
+/**
+ * Entries the user has to look at: undecided matches, misses, sources that
+ * can't be checked, duplicates, and entries flagged with an issue or a retraction.
+ */
 export function needsAttention(card) {
-  return card.dataset.status === "needs_review" || card.dataset.status === "not_found" ||
-    card.dataset.duplicate === "true";
+  const s = card.dataset.status;
+  return s === "needs_review" || s === "not_found" || s === "unverifiable" ||
+    card.dataset.duplicate === "true" || card.dataset.flagged === "true";
 }
 
 function cardMatchesFilter(card) {
   if (state.activeFilter === "all") return true;
   if (state.activeFilter === "attention") return needsAttention(card);
   if (state.activeFilter === "duplicate") return card.dataset.duplicate === "true";
+  if (state.activeFilter === "issues") return card.dataset.flagged === "true";
   return card.dataset.status === state.activeFilter;
 }
 
@@ -94,12 +100,19 @@ export function clearCards() {
 
 // ─── Summary + effective status ──────────────────────────────────────
 export function updateSummary() {
-  const c = { verified: 0, updated: 0, needs_review: 0, not_found: 0 };
-  let dupes = 0;
+  const c = { verified: 0, updated: 0, needs_review: 0, not_found: 0, unverifiable: 0 };
+  let dupes = 0, flagged = 0;
   $$(".entry-card").forEach(card => {
     c[card.dataset.status] = (c[card.dataset.status] || 0) + 1;
     if (card.dataset.duplicate === "true") dupes++;
+    if (card.dataset.flagged === "true") flagged++;
   });
+  // These two badges only appear when they have something to show.
+  for (const [cls, n] of [["badge-unverifiable", c.unverifiable], ["badge-issues", flagged]]) {
+    const badge = $(`.${cls}`);
+    badge.querySelector(".summary-count").textContent = n;
+    badge.hidden = n === 0;
+  }
   $(".badge-verified .summary-count").textContent = c.verified;
   $(".badge-updated .summary-count").textContent = c.updated;
   $(".badge-review .summary-count").textContent = c.needs_review;
@@ -134,7 +147,7 @@ export function updateCardStatuses() {
 
     card.dataset.status = effectiveStatus;
     card.className = card.className.replace(/status-\S+/, `status-${effectiveStatus}`);
-    const tag = card.querySelector(".status-tag:not(.tag-duplicate)");
+    const tag = card.querySelector(".status-tag:not(.tag-duplicate):not(.tag-extra)");
     if (tag) {
       tag.className = `status-tag tag-${effectiveStatus}`;
       tag.textContent = statusLabel(effectiveStatus);
@@ -215,8 +228,25 @@ function renderPlainFieldRow(idx, f, entry) {
     </tr>`;
 }
 
+function renderNotice(r) {
+  if (!r.notice) return "";
+  const link = r.notice.doi
+    ? ` <a href="https://doi.org/${esc(encodeURI(r.notice.doi))}" target="_blank" rel="noopener">Read the notice</a>.` : "";
+  return r.notice.kind === "retracted"
+    ? `<div class="notice-hint notice-retracted"><strong>This paper has been retracted</strong>
+        (Retraction Watch data, via CrossRef). Check whether you still want to cite it.${link}</div>`
+    : `<div class="notice-hint notice-concern"><strong>The publisher issued an expression of concern</strong>
+        about this paper (Retraction Watch data, via CrossRef).${link}</div>`;
+}
+
+function renderIssues(r) {
+  if (!r.issues?.length) return "";
+  return `<div class="issue-hint"><strong>${r.issues.length === 1 ? "Problem" : "Problems"} in this entry:</strong>
+    <ul>${r.issues.map(is => `<li>${esc(is.message)}</li>`).join("")}</ul></div>`;
+}
+
 function renderHints(r) {
-  let html = "";
+  let html = renderNotice(r) + renderIssues(r);
   if (r.duplicate_of)
     html += `<div class="duplicate-row">Duplicate of <strong>${esc(r.duplicate_of)}</strong></div>`;
 
@@ -239,6 +269,12 @@ function renderHints(r) {
 
   if ((r.status === "updated" || r.status === "verified") && r.unchecked?.length) {
     html += `<div class="unchecked-hint">Not checked: ${r.unchecked.map(esc).join(", ")} — the database record has no value to compare.</div>`;
+  }
+
+  if (r.status === "unverifiable") {
+    html += `<div class="not-found-hint">No database record was found, which is expected for this kind of source
+      (a web page, thesis, report or software): the databases cover published papers. It can’t be checked
+      automatically, and nothing was changed.</div>`;
   }
 
   if (r.status === "not_found") {
@@ -284,6 +320,7 @@ export function renderEntryCard(r) {
   card.dataset.status = r.status;
   card.dataset.index = idx;
   if (r.duplicate_of) card.dataset.duplicate = "true";
+  if (r.notice || r.issues?.length) card.dataset.flagged = "true";
 
   const hasDiffs = r.field_diffs?.length > 0;
   // Verified entries can still carry enrichment-only diffs worth adopting.
@@ -362,6 +399,8 @@ export function renderEntryCard(r) {
     <div class="entry-header-aside">
       ${jumpBtn}
       <div class="entry-tags">
+        ${r.notice ? `<span class="status-tag tag-extra tag-notice-${esc(r.notice.kind)}">${r.notice.kind === "retracted" ? "Retracted" : "Concern"}</span>` : ""}
+        ${r.issues?.length ? '<span class="status-tag tag-extra tag-issue">Issue</span>' : ""}
         ${r.duplicate_of ? '<span class="status-tag tag-duplicate">Duplicate</span>' : ""}
         <span class="status-tag tag-${r.status}">${statusLabel(r.status)}</span>
       </div>

@@ -7,7 +7,7 @@ const entrySearchWrap = $(".entry-search");
 const entrySearchInput = $("#entry-search-input");
 const entrySearchClear = $("#entry-search-clear");
 
-const ATTENTION_FILTERS = new Set(["needs_review", "not_found", "duplicate"]);
+const ATTENTION_FILTERS = new Set(["needs_review", "not_found", "unverifiable", "duplicate", "issues"]);
 
 // The view switch shows "To check" or "All"; a status badge narrows further.
 // Badges light up for every status the current view includes.

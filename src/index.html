@@ -75,9 +75,15 @@
           <a href="https://openalex.org/" target="_blank">OpenAlex</a> as a fallback, to find
           wrong authors, incorrect years, mismatched venues, missing DOIs, duplicates,
           and <strong>AI-hallucinated citations</strong> that don't exist in any database.
-          100% in-browser — your data never leaves your machine.</p>
+          100% in-browser — your file never leaves your machine.</p>
       </div>
     </header>
+
+    <div class="resume-banner" id="resume-banner" hidden>
+      <span class="resume-banner-text" id="resume-banner-text"></span>
+      <button type="button" class="resume-btn resume-btn-primary" id="btn-resume">Open it</button>
+      <button type="button" class="resume-btn" id="btn-resume-discard">Discard</button>
+    </div>
 
     <div class="input-tabs">
       <button class="input-tab active" data-tab="upload">Upload file</button>
@@ -101,7 +107,7 @@
     <div class="results-section">
       <div class="summary-bar">
         <div class="view-switch" role="group" aria-label="Which entries to show">
-          <button type="button" class="view-btn active" data-filter="attention" title="Entries that need your decision: needs review, not found, duplicates">
+          <button type="button" class="view-btn active" data-filter="attention" title="Entries that need your decision: needs review, not found, can't check, duplicates, issues">
             To check <span class="view-count" id="count-attention">0</span>
           </button>
           <button type="button" class="view-btn" data-filter="all" title="Every entry, including verified and auto-fixed ones">
@@ -133,6 +139,18 @@
           <span class="summary-label">Duplicates</span>
           <span class="summary-count">0</span>
         </button>
+        <button type="button" class="summary-badge badge-unverifiable" data-filter="unverifiable" hidden
+                title="Web pages, theses, reports and software: sources the databases don't cover">
+          <span class="summary-dot"></span>
+          <span class="summary-label">Can&rsquo;t Check</span>
+          <span class="summary-count">0</span>
+        </button>
+        <button type="button" class="summary-badge badge-issues" data-filter="issues" hidden
+                title="Entries with a problem in the file itself (duplicate key, missing field, bad DOI) or a retraction">
+          <span class="summary-dot"></span>
+          <span class="summary-label">Issues</span>
+          <span class="summary-count">0</span>
+        </button>
         <div class="entry-search" role="search">
           <svg class="entry-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="search" id="entry-search-input" class="entry-search-input" placeholder="Search title or key…" aria-label="Search entries by title or BibTeX key" autocomplete="off" spellcheck="false" />
@@ -142,6 +160,10 @@
           <kbd class="entry-search-kbd" aria-hidden="true">/</kbd>
         </div>
       </div>
+      <p class="kbd-hint" aria-label="Keyboard shortcuts">
+        <kbd>j</kbd> <kbd>k</kbd> next / previous entry &middot; <kbd>a</kbd> accept all &middot; <kbd>o</kbd> keep original
+      </p>
+      <p class="run-note" id="run-note" hidden></p>
 
       <div class="main-columns" id="main-columns">
         <div class="col-entries">
@@ -237,7 +259,7 @@
         <div class="feature-card">
           <div class="feature-icon">&#128274;</div>
           <h3>Privacy-first</h3>
-          <p>Your file never leaves the browser. Only paper titles are sent to public academic APIs for lookup. No server, no tracking.</p>
+          <p>Your file never leaves the browser. Only paper titles, DOIs and arXiv IDs are sent to public academic APIs for lookup. No server, no tracking; your progress is saved only in this browser.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">&#128221;</div>

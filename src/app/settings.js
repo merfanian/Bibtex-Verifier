@@ -23,6 +23,21 @@ export function getSettings() {
   };
 }
 
+/** Set the controls from a saved getSettings() snapshot; missing keys keep their value. */
+export function applySettings(s = {}) {
+  const check = (el, v) => { if (typeof v === "boolean") el.checked = v; };
+  check(optRemoveDuplicates, s.removeDuplicates);
+  check(optRemoveNotFound, s.removeNotFound);
+  check(optCleanNotes, s.cleanNotes);
+  check(optPreferPublished, s.preferPublished);
+  check(optApplyMinor, s.applyMinor);
+  const radio = [...$$('input[name="dedup-criteria"]')].find(el => el.value === s.dedupBy);
+  if (radio) radio.checked = true;
+  if ([...optMaxAuthors.options].some(o => o.value === String(s.maxAuthors)))
+    optMaxAuthors.value = String(s.maxAuthors);
+  dedupCriteriaWrap.classList.toggle("visible", optRemoveDuplicates.checked);
+}
+
 export function setSettingsOpen(open) {
   settingsPopover.classList.toggle("open", open);
   settingsToggle.classList.toggle("active", open);

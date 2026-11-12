@@ -1,6 +1,7 @@
 // Live BibTeX preview panel: diff rendering, copy, download, collapse and scroll sync.
 import { buildExportEntries, diffLines, entriesToBib } from "../lib/index.js";
 import { $, $$, esc } from "./dom.js";
+import { scheduleSave } from "./session.js";
 import { getSettings } from "./settings.js";
 import { state } from "./state.js";
 
@@ -43,6 +44,8 @@ function renderDiff(oldBib, newBib) {
 
 export function updatePreview() {
   if (!state.parsedEntries.length) return;
+  // Every result, choice and setting change passes through here.
+  scheduleSave();
   currentPreviewBib = buildPreviewBib();
   previewPlaceholder.style.display = "none";
   previewCode.style.display = "block";

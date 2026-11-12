@@ -2337,3 +2337,98 @@ code {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ─── "Can't check" status, entry issues and retraction notices ───── */
+.summary-badge[hidden] { display: none; }
+.badge-unverifiable .summary-dot { background: var(--text-dim); }
+.badge-issues .summary-dot { background: var(--red); }
+.summary-badge.active.badge-unverifiable { background: var(--gray-bg); color: var(--text); border-color: var(--gray-border); }
+.summary-badge.active.badge-issues { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
+
+.tag-unverifiable { background: var(--gray-bg); color: var(--text-dim); }
+.tag-issue { background: var(--yellow-bg); color: var(--yellow); }
+.tag-notice-retracted { background: var(--red); color: #fff; }
+.tag-notice-concern { background: var(--red-bg); color: var(--red); }
+
+.notice-hint,
+.issue-hint {
+  margin-top: 0.65rem;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  border-radius: var(--radius-sm);
+}
+.notice-hint { color: var(--text); background: var(--red-bg); border: 1px solid var(--red-border); }
+.notice-hint strong { color: var(--red); }
+.notice-hint a { color: var(--red); font-weight: 600; }
+.issue-hint { color: var(--text-dim); background: var(--yellow-bg); border: 1px solid var(--yellow-border); }
+.issue-hint strong { color: var(--yellow); }
+.issue-hint ul { margin: 0.25rem 0 0; padding-left: 1.1rem; }
+.issue-hint li { overflow-wrap: anywhere; }
+
+.run-note {
+  margin: -0.4rem 0 1rem;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  background: var(--yellow-bg);
+  border: 1px solid var(--yellow-border);
+  border-radius: var(--radius-sm);
+}
+.run-note[hidden] { display: none; }
+
+/* ─── Keyboard review ─────────────────────────────────────────────── */
+.kbd-hint {
+  margin: -0.5rem 0 0.9rem;
+  font-size: 0.74rem;
+  color: var(--text-dim);
+}
+.kbd-hint kbd {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0.05rem 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface-alt);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.7rem;
+  text-align: center;
+}
+.entry-card.kb-active {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (max-width: 640px) {
+  .kbd-hint { display: none; }
+}
+
+/* ─── Resume a saved run ──────────────────────────────────────────── */
+.resume-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.85rem;
+  color: var(--text);
+  background: var(--accent-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.resume-banner[hidden] { display: none; }
+.resume-banner-text { flex: 1 1 16rem; }
+.resume-btn {
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.resume-btn:hover { background: var(--surface); }
+.resume-btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.resume-btn-primary:hover { background: var(--accent); filter: brightness(1.08); }

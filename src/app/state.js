@@ -9,6 +9,8 @@ export const state = {
   // "attention" (default: entries needing a decision), "all", a status, or "duplicate".
   activeFilter: "attention",
   activeSearch: "",
+  // Whether this run is saved to the browser for a later visit (not the tour's sample).
+  persist: false,
 };
 
 export function resetRunState() {
