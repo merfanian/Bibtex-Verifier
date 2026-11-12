@@ -52,7 +52,7 @@ Runs **100% in your browser** — no install, no server, no account. Only paper 
 - **Live BibTeX preview** with diff highlighting; **copy** or **download** the final file
 - **Max authors** truncation for long author lists (plus peer-reviewed venue preference, dedup, optional filters)
 - **Clean notes** — strip reference-manager bookkeeping (`Read_Status`, `ZSCC`, …) from `note` / `annote`
-- **Keyboard review** — `j` / `k` move between entries, `a` accepts all suggestions, `o` keeps the original
+- **Keyboard review** — click an entry, then the arrow keys (or `k` / `j`) go to the next / previous one, `a` accepts all suggestions, `o` keeps the original
 - **Saved progress** — a reload or closed tab doesn't lose a long run or your choices (stored only in your browser)
 - **Dark / light** theme
 - **Quick search shortcuts** on each card (Scholar, CrossRef, DBLP, …)

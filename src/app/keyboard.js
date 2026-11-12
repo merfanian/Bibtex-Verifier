@@ -1,5 +1,6 @@
 // Keyboard review: move between the visible entries and decide each one
-// without the mouse. j / k move, a accepts all suggestions, o keeps the original.
+// without the mouse. k / j (or the arrow keys, once a card is selected) go to
+// the next / previous entry, a accepts all suggestions, o keeps the original.
 import { $, $$ } from "./dom.js";
 
 const ACTIVE = "kb-active";
@@ -17,7 +18,7 @@ function move(step) {
   const cards = visibleCards();
   if (!cards.length) return;
   const i = cards.findIndex(c => c.classList.contains(ACTIVE));
-  // With nothing selected yet, j starts at the first card and k at the last.
+  // With nothing selected yet, "next" starts at the first card and "previous" at the last.
   const next = i === -1 ? (step > 0 ? 0 : cards.length - 1)
     : Math.min(cards.length - 1, Math.max(0, i + step));
   setActive(cards[next]);
@@ -37,11 +38,17 @@ export function initKeyboard() {
     if (document.body.dataset.onboardingStage) return;  // the tour owns the keyboard
     if ($(".results-section").offsetParent === null) return;
     const actions = {
-      j: () => move(1),
-      k: () => move(-1),
+      k: () => move(1),
+      j: () => move(-1),
       a: () => decide(".btn-accept-all"),
       o: () => decide(".btn-revert-all"),
     };
+    // Arrows move too, but only once a card is selected (by a click or k / j);
+    // before that they keep scrolling the page.
+    if ($(`.entry-card.${ACTIVE}:not(.hidden)`)) {
+      actions.ArrowDown = actions.ArrowRight = actions.k;
+      actions.ArrowUp = actions.ArrowLeft = actions.j;
+    }
     const action = actions[e.key];
     if (!action) return;
     e.preventDefault();
