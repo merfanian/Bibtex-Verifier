@@ -1,3 +1,8 @@
+// Field names may carry hyphens, dots and colons ("date-added", "bdsk-url-1").
+const FIELD_NAME = "[A-Za-z][\\w.:+-]*";
+const FIELD_START_RE = new RegExp(`^(${FIELD_NAME})\\s*=\\s*`);
+const NEXT_FIELD_RE = new RegExp(`^\\s*(?:\\r?\\n\\s*)?${FIELD_NAME}\\s*=`);
+
 function skipWhitespace(str, i) {
   while (i < str.length && /\s/.test(str[i])) i++;
   return i;
@@ -43,7 +48,7 @@ function extractBracedFieldValue(str, start) {
       }
     } else if (depth === 1 && c === ",") {
       const tail = str.slice(i + 1);
-      if (/^\s*(?:\r?\n\s*)?\w+\s*=/.test(tail)) {
+      if (NEXT_FIELD_RE.test(tail)) {
         const inner = str.slice(start + 1, i);
         return {
           value: balanceClosingBraces(inner),
@@ -91,13 +96,27 @@ function extractNumberFieldValue(str, start) {
   return { value: m[1], next };
 }
 
-function parseEntryFields(body) {
+// A bare word is a @string macro or a month ("month = may"). A macro defined
+// in the file is replaced by its text; any other bare word is written back
+// without braces as long as its value is unchanged.
+function extractBareFieldValue(str, start) {
+  const m = /^[A-Za-z][\w.:+-]*/.exec(str.slice(start));
+  if (!m) return null;
+  let next = skipWhitespace(str, start + m[0].length);
+  if (str[next] === "#") return null;  // concatenation isn't supported
+  if (str[next] === ",") next = skipWhitespace(str, next + 1);
+  return { value: m[0], next };
+}
+
+function parseEntryFields(body, macros = new Map()) {
   const fields = {};
+  const bare = {};
   let i = skipWhitespace(body, 0);
   while (i < body.length) {
-    const nameMatch = /^(\w+)\s*=\s*/.exec(body.slice(i));
+    const nameMatch = FIELD_START_RE.exec(body.slice(i));
     if (!nameMatch) break;
     const key = nameMatch[1].toLowerCase();
+    const fieldStart = i;
     i += nameMatch[0].length;
     i = skipWhitespace(body, i);
     if (i >= body.length) break;
@@ -106,12 +125,22 @@ function parseEntryFields(body) {
     if (body[i] === "{") ext = extractBracedFieldValue(body, i);
     else if (body[i] === '"') ext = extractQuotedFieldValue(body, i);
     else if (/\d/.test(body[i])) ext = extractNumberFieldValue(body, i);
-    else break;
+    else {
+      ext = extractBareFieldValue(body, i);
+      if (!ext) { i = fieldStart; break; }
+      const text = macros.get(ext.value.toLowerCase());
+      if (text !== undefined) ext.value = text;
+      else bare[key] = ext.value;
+    }
 
     fields[key] = ext.value.replace(/\s*\n\s*/g, " ").trim();
     i = ext.next;
     i = skipWhitespace(body, i);
   }
+  if (Object.keys(bare).length) fields._bare = bare;
+  // Anything left before the entry's closing brace was not understood.
+  const rest = body.slice(i).replace(/^[\s,]+/, "");
+  if (rest && !rest.startsWith("}")) fields._unparsed = rest.slice(0, 40).replace(/\s+/g, " ").trim();
   return fields;
 }
 
@@ -119,7 +148,8 @@ export function parseBib(content) {
   const entries = [];
   // Bodies run from one `@type{key,` header to the next, not to the first `@`:
   // values legitimately contain `@` (emails, URLs) and must not end the entry.
-  const headerRe = /@(\w+)\s*\{([^,]*),/g;
+  // A key has no braces or "@", so "@string{a = "b"}" before an entry can't swallow its header.
+  const headerRe = /@(\w+)\s*\{([^,{}@]*),/g;
   const headers = [];
   let m;
   while ((m = headerRe.exec(content)) !== null) {
@@ -130,6 +160,11 @@ export function parseBib(content) {
       bodyStart: headerRe.lastIndex,
     });
   }
+  // @string{jmlr = "Journal of Machine Learning Research"} definitions.
+  const macros = new Map();
+  const stringRe = new RegExp(`@string\\s*[{(]\\s*(${FIELD_NAME})\\s*=\\s*(?:\\{([^{}]*)\\}|"([^"]*)")`, "gi");
+  for (const s of content.matchAll(stringRe)) macros.set(s[1].toLowerCase(), (s[2] ?? s[3]).trim());
+
   for (let h = 0; h < headers.length; h++) {
     const hdr = headers[h];
     if (hdr.type === "string" || hdr.type === "preamble" || hdr.type === "comment")
@@ -138,7 +173,7 @@ export function parseBib(content) {
     let body = content.slice(hdr.bodyStart, bodyEnd);
     body = body.replace(/\}\s*$/, "").trim();
     const entry = { ENTRYTYPE: hdr.type, ID: hdr.id };
-    Object.assign(entry, parseEntryFields(body));
+    Object.assign(entry, parseEntryFields(body, macros));
     entries.push(entry);
   }
   return entries;
@@ -152,7 +187,8 @@ export function entriesToBib(entries) {
     lines.push(`@${type}{${id},`);
     for (const [k, v] of Object.entries(entry)) {
       if (k === "ENTRYTYPE" || k === "ID" || k.startsWith("_")) continue;
-      lines.push(`  ${k} = {${v}},`);
+      const isBare = entry._bare?.[k] === v;
+      lines.push(isBare ? `  ${k} = ${v},` : `  ${k} = {${v}},`);
     }
     lines.push("}\n");
   }

@@ -1,4 +1,5 @@
 import { normalizeTitle } from "./latex.js";
+import { isUnmatched } from "./results.js";
 import { cleanEntryNotes } from "./notes.js";
 
 export function truncateAuthors(authorStr, max) {
@@ -47,7 +48,7 @@ export function buildExportEntries(entries, results, fieldEdits, settings) {
 
     const out = applyFieldEdits(entry, fieldEdits[i]);
 
-    if (s.maxAuthors > 0 && out.author && r.status !== "not_found") {
+    if (s.maxAuthors > 0 && out.author && !isUnmatched(r.status)) {
       out.author = truncateAuthors(out.author, s.maxAuthors);
     }
 

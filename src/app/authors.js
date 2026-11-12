@@ -1,6 +1,6 @@
 // "Max authors" setting: reflect truncation in author diff rows, and inject a
 // truncation suggestion for entries whose lookup didn't suggest an author.
-import { truncateAuthors } from "../lib/index.js";
+import { isUnmatched, truncateAuthors } from "../lib/index.js";
 import { DIFF_TABLE_HEADER, removeFieldButton, updateCardStatuses } from "./cards.js";
 import { $$, esc } from "./dom.js";
 import { getSettings } from "./settings.js";
@@ -62,7 +62,7 @@ function injectTruncationRows(max) {
     const res = state.results[idx];
     if (!entry || !entry.author) return;
     // No lookup match — don't present truncation as if it were an API suggestion.
-    if (res && res.status === "not_found") return;
+    if (res && isUnmatched(res.status)) return;
     if (card.querySelector('.diff-row[data-field="author"]:not(.field-row-plain)')) return;
 
     if (entry.author.split(/\s+and\s+/i).length <= max) return;

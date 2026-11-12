@@ -1,5 +1,6 @@
 // Per-field choices on entry cards: keep original, adopt suggestion, edit
 // inline, remove a field, and the "Accept all" / "Keep original" bulk actions.
+import { isUnmatched } from "../lib/index.js";
 import { updatePreview } from "./preview.js";
 import { state } from "./state.js";
 
@@ -185,7 +186,7 @@ export function reapplyMinorDefaults(applyMinor) {
     if (edits[field] && !edits[field]._auto) continue;
     // Entries that need review keep every original value regardless.
     const result = state.results[idx];
-    if (!result || result.status === "needs_review" || result.status === "not_found") continue;
+    if (!result || result.status === "needs_review" || isUnmatched(result.status)) continue;
 
     row.dataset.default = action;
     if (row.dataset.action === action) continue;

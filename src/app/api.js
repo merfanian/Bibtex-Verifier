@@ -1,13 +1,14 @@
 // Network layer: rate-limited lookups against Semantic Scholar, CrossRef and
-// OpenAlex. Only paper titles are ever sent.
+// OpenAlex. Only paper titles, DOIs and arXiv IDs are ever sent.
 import {
-  bestMatch, crossrefToStandard, isSamePaper, mergeMetadata, MIN_TITLE_SIM,
-  openAlexToStandard, ssToStandard, titleSimilarity,
+  bestMatch, checkableDois, crossrefToStandard, editorialNotice, isSamePaper, mergeMetadata,
+  MIN_TITLE_SIM, openAlexToStandard, ssToStandard, titleSimilarity,
 } from "../lib/index.js";
 
 const CROSSREF_API = "https://api.crossref.org/works";
 const SS_MATCH = "https://api.semanticscholar.org/graph/v1/paper/search/match";
 const SS_SEARCH = "https://api.semanticscholar.org/graph/v1/paper/search";
+const SS_PAPER = "https://api.semanticscholar.org/graph/v1/paper/";
 const SS_FIELDS = "title,authors,year,venue,publicationVenue,externalIds";
 const OPENALEX_API = "https://api.openalex.org/works";
 const OPENALEX_FIELDS = "title,display_name,publication_year,doi,authorships,primary_location,biblio,id";
@@ -134,8 +135,47 @@ async function searchCrossref(title) {
   return (data?.message?.items || []).map(crossrefToStandard);
 }
 
+// Path-safe identifier: keep the ":" and "/" the APIs expect.
+const idPath = (id) => encodeURIComponent(id).replace(/%3A/gi, ":").replace(/%2F/gi, "/");
+
+/** Semantic Scholar record for "DOI:10.x/y" or "ARXIV:2302.09419", or null. */
+async function fetchSSById(id) {
+  const data = await fetchJSON(SS_PAPER + idPath(id), { fields: SS_FIELDS }, { is404Ok: true });
+  return data?.title ? ssToStandard(data) : null;
+}
+
+async function fetchCrossrefByDoi(doi) {
+  const data = await fetchJSON(`${CROSSREF_API}/${encodeURIComponent(doi)}`, {}, { is404Ok: true });
+  return data?.message?.title ? crossrefToStandard(data.message) : null;
+}
+
+const NOTICE_BATCH = 40;
+
+/**
+ * Retractions and expressions of concern (Retraction Watch data in CrossRef)
+ * for `dois`. Returns Map(lowercase DOI -> { kind, doi }). Throws
+ * TransientLookupError when CrossRef is unreachable.
+ */
+export async function fetchEditorialNotices(dois) {
+  const notices = new Map();
+  const list = checkableDois(dois);
+  for (let i = 0; i < list.length; i += NOTICE_BATCH) {
+    const batch = list.slice(i, i + NOTICE_BATCH);
+    const data = await fetchJSON(CROSSREF_API, {
+      filter: batch.map(d => `doi:${d}`).join(","), rows: String(batch.length), select: "DOI,updated-by",
+    });
+    // A rejected request (HTTP 4xx) is a failed check, not "no retractions".
+    if (!Array.isArray(data?.message?.items)) throw new TransientLookupError("retraction check rejected");
+    for (const item of data.message.items) {
+      const notice = editorialNotice(item["updated-by"]);
+      if (notice && item.DOI) notices.set(item.DOI.toLowerCase(), notice);
+    }
+  }
+  return notices;
+}
+
 async function searchOpenAlex(title) {
-  // No `mailto`: only the title may leave the user's machine.
+  // No `mailto`: nothing that identifies the user may leave the machine.
   const data = await fetchJSON(OPENALEX_API, {
     search: title, per_page: "5", select: OPENALEX_FIELDS,
   });
@@ -144,10 +184,13 @@ async function searchOpenAlex(title) {
 
 /**
  * Find the best published record for a title, or null if no source has it.
+ * `ids` ({ doi, arxiv } from entryIdentifiers) are tried first: an identifier
+ * names the paper exactly, but its record is used only when the title agrees,
+ * so a wrong DOI can never swap in another paper.
  * Throws TransientLookupError when nothing matched but a source failed
  * transiently, so the caller can retry instead of reporting "not found".
  */
-export async function lookupPaper(title) {
+export async function lookupPaper(title, ids = {}) {
   let transient = false;
   const attempt = async (fn) => {
     try { return await fn(); }
@@ -160,7 +203,12 @@ export async function lookupPaper(title) {
   // CrossRef repository uploads ("posted-content") are kept apart: anyone can
   // re-register a famous paper under a new DOI and publisher, so they never
   // fill in another record and are used only when nothing else matches.
+  const sameTitle = (rec) => !!rec && titleSimilarity(title, rec.title || "") >= MIN_TITLE_SIM;
   const crossref = async () => {
+    if (ids.doi) {
+      const byDoi = await attempt(() => fetchCrossrefByDoi(ids.doi));
+      if (sameTitle(byDoi) && !byDoi._preprint) return { published: byDoi, posted: null };
+    }
     const items = (await attempt(() => searchCrossref(title))) || [];
     return {
       published: bestMatch(items.filter(c => !c._preprint), title),
@@ -168,8 +216,13 @@ export async function lookupPaper(title) {
     };
   };
 
-  const ssMatch = await attempt(() => searchSSMatch(title));
-  if (ssMatch && titleSimilarity(title, ssMatch.title || "") >= MIN_TITLE_SIM) {
+  let ssMatch = null;
+  if (ids.doi || ids.arxiv) {
+    const byId = await attempt(() => fetchSSById(ids.doi ? `DOI:${ids.doi}` : `ARXIV:${ids.arxiv}`));
+    if (sameTitle(byId)) ssMatch = byId;
+  }
+  ssMatch ??= await attempt(() => searchSSMatch(title));
+  if (sameTitle(ssMatch)) {
     const { published } = await crossref();
     if (published && isSamePaper(ssMatch, published))
       return mergeMetadata(ssMatch, published);

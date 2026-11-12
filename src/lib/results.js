@@ -1,3 +1,4 @@
+import { isUncheckable } from "./checks.js";
 import { compareEntry, fieldDiffsForNeedsReview } from "./compare.js";
 import { COMPARED_FIELDS } from "./constants.js";
 import { normalizeTitle } from "./latex.js";
@@ -20,10 +21,13 @@ export function findDuplicateTitles(entries) {
 
 /**
  * Turn a lookup outcome into the result object the UI renders: a missing
- * `found` record is "not_found", otherwise the entry is compared against it.
+ * `found` record is "not_found" — or "unverifiable" for a kind of source the
+ * databases don't cover — otherwise the entry is compared against it.
+ * `issues` are the entry's problems from lintEntries().
  */
-export function buildResult(entry, index, found, duplicateOf = null, { preferPublished = false } = {}) {
+export function buildResult(entry, index, found, duplicateOf = null, { preferPublished = false, issues = [] } = {}) {
   let status = "not_found", titleScore = 0, fieldDiffs = [], suggested = {};
+  if (!found && (entry.title || "").trim() && isUncheckable(entry)) status = "unverifiable";
   let reviewReason = null, publishedOnly = false;
   if (found) {
     const cmp = compareEntry(entry, found);
@@ -65,6 +69,12 @@ export function buildResult(entry, index, found, duplicateOf = null, { preferPub
     suggested,
     found_title: found ? (found.title || "") : "",
     duplicate_of: duplicateOf,
+    // DOI of the matched record, for the retraction check. The entry's own
+    // DOI is not used: it may belong to another paper.
+    found_doi: (found?.doi || "").trim(),
+    // Problems in the entry itself. A missing field is not reported when a
+    // row already offers the database's value for it.
+    issues: issues.filter(is => !(is.code === "missing_field" && fieldDiffs.some(d => d.field === is.field))),
     // Why a matched entry needs review: "title" (weak title match),
     // "different_work" (same title, different authors) or "fields" (major diffs).
     review_reason: reviewReason,
@@ -89,6 +99,9 @@ export function applyPublishedPreference(result, preferPublished) {
     ? { ...result, status: "updated", review_reason: null }
     : { ...result, status: "needs_review", review_reason: "fields" };
 }
+
+/** No database record was matched: nothing to compare or suggest. */
+export const isUnmatched = (status) => status === "not_found" || status === "unverifiable";
 
 const isDifferentWork = (d) =>
   d.field === "author" && d.severity === SEVERITY.MAJOR && d.reason === NO_COMMON_AUTHORS;

@@ -6,8 +6,10 @@ import { initFilters } from "./filters.js";
 import { initInput } from "./input.js";
 import { initOnboarding } from "./onboarding.js";
 import { initPreview, updatePreview } from "./preview.js";
+import { initKeyboard } from "./keyboard.js";
+import { initSession } from "./session.js";
 import { initSettings } from "./settings.js";
-import { reclassifyPublishedOnly, startVerificationFromContent } from "./verify.js";
+import { reclassifyPublishedOnly, restoreSession, startVerificationFromContent } from "./verify.js";
 
 function initTheme() {
   const root = document.documentElement;
@@ -62,5 +64,7 @@ initSettings({
   onApplyMinorChange: (applyMinor) => reapplyMinorDefaults(applyMinor),
   onPreferPublishedChange: (preferPublished) => reclassifyPublishedOnly(preferPublished),
 });
+initKeyboard();
 initInput({ onContent: startVerificationFromContent });
+initSession({ onResume: restoreSession });
 initOnboarding({ onVerifySample: startVerificationFromContent });

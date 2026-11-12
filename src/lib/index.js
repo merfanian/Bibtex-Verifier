@@ -10,6 +10,8 @@ export * from "./venues.js";
 export * from "./notes.js";
 export * from "./search.js";
 export * from "./severity.js";
+export * from "./checks.js";
 export * from "./results.js";
 export * from "./export.js";
+export * from "./session.js";
 export * from "./diff.js";
