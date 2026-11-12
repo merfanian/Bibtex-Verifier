@@ -337,6 +337,16 @@ describe("buildResult triage", () => {
       for (const d of r.field_diffs) assert.equal(adoptsByDefault(r, d), false, d.field);
     });
 
+    it("never auto-adopts a repository re-upload as the published version", () => {
+      const withDoi = { ...preprint, doi: "10.48550/arXiv.2402.01071" };
+      const reupload = { ...published, journal: "", doi: "10.65215/x", publisher: "Some Repository", _preprint: true };
+      assert.equal(classifyDiff({ field: "doi", original: withDoi.doi, found: reupload.doi }, withDoi, reupload).reason,
+        "conflicting DOI");
+      const r = buildResult(withDoi, 0, reupload, null, { preferPublished: true });
+      assert.equal(r.published_only, false);
+      assert.equal(r.status, "needs_review");
+    });
+
     it("is auto-updated to the published version when preferPublished is on", () => {
       const r = buildResult(preprint, 0, published, null, { preferPublished: true });
       assert.equal(r.status, "updated");

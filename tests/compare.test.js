@@ -106,6 +106,20 @@ describe("compareEntry", () => {
     assert.ok(!("booktitle" in found));
   });
 
+  it("keeps an arXiv record a preprint after moving its venue to booktitle", () => {
+    // S2 records may carry journal "arXiv" with no DOI or URL.
+    const result = compareEntry({ title: "Test Paper", booktitle: "ICML", year: "2022" },
+      { title: "Test Paper", journal: "arXiv", year: "2020" });
+    assert.ok(!result.field_diffs.some(d => d.field === "year"));
+  });
+
+  it("doesn't suggest a journal field for a conference paper", () => {
+    const result = compareEntry({ title: "Test Paper", booktitle: "Advances in NeurIPS" },
+      { title: "Test Paper", journal: "NeurIPS" });
+    assert.ok(!result.field_diffs.some(d => d.field === "journal"));
+    assert.ok(result.field_diffs.some(d => d.field === "booktitle"));
+  });
+
   it("does not suggest the older year when found is a preprint", () => {
     const orig = { title: "Great Paper", year: "2021", journal: "NeurIPS" };
     const found = { title: "Great Paper", year: "2020", journal: "arXiv" };

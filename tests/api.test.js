@@ -50,6 +50,46 @@ describe("lookupPaper", () => {
     assert.equal(found.pages, "5998-6008");
   });
 
+  it("never fills a record from a CrossRef repository re-upload", async () => {
+    // Seen live: a "posted-content" copy of the Vaswani paper under another
+    // publisher's DOI replaced the DOI of the S2 record (whose arXiv DOI made
+    // it look like a preprint) and added the uploader as publisher.
+    const ssArxiv = { ...ssPaper, venue: "Neural Information Processing Systems",
+      externalIds: { DOI: "10.48550/arXiv.1706.03762", ArXiv: "1706.03762" } };
+    const posted = { ...crItem, type: "posted-content", "published-print": undefined,
+      "container-title": [], DOI: "10.65215/ysbyhc05", publisher: "Some Repository" };
+    mockFetch({
+      ss: (u) => (u.pathname.endsWith("/match") ? json(200, { data: [ssArxiv] }) : json(200, { data: [] })),
+      cr: () => json(200, { message: { items: [posted] } }),
+    });
+    const found = await lookupPaper("Attention Is All You Need");
+    assert.equal(found._source, "semantic_scholar");
+    assert.equal(found.doi, "10.48550/arXiv.1706.03762");
+    assert.equal(found.publisher, "");
+  });
+
+  it("uses a CrossRef re-upload only when nothing else matches", async () => {
+    const posted = { ...crItem, type: "posted-content", DOI: "10.1/posted" };
+    mockFetch({
+      cr: () => json(200, { message: { items: [posted] } }),
+      oa: () => json(200, { results: [{ title: "Attention Is All You Need", publication_year: 2017, id: "W1" }] }),
+    });
+    assert.equal((await lookupPaper("Attention Is All You Need"))._source, "openalex");
+    mockFetch({ cr: () => json(200, { message: { items: [posted] } }) });
+    const found = await lookupPaper("Attention Is All You Need");
+    assert.equal(found.doi, "10.1/posted");
+    assert.ok(found._preprint);
+  });
+
+  it("retries instead of settling on a re-upload after a transient failure", async () => {
+    const posted = { ...crItem, type: "posted-content", DOI: "10.1/posted" };
+    mockFetch({
+      ss: () => json(503, {}),
+      cr: () => json(200, { message: { items: [posted] } }),
+    });
+    await assert.rejects(lookupPaper("Attention Is All You Need"), TransientLookupError);
+  });
+
   it("only sends the title to the APIs", async () => {
     mockFetch();
     await lookupPaper("Some Title");

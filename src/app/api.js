@@ -157,22 +157,36 @@ export async function lookupPaper(title) {
     }
   };
 
+  // CrossRef repository uploads ("posted-content") are kept apart: anyone can
+  // re-register a famous paper under a new DOI and publisher, so they never
+  // fill in another record and are used only when nothing else matches.
+  const crossref = async () => {
+    const items = (await attempt(() => searchCrossref(title))) || [];
+    return {
+      published: bestMatch(items.filter(c => !c._preprint), title),
+      posted: bestMatch(items.filter(c => c._preprint), title),
+    };
+  };
+
   const ssMatch = await attempt(() => searchSSMatch(title));
   if (ssMatch && titleSimilarity(title, ssMatch.title || "") >= MIN_TITLE_SIM) {
-    const crMatch = bestMatch((await attempt(() => searchCrossref(title))) || [], title);
-    if (crMatch && isSamePaper(ssMatch, crMatch))
-      return mergeMetadata(ssMatch, crMatch);
+    const { published } = await crossref();
+    if (published && isSamePaper(ssMatch, published))
+      return mergeMetadata(ssMatch, published);
     return ssMatch;
   }
 
-  const crMatch = bestMatch((await attempt(() => searchCrossref(title))) || [], title);
-  if (crMatch) return crMatch;
+  const cr = await crossref();
+  if (cr.published) return cr.published;
 
   const oaMatch = bestMatch((await attempt(() => searchOpenAlex(title))) || [], title);
   if (oaMatch) return oaMatch;
 
   const ssSearchMatch = bestMatch((await attempt(() => searchSSSearch(title))) || [], title);
   if (ssSearchMatch) return ssSearchMatch;
+  // After a transient failure a better record may still exist: retry later
+  // instead of settling on a re-upload.
+  if (cr.posted && !transient) return cr.posted;
 
   if (transient) throw new TransientLookupError("inconclusive lookup");
   return null;
