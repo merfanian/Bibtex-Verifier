@@ -70,7 +70,10 @@ and the `<script>` tag in `src/index.html`, including its `integrity` hash.
    Add a converter test in `tests/sources.test.js`.
 2. In `src/app/api.js`, add a `search<Source>(title)` function and a rate-limit
    bucket in `RATE_DEFAULTS`, then wire it into `lookupPaper` (and cover it in
-   `tests/api.test.js`).
+   `tests/api.test.js`). `lookupMany` runs a chunk of entries: CrossRef per
+   entry, one Semantic Scholar batch request for the chunk, and `lookupPaper`
+   only for entries that couldn't be identified. Pace each source at what it
+   actually accepts (see the comments on `apiSettings` and `RATE_DEFAULTS`).
 3. **Privacy rule:** send only the paper title, or the entry's DOI / arXiv ID.
    Do not attach emails, `mailto` parameters, or any other part of the user's
    `.bib` — the promise is that only titles and those identifiers ever leave
