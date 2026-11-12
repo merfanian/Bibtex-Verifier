@@ -1020,7 +1020,7 @@ code {
 .diff-table .field-name {
   font-weight: 600;
   white-space: nowrap;
-  width: 80px;
+  width: 8.5rem;
 }
 
 .diff-table .field-name-pill {
@@ -1272,7 +1272,10 @@ code {
 .diff-reason {
   display: block;
   margin-top: 0.3rem;
-  max-width: 11rem;
+  max-width: 8.5rem;
+  /* The field cell is nowrap for the pill; the reason must wrap inside it. */
+  white-space: normal;
+  overflow-wrap: anywhere;
   font-size: 0.68rem;
   line-height: 1.3;
   color: var(--text-dim);
