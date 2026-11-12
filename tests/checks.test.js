@@ -114,6 +114,10 @@ describe("lintEntries", () => {
     assert.deepEqual(filled.issues.map(i => i.code), ["duplicate_key"]);
     const unfilled = buildResult(entry, 0, { title: "Great Paper", author: "Doe, Jane" }, null, { issues });
     assert.deepEqual(unfilled.issues.map(i => i.code), ["duplicate_key", "missing_field"]);
+    // In an entry that needs review the year is offered in a row, so it isn't reported either.
+    const review = buildResult(entry, 0, { title: "Great Paper", author: "Poe, Edgar", year: "2020" }, null, { issues });
+    assert.equal(review.status, "needs_review");
+    assert.deepEqual(review.issues.map(i => i.code), ["duplicate_key"]);
     assert.equal(buildResult(entry, 0, null, null, { issues }).issues.length, 2);
   });
 });
@@ -129,8 +133,18 @@ describe("parser: bare words and unreadable fields", () => {
     assert.match(bib, /^ {2}month = may,$/m);
     assert.match(bib, /^ {2}year = \{2020\},$/m);
     assert.doesNotMatch(bib, /_bare|_unparsed/);
-    // An edited value is braced again.
+    // An edited value is literal text, even a single word.
     assert.match(entriesToBib([{ ...e, month: "May 5" }]), /month = \{May 5\},/);
+    assert.match(entriesToBib([{ ...e, month: "June" }]), /month = \{June\},/);
+  });
+
+  it("replaces a @string macro defined in the file by its text", () => {
+    const [e] = parseBib('@string{jmlr = "Journal of Machine Learning Research"}\n@STRING{ nips = {NeurIPS} }\n' +
+      "@article{a,\n  title={T},\n  journal = JMLR,\n  booktitle = nips,\n  month = may,\n  year={2020}\n}");
+    assert.equal(e.journal, "Journal of Machine Learning Research");
+    assert.equal(e.booktitle, "NeurIPS");
+    assert.deepEqual(e._bare, { month: "may" });
+    assert.match(entriesToBib([e]), /journal = \{Journal of Machine Learning Research\},/);
   });
 
   it("reads field names with hyphens, dots and colons", () => {
@@ -163,6 +177,13 @@ describe("editorial notices", () => {
     assert.deepEqual(editorialNotice([{ type: "Expression of Concern", DOI: "10.1/e" }]), { kind: "concern", doi: "10.1/e" });
     assert.equal(editorialNotice([{ type: "correction", DOI: "10.1/c" }, { type: "erratum" }]), null);
     assert.equal(editorialNotice(undefined), null);
+  });
+
+  it("checks the matched record's DOI, never the entry's own", () => {
+    const entry = { ID: "a", ENTRYTYPE: "article", title: "Great Paper", doi: "10.1000/someone-elses" };
+    assert.equal(buildResult(entry, 0, { title: "Great Paper" }).found_doi, "");
+    assert.equal(buildResult(entry, 0, { title: "Great Paper", doi: "10.1000/right" }).found_doi, "10.1000/right");
+    assert.equal(buildResult(entry, 0, null).found_doi, "");
   });
 
   it("only asks about valid CrossRef-style DOIs, once each", () => {

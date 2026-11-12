@@ -164,7 +164,9 @@ export async function fetchEditorialNotices(dois) {
     const data = await fetchJSON(CROSSREF_API, {
       filter: batch.map(d => `doi:${d}`).join(","), rows: String(batch.length), select: "DOI,updated-by",
     });
-    for (const item of data?.message?.items || []) {
+    // A rejected request (HTTP 4xx) is a failed check, not "no retractions".
+    if (!Array.isArray(data?.message?.items)) throw new TransientLookupError("retraction check rejected");
+    for (const item of data.message.items) {
       const notice = editorialNotice(item["updated-by"]);
       if (notice && item.DOI) notices.set(item.DOI.toLowerCase(), notice);
     }

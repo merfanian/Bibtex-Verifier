@@ -11,10 +11,13 @@ export const state = {
   activeSearch: "",
   // Whether this run is saved to the browser for a later visit (not the tour's sample).
   persist: false,
+  // Whether the retraction check has succeeded for this run.
+  noticesChecked: false,
 };
 
 export function resetRunState() {
   state.parsedEntries = [];
   state.results = [];
   state.fieldEdits = {};
+  state.noticesChecked = false;
 }

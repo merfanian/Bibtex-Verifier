@@ -3,14 +3,15 @@
 export const SESSION_VERSION = 1;
 
 /** Plain object to store. `settings` is the settings snapshot the results were built with. */
-export function packSession({ parsedEntries, results, fieldEdits }, settings, savedAt = Date.now()) {
-  return { version: SESSION_VERSION, savedAt, settings, parsedEntries, results, fieldEdits };
+export function packSession({ parsedEntries, results, fieldEdits, noticesChecked }, settings, savedAt = Date.now()) {
+  return { version: SESSION_VERSION, savedAt, settings, noticesChecked: !!noticesChecked, parsedEntries, results, fieldEdits };
 }
 
 /**
  * Validate stored text. Returns `{ parsedEntries, results, fieldEdits, settings,
  * savedAt, complete }`, or null when it is missing, from another version or
- * malformed. `complete` is false when entries still await a lookup.
+ * malformed. `complete` is false when entries still await a lookup or the
+ * retraction check has not succeeded yet.
  */
 export function unpackSession(raw) {
   let data;
@@ -34,6 +35,6 @@ export function unpackSession(raw) {
       .filter(([i]) => Number(i) < n)),
     settings: settings && typeof settings === "object" ? settings : {},
     savedAt: Number(savedAt) || 0,
-    complete: n === parsedEntries.length && !kept.some(r => r.pending),
+    complete: n === parsedEntries.length && !kept.some(r => r.pending) && data.noticesChecked === true,
   };
 }

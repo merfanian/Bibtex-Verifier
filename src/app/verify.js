@@ -120,11 +120,10 @@ async function lookupEntry(entry) {
  */
 async function checkEditorialNotices(run) {
   const dois = state.results.map(r => r?.found_doi).filter(Boolean);
-  if (!dois.length) return;
-  barProgressText.textContent = "Checking for retractions…";
+  if (dois.length) barProgressText.textContent = "Checking for retractions…";
   let notices;
   try {
-    notices = await fetchEditorialNotices(dois);
+    notices = dois.length ? await fetchEditorialNotices(dois) : new Map();
   } catch (err) {
     console.warn("Retraction check failed:", err);
     if (run === currentRun)
@@ -136,6 +135,9 @@ async function checkEditorialNotices(run) {
     const notice = r?.found_doi && notices.get(normalizeDoi(r.found_doi));
     if (notice) showResult({ ...r, notice });
   }
+  // A run reopened before this point repeats the check.
+  state.noticesChecked = true;
+  updatePreview();
 }
 
 function prepareRun() {
@@ -183,6 +185,7 @@ export function restoreSession(saved) {
   state.parsedEntries = saved.parsedEntries;
   state.results = saved.results;
   state.fieldEdits = saved.fieldEdits;
+  state.noticesChecked = saved.complete;
 
   resultsSection.style.display = "block";
   resetPreview();

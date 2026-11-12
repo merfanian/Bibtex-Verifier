@@ -69,12 +69,12 @@ export function buildResult(entry, index, found, duplicateOf = null, { preferPub
     suggested,
     found_title: found ? (found.title || "") : "",
     duplicate_of: duplicateOf,
-    // DOI of the matched record (or the entry's own), for the retraction check.
-    found_doi: found ? (found.doi || entry.doi || "").trim() : "",
-    // Problems in the entry itself. A missing field the database supplies
-    // (and that is adopted by default) is not reported.
-    issues: issues.filter(is => !(is.code === "missing_field" && suggested[is.field] &&
-      (status === "updated" || status === "verified"))),
+    // DOI of the matched record, for the retraction check. The entry's own
+    // DOI is not used: it may belong to another paper.
+    found_doi: (found?.doi || "").trim(),
+    // Problems in the entry itself. A missing field is not reported when a
+    // row already offers the database's value for it.
+    issues: issues.filter(is => !(is.code === "missing_field" && fieldDiffs.some(d => d.field === is.field))),
     // Why a matched entry needs review: "title" (weak title match),
     // "different_work" (same title, different authors) or "fields" (major diffs).
     review_reason: reviewReason,

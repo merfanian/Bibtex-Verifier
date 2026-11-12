@@ -9,7 +9,8 @@ const entries = [
 ];
 const results = entries.map((e, i) => buildResult(e, i, { title: e.title, year: "2020" }));
 const edits = { 0: {}, 1: { year: { action: "found", value: "2020", _auto: true } } };
-const store = (state, settings = { maxAuthors: 10 }) => JSON.stringify(packSession(state, settings, 1234));
+const store = (state, settings = { maxAuthors: 10 }) =>
+  JSON.stringify(packSession({ noticesChecked: true, ...state }, settings, 1234));
 
 describe("saved sessions", () => {
   it("round-trips a finished run", () => {
@@ -29,6 +30,12 @@ describe("saved sessions", () => {
     assert.deepEqual(Object.keys(partial.fieldEdits), ["0"], "choices for entries not yet looked up are dropped");
     const pending = unpackSession(store({ parsedEntries: entries, results: [results[0], { ...results[1], pending: true }], fieldEdits: {} }));
     assert.equal(pending.complete, false);
+  });
+
+  it("is incomplete until the retraction check has succeeded", () => {
+    const s = unpackSession(store({ parsedEntries: entries, results, fieldEdits: {}, noticesChecked: false }));
+    assert.equal(s.complete, false);
+    assert.equal(s.results.length, 2);
   });
 
   it("rejects missing, foreign or malformed data", () => {

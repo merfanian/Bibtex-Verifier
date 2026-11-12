@@ -172,6 +172,11 @@ describe("lookupPaper", () => {
       assert.equal(calls.length, 0);
       await assert.rejects(fetchEditorialNotices(["10.1000/x"]), TransientLookupError);
     });
+
+    it("treats a rejected request as a failed check, not as no retractions", async () => {
+      mockFetch({ cr: () => json(400, {}) });
+      await assert.rejects(fetchEditorialNotices(["10.1000/x"]), TransientLookupError);
+    });
   });
 
   it("only sends the title to the APIs", async () => {

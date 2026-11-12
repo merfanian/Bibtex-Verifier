@@ -67,7 +67,9 @@ export function initSession({ onResume }) {
   const total = saved.parsedEntries.length;
   bannerText.textContent = saved.complete
     ? `Your last run (${total} ${total === 1 ? "entry" : "entries"}, ${ago(saved.savedAt)}) is saved in this browser, with your choices.`
-    : `Your last run stopped at entry ${saved.results.length} of ${total} (${ago(saved.savedAt)}). It is saved in this browser.`;
+    : saved.results.length < total
+      ? `Your last run stopped at entry ${saved.results.length} of ${total} (${ago(saved.savedAt)}). It is saved in this browser.`
+      : `Your last run (${total} ${total === 1 ? "entry" : "entries"}, ${ago(saved.savedAt)}) is saved in this browser; its retraction check will be repeated.`;
   $("#btn-resume").textContent = saved.complete ? "Open it" : "Continue";
   banner.hidden = false;
 
