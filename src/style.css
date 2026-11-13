@@ -258,7 +258,8 @@ code {
 }
 
 /* Theme toggle */
-.theme-toggle {
+.theme-toggle,
+.header-icon-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -272,7 +273,8 @@ code {
   transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
 
-.theme-toggle:hover {
+.theme-toggle:hover,
+.header-icon-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
 }
@@ -2432,3 +2434,132 @@ code {
 .resume-btn:hover { background: var(--surface); }
 .resume-btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .resume-btn-primary:hover { background: var(--accent); filter: brightness(1.08); }
+
+/* ─── Settings / About / What's new dialog ────────────────────────── */
+.app-dialog {
+  margin: auto;  /* the page's reset clears the default that centres a dialog */
+  width: min(36rem, calc(100vw - 2rem));
+  max-height: min(42rem, calc(100vh - 2rem));
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+.app-dialog[open] { display: flex; flex-direction: column; }
+.app-dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
+
+.app-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.1rem 0.4rem;
+}
+.app-dialog-head h2 { margin: 0; font-size: 1.05rem; }
+.app-dialog-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.app-dialog-close:hover { background: var(--surface-alt); color: var(--text); }
+
+.app-dialog-tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0 1.1rem;
+  border-bottom: 1px solid var(--border);
+}
+.app-dialog-tab {
+  padding: 0.5rem 0.7rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.app-dialog-tab:hover { color: var(--text); }
+.app-dialog-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.app-dialog-panel {
+  padding: 0.9rem 1.1rem 1.2rem;
+  overflow-y: auto;
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+.app-dialog-panel[hidden] { display: none; }
+.app-dialog-panel h3 { margin: 1rem 0 0.35rem; font-size: 0.92rem; }
+.app-dialog-panel h3:first-child { margin-top: 0; }
+.app-dialog-panel h4 {
+  margin: 0.7rem 0 0.2rem;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+}
+.app-dialog-panel p { margin: 0 0 0.6rem; color: var(--text-dim); }
+.app-dialog-panel ul { margin: 0 0 0.6rem; padding-left: 1.1rem; color: var(--text-dim); }
+.app-dialog-panel li { margin-bottom: 0.25rem; }
+.app-dialog-panel strong { color: var(--text); }
+.app-dialog-panel a { color: var(--accent); }
+.app-dialog-panel code {
+  padding: 0.05rem 0.3rem;
+  border-radius: 4px;
+  background: var(--surface-alt);
+  font-size: 0.8rem;
+}
+.dialog-note { font-size: 0.8rem; }
+.optional-tag {
+  margin-left: 0.3rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--gray-bg);
+  color: var(--text-dim);
+  font-size: 0.68rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.key-label { display: block; margin-bottom: 0.25rem; font-size: 0.78rem; font-weight: 600; }
+.key-row, .key-actions { display: flex; gap: 0.4rem; margin-bottom: 0.5rem; }
+.key-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+}
+.key-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.dialog-btn {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.dialog-btn:hover { border-color: var(--accent); }
+.dialog-btn:disabled { opacity: 0.6; cursor: default; }
+.dialog-btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.key-status { min-height: 1.3rem; margin: 0 0 0.6rem; font-size: 0.8rem; }
+.app-dialog-panel .key-status[data-kind="ok"] { color: var(--green); }
+.app-dialog-panel .key-status[data-kind="error"] { color: var(--red); }
+.app-dialog-panel .key-status[data-kind="warn"] { color: var(--yellow); }

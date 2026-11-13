@@ -7,6 +7,7 @@ import { initInput } from "./input.js";
 import { initOnboarding } from "./onboarding.js";
 import { initPreview, updatePreview } from "./preview.js";
 import { initKeyboard } from "./keyboard.js";
+import { initMenu } from "./menu.js";
 import { initSession } from "./session.js";
 import { initSettings } from "./settings.js";
 import { reclassifyPublishedOnly, restoreSession, startVerificationFromContent } from "./verify.js";
@@ -64,6 +65,7 @@ initSettings({
   onApplyMinorChange: (applyMinor) => reapplyMinorDefaults(applyMinor),
   onPreferPublishedChange: (preferPublished) => reclassifyPublishedOnly(preferPublished),
 });
+initMenu();
 initKeyboard();
 initInput({ onContent: startVerificationFromContent });
 initSession({ onResume: restoreSession });

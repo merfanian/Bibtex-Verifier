@@ -15,3 +15,4 @@ export * from "./results.js";
 export * from "./export.js";
 export * from "./session.js";
 export * from "./diff.js";
+export * from "./markdown.js";

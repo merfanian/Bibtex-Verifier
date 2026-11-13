@@ -1,7 +1,10 @@
 import "./helpers/setup.js";
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
-import { apiSettings, fetchEditorialNotices, lookupMany, lookupPaper, resetRateLimits, TransientLookupError } from "../src/app/api.js";
+import {
+  apiSettings, fetchEditorialNotices, lookupMany, lookupPaper, resetRateLimits, semanticScholarKeyRejected,
+  setSemanticScholarKey, testSemanticScholarKey, TransientLookupError,
+} from "../src/app/api.js";
 
 const realFetch = globalThis.fetch;
 let calls;
@@ -15,6 +18,7 @@ function mockFetch({ ss = () => json(404, {}), cr = () => json(200, { message: {
     const u = new URL(url);
     u.body = init?.body ?? null;
     calls.push(u);
+    u.key = init?.headers?.["x-api-key"] ?? null;
     if (u.host.includes("semanticscholar")) return ss(u, init);
     if (u.host.includes("crossref")) return cr(u);
     if (u.host.includes("openalex")) return oa(u);
@@ -38,7 +42,7 @@ describe("lookupPaper", () => {
     Object.assign(apiSettings, { maxRetries: 1, ssRetries: 1, batchRetries: 1, retryBaseMs: 0, ssRetryMs: 0, throttle: false });
     resetRateLimits();
   });
-  afterEach(() => { globalThis.fetch = realFetch; });
+  afterEach(() => { globalThis.fetch = realFetch; setSemanticScholarKey(""); });
 
   it("merges a Semantic Scholar match with the same CrossRef paper", async () => {
     mockFetch({
@@ -268,6 +272,73 @@ describe("lookupPaper", () => {
       const seen = [];
       await lookupMany([item(7), item(8)], (k) => { seen.push(k); }, () => seen.length >= 1);
       assert.deepEqual(seen, [0]);
+    });
+  });
+
+  describe("Semantic Scholar API key", () => {
+    const ssOk = (u) => (u.pathname.endsWith("/match") ? json(200, { data: [ssPaper] }) : json(200, { data: [] }));
+    const crOk = () => json(200, { message: { items: [crItem] } });
+
+    it("is sent to Semantic Scholar only, on GET and batch requests", async () => {
+      setSemanticScholarKey("  my-key ");
+      mockFetch({ ss: (u, init) => (init?.body ? json(200, [ssPaper]) : ssOk(u)), cr: crOk, oa: () => json(200, { results: [] }) });
+      await lookupPaper("Attention Is All You Need");
+      await lookupMany([{ title: "Attention Is All You Need", author: "Vaswani, Ashish", year: "2017", ids: {} }], () => {});
+      const ss = calls.filter(u => u.host.includes("semanticscholar"));
+      assert.ok(ss.length >= 2 && ss.some(u => u.body));
+      assert.ok(ss.every(u => u.key === "my-key"));
+      assert.ok(calls.filter(u => !u.host.includes("semanticscholar")).every(u => u.key === null));
+    });
+
+    it("is not sent when unset", async () => {
+      mockFetch({ ss: ssOk, cr: crOk });
+      await lookupPaper("Attention Is All You Need");
+      assert.ok(calls.every(u => u.key === null));
+    });
+
+    it("a rejected key never hides a paper: the request is repeated without it", async () => {
+      setSemanticScholarKey("bad-key");
+      mockFetch({ ss: (u) => (u.key ? json(403, { message: "Forbidden" }) : ssOk(u)), cr: crOk });
+      for (let i = 0; i < 2; i++) {
+        const found = await lookupPaper("Attention Is All You Need");
+        assert.equal(found._source, "semantic_scholar+crossref");
+      }
+      assert.equal(semanticScholarKeyRejected(), false, "not given up yet");
+      await lookupPaper("Attention Is All You Need");
+      assert.equal(semanticScholarKeyRejected(), true);
+      calls = [];
+      await lookupPaper("Attention Is All You Need");
+      assert.ok(calls.every(u => u.key === null), "the key is no longer sent in this run");
+      resetRateLimits();
+      assert.equal(semanticScholarKeyRejected(), false, "a new run tries the key again");
+    });
+
+    it("a throttled key doesn't hide a paper either, and isn't given up on", async () => {
+      setSemanticScholarKey("busy-key");
+      mockFetch({ ss: (u) => (u.key ? json(429, {}) : ssOk(u)), cr: crOk });
+      for (let i = 0; i < 4; i++)
+        assert.equal((await lookupPaper("Attention Is All You Need"))._source, "semantic_scholar+crossref");
+      assert.equal(semanticScholarKeyRejected(), false);
+    });
+
+    it("treats an unreadable failure with the key like a rejection (browser)", async () => {
+      setSemanticScholarKey("bad-key");
+      mockFetch({ ss: (u) => { if (u.key) throw new TypeError("NetworkError"); return ssOk(u); }, cr: crOk });
+      const found = await lookupPaper("Attention Is All You Need");
+      assert.equal(found._source, "semantic_scholar+crossref");
+    });
+
+    it("testSemanticScholarKey tells a working key, a rejected one and no answer apart", async () => {
+      mockFetch({ ss: (u) => (u.key === "good" ? json(200, { data: [] }) : u.key ? json(403, {}) : json(200, { data: [] })) });
+      assert.equal(await testSemanticScholarKey("good"), "ok");
+      assert.equal(await testSemanticScholarKey("bad"), "rejected");
+      mockFetch({ ss: (u) => { if (u.key) throw new TypeError("NetworkError"); return json(200, { data: [] }); } });
+      assert.equal(await testSemanticScholarKey("bad"), "rejected");
+      mockFetch({ ss: () => { throw new TypeError("NetworkError"); } });
+      assert.equal(await testSemanticScholarKey("any"), "unreachable");
+      // A readable "busy" answer with the key is not a verdict on the key.
+      mockFetch({ ss: (u) => (u.key ? json(429, {}) : json(200, { data: [] })) });
+      assert.equal(await testSemanticScholarKey("busy"), "unreachable");
     });
   });
 
