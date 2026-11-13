@@ -88,10 +88,9 @@ export function initMenu() {
   keyInput.value = key;
   if (key) setStatus("A key is saved in this browser.");
 
-  $("#btn-open-menu").addEventListener("click", () => {
-    showPanel("settings");
-    dialog.showModal();
-  });
+  const open = (panel) => { showPanel(panel); dialog.showModal(); };
+  $("#btn-open-menu").addEventListener("click", () => open("settings"));
+  $("#footer-open-changelog").addEventListener("click", () => open("changelog"));
   $("#app-dialog-close").addEventListener("click", () => dialog.close());
   // A click on the backdrop (the dialog element itself) closes it.
   dialog.addEventListener("click", (e) => { if (e.target === dialog) dialog.close(); });
