@@ -2,6 +2,13 @@
 
 What changed for people using BibTeX Verifier, newest first.
 
+## 2026-11-13
+
+### Changed
+- **A new look for the start page:** a headline with an example of a corrected and a made-up entry, clearer "How it works" and feature sections, and a fuller footer.
+- The **Star on GitHub** button shows the project's star count.
+- The header buttons are now the same height.
+
 ## 2026-11-12
 
 ### Added
