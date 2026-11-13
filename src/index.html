@@ -46,13 +46,29 @@
 
     <header class="hero">
       <div class="hero-top">
-        <h1>BibTeX Verifier</h1>
+        <div class="brand">
+          <svg class="brand-mark" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true">
+            <rect width="32" height="32" rx="8" fill="currentColor"/>
+            <g fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 7.5c-2 0-3 1-3 3v2.6c0 1.3-.8 2.2-2.2 2.9 1.4.7 2.2 1.6 2.2 2.9v2.6c0 2 1 3 3 3"/>
+              <path d="M21 7.5c2 0 3 1 3 3v2.6c0 1.3.8 2.2 2.2 2.9-1.4.7-2.2 1.6-2.2 2.9v2.6c0 2-1 3-3 3"/>
+              <path d="M12.4 16.3l2.5 2.5 4.7-5.3"/>
+            </g>
+          </svg>
+          <h1>BibTeX Verifier</h1>
+        </div>
         <div class="hero-top-right">
-          <a class="github-star-btn" href="https://github.com/merfanian/Bibtex-Verifier" target="_blank" rel="noopener">
-            <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.65 7.65 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
-            Star on GitHub
+          <a class="github-star-btn" id="github-star-btn" href="https://github.com/merfanian/Bibtex-Verifier" target="_blank" rel="noopener" aria-label="Star BibTeX Verifier on GitHub">
+            <span class="star-label">
+              <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.65 7.65 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+              Star
+            </span>
+            <span class="star-count" id="star-count" hidden>
+              <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 .25a.75.75 0 0 1 .67.42l1.88 3.82 4.21.61a.75.75 0 0 1 .42 1.28l-3.05 2.97.72 4.19a.75.75 0 0 1-1.09.79L8 12.35l-3.77 1.98a.75.75 0 0 1-1.09-.79l.72-4.19L.82 6.38a.75.75 0 0 1 .42-1.28l4.21-.61L7.33.67A.75.75 0 0 1 8 .25z"/></svg>
+              <span id="star-count-value"></span>
+            </span>
           </a>
-          <button class="theme-toggle" id="theme-toggle" title="Toggle light/dark theme">
+          <button class="theme-toggle" id="theme-toggle" title="Toggle light/dark theme" aria-label="Toggle light/dark theme">
             <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
             <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
           </button>
@@ -65,20 +81,37 @@
           </button>
         </div>
       </div>
-      <button type="button" class="hero-overview-toggle" id="hero-overview-toggle" aria-expanded="false" aria-controls="hero-overview">
+      <button type="button" class="hero-overview-toggle info-section" id="hero-overview-toggle" aria-expanded="false" aria-controls="hero-overview">
         <span id="hero-overview-toggle-label">About this tool</span>
         <svg class="hero-overview-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
-      <div class="hero-overview" id="hero-overview">
-        <p class="hero-tagline">Catch errors, hallucinated references, and missing metadata before you submit.</p>
-        <p class="hero-lead">Upload a <code>.bib</code> file or paste directly from Overleaf.
-          BibTeX Verifier checks every entry against
-          <a href="https://www.crossref.org/" target="_blank">CrossRef</a> and
-          <a href="https://www.semanticscholar.org/" target="_blank">Semantic Scholar</a>, with
-          <a href="https://openalex.org/" target="_blank">OpenAlex</a> as a fallback, to find
-          wrong authors, incorrect years, mismatched venues, missing DOIs, duplicates,
-          and <strong>AI-hallucinated citations</strong> that don't exist in any database.
-          100% in-browser — your file never leaves your machine.</p>
+      <div class="hero-overview info-section" id="hero-overview">
+        <div class="hero-copy">
+          <p class="hero-tagline">Catch wrong and <em>hallucinated</em> references before you submit.</p>
+          <p class="hero-lead">Upload a <code>.bib</code> file or paste directly from Overleaf.
+            BibTeX Verifier checks every entry against
+            <a href="https://www.crossref.org/" target="_blank">CrossRef</a> and
+            <a href="https://www.semanticscholar.org/" target="_blank">Semantic Scholar</a>, with
+            <a href="https://openalex.org/" target="_blank">OpenAlex</a> as a fallback, to find
+            wrong authors, incorrect years, mismatched venues, missing DOIs, duplicates,
+            and <strong>AI-hallucinated citations</strong> that don't exist in any database.</p>
+          <ul class="hero-points">
+            <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Your file never leaves your machine</li>
+            <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>No sign-up</li>
+            <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Free and open source</li>
+          </ul>
+        </div>
+        <div class="hero-specimen" role="img" aria-label="Example result: one entry corrected from the published record, and one entry that no database knows">
+          <div class="specimen-entry is-updated">
+            <div class="specimen-head"><span>vaswani2017attention</span><span class="specimen-badge">Auto-updated</span></div>
+            <div class="specimen-code"><span class="l">@inproceedings{vaswani2017attention,</span><span class="l">  title  = {Attention Is All You Need},</span><span class="l">  author = {Vaswani, Ashish and others},</span><span class="l del">  year   = {2018},</span><span class="l add">  year   = {2017},</span><span class="l add">  pages  = {5998--6008},</span><span class="l">}</span></div>
+          </div>
+          <div class="specimen-entry is-missing">
+            <div class="specimen-head"><span>chen2024selfhealing</span><span class="specimen-badge">Not found</span></div>
+            <div class="specimen-code"><span class="l">@article{chen2024selfhealing,</span><span class="l">  title  = {Self-Healing Transformers for</span><span class="l">            Unbounded Context},</span><span class="l">  year   = {2024},</span><span class="l">}</span></div>
+            <p class="specimen-note">No record in CrossRef, Semantic Scholar or OpenAlex. Possibly hallucinated.</p>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -95,7 +128,7 @@
 
     <div class="tab-panel active" id="tab-upload">
       <div class="upload-zone">
-        <span class="icon">&#128462;</span>
+        <span class="icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span>
         <span class="label">Drop your .bib file here or click to browse</span>
         <p>Standard BibTeX &amp; BibLaTeX &middot; Processed entirely in your browser</p>
         <input type="file" id="file-input" accept=".bib" />
@@ -245,32 +278,32 @@
       <h2>Features</h2>
       <div class="feature-grid">
         <div class="feature-card">
-          <div class="feature-icon">&#129302;</div>
+          <div class="feature-icon tone-red"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
           <h3>Hallucination detection</h3>
           <p>Flags entries whose titles don't match any known publication — catches fabricated references from AI-generated bibliographies.</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">&#128269;</div>
+          <div class="feature-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></div>
           <h3>Multi-source verification</h3>
           <p>Uses Semantic Scholar and CrossRef, with OpenAlex fallback, to maximize coverage and metadata quality.</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">&#128203;</div>
+          <div class="feature-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="4" x2="12" y2="12"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="18" x2="16" y2="18"/></svg></div>
           <h3>Field-by-field diff</h3>
           <p>See exactly which fields differ — authors, year, venue, DOI, pages — with inline editing and a live BibTeX preview.</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">&#128274;</div>
+          <div class="feature-icon tone-green"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
           <h3>Privacy-first</h3>
           <p>Your file never leaves the browser. Only paper titles, DOIs and arXiv IDs are sent to public academic APIs for lookup. No server, no tracking; your progress is saved only in this browser.</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">&#128221;</div>
+          <div class="feature-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
           <h3>DOI &amp; metadata enrichment</h3>
           <p>Fills in missing DOIs, publisher info, volume, pages, and other metadata from the online record automatically.</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">&#127919;</div>
+          <div class="feature-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
           <h3>Smart matching</h3>
           <p>Fuzzy title matching, LaTeX-aware text processing, and last-name-based author comparison handle real-world formatting differences.</p>
         </div>
@@ -278,14 +311,18 @@
     </section>
 
     <section class="faq info-section">
-      <h2>FAQ</h2>
+      <div class="faq-intro">
+        <h2>Questions</h2>
+        <p>Something else? <a href="https://github.com/merfanian/Bibtex-Verifier/issues" target="_blank" rel="noopener">Open an issue on GitHub</a>.</p>
+      </div>
+      <div class="faq-list">
       <details>
         <summary>Can it detect AI-hallucinated references?</summary>
         <p>Yes. When a BibTeX entry's title doesn't match any real publication in Semantic Scholar, CrossRef, or the OpenAlex fallback, it's flagged as "Not Found" or "Needs Review." This is how fabricated citations from ChatGPT, Copilot, or other AI tools get caught — the paper simply doesn't exist in any checked academic database.</p>
       </details>
       <details>
         <summary>Is my data safe?</summary>
-        <p>Yes. Your <code>.bib</code> file is parsed entirely in your browser using JavaScript. The only network requests made are title lookups to the public Semantic Scholar, CrossRef, and OpenAlex APIs. No file content is sent to any server.</p>
+        <p>Yes. Your <code>.bib</code> file is parsed entirely in your browser using JavaScript. The only network requests made are lookups by title, DOI or arXiv ID to the public Semantic Scholar, CrossRef, and OpenAlex APIs, plus one request to GitHub for the star count in the header. No file content is sent to any server.</p>
       </details>
       <details>
         <summary>Why are some entries "Not Found"?</summary>
@@ -303,12 +340,39 @@
         <summary>Is this open source?</summary>
         <p>Yes! The full source code is on <a href="https://github.com/merfanian/Bibtex-Verifier" target="_blank">GitHub</a> under the MIT license. Contributions are welcome.</p>
       </details>
+      </div>
     </section>
 
     <footer class="site-footer info-section">
-      <p>Open source under <a href="https://github.com/merfanian/Bibtex-Verifier/blob/main/LICENSE" target="_blank">MIT License</a>
-        &middot; <a href="https://github.com/merfanian/Bibtex-Verifier" target="_blank">GitHub</a>
-        &middot; <button type="button" class="footer-tour-link" id="footer-start-tour">Quick tour</button></p>
+      <div class="footer-brand">
+        <div class="brand">
+          <svg class="brand-mark" viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
+            <rect width="32" height="32" rx="8" fill="currentColor"/>
+            <g fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 7.5c-2 0-3 1-3 3v2.6c0 1.3-.8 2.2-2.2 2.9 1.4.7 2.2 1.6 2.2 2.9v2.6c0 2 1 3 3 3"/>
+              <path d="M21 7.5c2 0 3 1 3 3v2.6c0 1.3.8 2.2 2.2 2.9-1.4.7-2.2 1.6-2.2 2.9v2.6c0 2-1 3-3 3"/>
+              <path d="M12.4 16.3l2.5 2.5 4.7-5.3"/>
+            </g>
+          </svg>
+          <span class="footer-name">BibTeX Verifier</span>
+        </div>
+        <p>Checks a bibliography against the published record, entirely in your browser.</p>
+        <p>Open source under the <a href="https://github.com/merfanian/Bibtex-Verifier/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>.</p>
+      </div>
+      <nav class="footer-col" aria-label="Project">
+        <h3>Project</h3>
+        <a href="https://github.com/merfanian/Bibtex-Verifier" target="_blank" rel="noopener">Source code on GitHub</a>
+        <a href="https://github.com/merfanian/Bibtex-Verifier/issues" target="_blank" rel="noopener">Report a problem</a>
+        <button type="button" id="footer-open-changelog">What&rsquo;s new</button>
+        <button type="button" id="footer-start-tour">Quick tour</button>
+      </nav>
+      <nav class="footer-col" aria-label="Data sources">
+        <h3>Data sources</h3>
+        <a href="https://www.crossref.org/" target="_blank" rel="noopener">CrossRef</a>
+        <a href="https://www.semanticscholar.org/" target="_blank" rel="noopener">Semantic Scholar</a>
+        <a href="https://openalex.org/" target="_blank" rel="noopener">OpenAlex</a>
+        <a href="https://dblp.org/" target="_blank" rel="noopener">dblp (venue names)</a>
+      </nav>
     </footer>
 
   </div>

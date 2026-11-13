@@ -10,6 +10,7 @@ import { initKeyboard } from "./keyboard.js";
 import { initMenu } from "./menu.js";
 import { initSession } from "./session.js";
 import { initSettings } from "./settings.js";
+import { initStars } from "./stars.js";
 import { reclassifyPublishedOnly, restoreSession, startVerificationFromContent } from "./verify.js";
 
 function initTheme() {
@@ -66,6 +67,7 @@ initSettings({
   onPreferPublishedChange: (preferPublished) => reclassifyPublishedOnly(preferPublished),
 });
 initMenu();
+initStars();
 initKeyboard();
 initInput({ onContent: startVerificationFromContent });
 initSession({ onResume: restoreSession });
