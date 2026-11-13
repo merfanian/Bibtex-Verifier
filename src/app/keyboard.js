@@ -36,6 +36,7 @@ export function initKeyboard() {
   document.addEventListener("keydown", (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target)) return;
     if (document.body.dataset.onboardingStage) return;  // the tour owns the keyboard
+    if ($("dialog[open]")) return;
     if ($(".results-section").offsetParent === null) return;
     const actions = {
       k: () => move(1),

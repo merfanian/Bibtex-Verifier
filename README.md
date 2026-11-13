@@ -54,6 +54,7 @@ Runs **100% in your browser** — no install, no server, no account. Only paper 
 - **Clean notes** — strip reference-manager bookkeeping (`Read_Status`, `ZSCC`, …) from `note` / `annote`
 - **Keyboard review** — click an entry, then the arrow keys (or `j` / `k`) go to the previous / next one, `a` accepts all suggestions, `o` keeps the original
 - **Saved progress** — a reload or closed tab doesn't lose a long run or your choices (stored only in your browser)
+- **Optional Semantic Scholar API key** (gear button at the top) for faster lookups; stored only in your browser
 - **Dark / light** theme
 - **Quick search shortcuts** on each card (Scholar, CrossRef, DBLP, …)
 

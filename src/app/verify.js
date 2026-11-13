@@ -3,7 +3,7 @@ import {
   applyPublishedPreference, buildResult, entryIdentifiers, findDuplicateTitles, lintEntries,
   normalizeDoi, parseBib, setVenueIndex, stripLatex,
 } from "../lib/index.js";
-import { fetchEditorialNotices, lookupMany, resetRateLimits, sleep } from "./api.js";
+import { fetchEditorialNotices, lookupMany, resetRateLimits, semanticScholarKeyRejected, sleep } from "./api.js";
 import { updateAuthorPills } from "./authors.js";
 import { clearCards, renderEntryCard } from "./cards.js";
 import { $, $$ } from "./dom.js";
@@ -61,9 +61,10 @@ function showResult(r) {
   updatePreview();
 }
 
+/** Show a note about the run under the summary; "" clears it, further notes are appended. */
 function setRunNote(text) {
-  runNote.textContent = text;
-  runNote.hidden = !text;
+  runNote.textContent = text ? [runNote.textContent, text].filter(Boolean).join(" ") : "";
+  runNote.hidden = !runNote.textContent;
 }
 
 /**
@@ -260,6 +261,8 @@ async function runVerification(run, resumeTour, startAt = 0) {
 
   await checkEditorialNotices(run);
   if (run !== currentRun) return;
+  if (semanticScholarKeyRejected())
+    setRunNote("Semantic Scholar didn’t accept requests with your API key, so this run continued without it. Check the key in Settings.");
 
   finishProgress(total, () => {
     if (resumeTour) setTimeout(openPostVerifyTour, 450);

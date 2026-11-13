@@ -58,9 +58,31 @@ const RATE_DEFAULTS = {
 };
 const rateBuckets = {};
 
+// Optional personal Semantic Scholar API key (Settings). It is sent only to
+// Semantic Scholar. If requests with it keep failing, the run carries on
+// without it: a bad key must never turn every lookup into "not found".
+const KEY_FAILURES_TO_GIVE_UP = 3;
+const ssKey = { value: "", failures: 0, rejected: false };
+
+export function setSemanticScholarKey(key) {
+  ssKey.value = String(key || "").trim();
+  ssKey.failures = 0;
+  ssKey.rejected = false;
+}
+
+/** True when the key was given up on during the current run. */
+export const semanticScholarKeyRejected = () => ssKey.rejected;
+
+function keyFailed() {
+  if (++ssKey.failures >= KEY_FAILURES_TO_GIVE_UP) ssKey.rejected = true;
+}
+
+/** Start of a run: fresh pacing, and the key gets another chance. */
 export function resetRateLimits() {
   for (const [source, d] of Object.entries(RATE_DEFAULTS))
     rateBuckets[source] = { ...d, last: 0, ok: 0 };
+  ssKey.failures = 0;
+  ssKey.rejected = false;
 }
 resetRateLimits();
 
@@ -92,8 +114,15 @@ async function fetchJSON(url, params, { is404Ok = false, body = null, retries = 
   retries ??= steady ? apiSettings.ssRetries : apiSettings.maxRetries;
   const retryWait = (attempt) =>
     steady ? apiSettings.ssRetryMs : apiSettings.retryBaseMs * Math.pow(2, attempt);
-  const init = body === null ? undefined
-    : { method: "POST", headers: { "Content-Type": "text/plain" }, body };
+  // The key is dropped for the rest of this request once a keyed attempt fails.
+  let withKey = steady && !!ssKey.value && !ssKey.rejected;
+  const makeInit = () => {
+    if (body === null && !withKey) return undefined;
+    const headers = {};
+    if (body !== null) headers["Content-Type"] = "text/plain";
+    if (withKey) headers["x-api-key"] = ssKey.value;
+    return body === null ? { headers } : { method: "POST", headers, body };
+  };
   const u = new URL(url);
   for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
 
@@ -105,10 +134,18 @@ async function fetchJSON(url, params, { is404Ok = false, body = null, retries = 
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const resp = await fetch(u.toString(), init);
+      const resp = await fetch(u.toString(), makeInit());
       if (resp.ok) {
         rateSuccess(source);
+        if (withKey) ssKey.failures = 0;
         return resp.json();
+      }
+      if (withKey && (resp.status === 401 || resp.status === 403)) {
+        // Key not accepted: ask again right away without it (not a retry).
+        withKey = false;
+        keyFailed();
+        attempt--;
+        continue;
       }
       if (resp.status === 404 && is404Ok) return null;
       // 429 and 5xx are transient: retry, then surface as an error so
@@ -127,6 +164,8 @@ async function fetchJSON(url, params, { is404Ok = false, body = null, retries = 
       return null;
     } catch (err) {
       if (err instanceof TransientLookupError) throw err;
+      // A browser can't read a rejected key's response: it looks like this.
+      if (withKey) { withKey = false; keyFailed(); }
       rateBackoff(source);
       if (attempt < retries) {
         const wait = retryWait(attempt);
@@ -182,6 +221,30 @@ async function fetchSSBatch(ids) {
   if (!Array.isArray(data)) return found;
   data.forEach((paper, i) => { if (paper?.title) found.set(ids[i], ssToStandard(paper)); });
   return found;
+}
+
+/**
+ * Check a Semantic Scholar API key with one small request:
+ * "ok", "rejected", or "unreachable" (Semantic Scholar didn't answer either way).
+ */
+export async function testSemanticScholarKey(key) {
+  const url = `${SS_MATCH}?query=attention+is+all+you+need&fields=title`;
+  const status = async (headers) => {
+    try { return (await fetch(url, headers ? { headers } : undefined)).status; } catch { return -1; }
+  };
+  for (let i = 0; i < 2; i++) {
+    const s = await status({ "x-api-key": String(key).trim() });
+    if (s === 200) return "ok";
+    if (s === 401 || s === 403) return "rejected";
+    await sleep(apiSettings.ssRetryMs);
+  }
+  // In a browser a rejected key is indistinguishable from a network failure.
+  // If Semantic Scholar answers without the key, the key was the problem.
+  for (let i = 0; i < 5; i++) {
+    if (await status(null) === 200) return "rejected";
+    await sleep(apiSettings.ssRetryMs);
+  }
+  return "unreachable";
 }
 
 async function fetchCrossrefByDoi(doi) {
