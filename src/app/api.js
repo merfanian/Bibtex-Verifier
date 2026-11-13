@@ -151,6 +151,8 @@ async function fetchJSON(url, params, { is404Ok = false, body = null, retries = 
       // 429 and 5xx are transient: retry, then surface as an error so
       // congestion is never mistaken for a genuine miss.
       if (resp.status === 429 || resp.status >= 500) {
+        // A throttled key isn't a bad key: finish this request without it.
+        withKey = false;
         rateBackoff(source);
         if (attempt < retries) {
           const wait = retryWait(attempt);
@@ -236,6 +238,8 @@ export async function testSemanticScholarKey(key) {
     const s = await status({ "x-api-key": String(key).trim() });
     if (s === 200) return "ok";
     if (s === 401 || s === 403) return "rejected";
+    // A readable "busy" answer says nothing about the key.
+    if (s === 429 || s >= 500) return "unreachable";
     await sleep(apiSettings.ssRetryMs);
   }
   // In a browser a rejected key is indistinguishable from a network failure.

@@ -35,6 +35,7 @@ function showPanel(name) {
     const on = tab.dataset.panel === name;
     tab.classList.toggle("active", on);
     tab.setAttribute("aria-selected", on ? "true" : "false");
+    tab.tabIndex = on ? 0 : -1;  // only the selected tab is a tab stop
   });
   $$(".app-dialog-panel").forEach(panel => {
     const on = panel.id === `menu-panel-${name}`;
@@ -94,7 +95,17 @@ export function initMenu() {
   $("#app-dialog-close").addEventListener("click", () => dialog.close());
   // A click on the backdrop (the dialog element itself) closes it.
   dialog.addEventListener("click", (e) => { if (e.target === dialog) dialog.close(); });
-  $$(".app-dialog-tab").forEach(tab => tab.addEventListener("click", () => showPanel(tab.dataset.panel)));
+  const tabs = [...$$(".app-dialog-tab")];
+  tabs.forEach(tab => tab.addEventListener("click", () => showPanel(tab.dataset.panel)));
+  // Left / Right move between tabs, as a tab list is expected to.
+  $(".app-dialog-tabs").addEventListener("keydown", (e) => {
+    const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+    if (!step) return;
+    e.preventDefault();
+    const next = tabs[(tabs.indexOf(document.activeElement) + step + tabs.length) % tabs.length];
+    showPanel(next.dataset.panel);
+    next.focus();
+  });
 
   $("#key-form").addEventListener("submit", (e) => { e.preventDefault(); saveKey(); });
   $("#btn-key-remove").addEventListener("click", removeKey);

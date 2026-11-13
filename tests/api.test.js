@@ -313,6 +313,14 @@ describe("lookupPaper", () => {
       assert.equal(semanticScholarKeyRejected(), false, "a new run tries the key again");
     });
 
+    it("a throttled key doesn't hide a paper either, and isn't given up on", async () => {
+      setSemanticScholarKey("busy-key");
+      mockFetch({ ss: (u) => (u.key ? json(429, {}) : ssOk(u)), cr: crOk });
+      for (let i = 0; i < 4; i++)
+        assert.equal((await lookupPaper("Attention Is All You Need"))._source, "semantic_scholar+crossref");
+      assert.equal(semanticScholarKeyRejected(), false);
+    });
+
     it("treats an unreadable failure with the key like a rejection (browser)", async () => {
       setSemanticScholarKey("bad-key");
       mockFetch({ ss: (u) => { if (u.key) throw new TypeError("NetworkError"); return ssOk(u); }, cr: crOk });
@@ -328,6 +336,9 @@ describe("lookupPaper", () => {
       assert.equal(await testSemanticScholarKey("bad"), "rejected");
       mockFetch({ ss: () => { throw new TypeError("NetworkError"); } });
       assert.equal(await testSemanticScholarKey("any"), "unreachable");
+      // A readable "busy" answer with the key is not a verdict on the key.
+      mockFetch({ ss: (u) => (u.key ? json(429, {}) : json(200, { data: [] })) });
+      assert.equal(await testSemanticScholarKey("busy"), "unreachable");
     });
   });
 
