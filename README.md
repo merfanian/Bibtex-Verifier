@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="src/favicon.svg" alt="" width="88" height="88" />
+
 # BibTeX Verifier
 
 **Stop fixing citations by hand.** Paste or upload your `.bib`, compare every entry against real publications, and leave with a bibliography you trust — including catching **AI-hallucinated** references before they ship.
