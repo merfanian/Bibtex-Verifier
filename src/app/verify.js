@@ -3,7 +3,7 @@ import {
   applyPublishedPreference, buildResult, entryIdentifiers, findDuplicateTitles, lintEntries,
   normalizeDoi, parseBib, setVenueIndex, stripLatex,
 } from "../lib/index.js";
-import { fetchEditorialNotices, lookupPaper, resetRateLimits, sleep, TransientLookupError } from "./api.js";
+import { fetchEditorialNotices, lookupMany, resetRateLimits, sleep } from "./api.js";
 import { updateAuthorPills } from "./authors.js";
 import { clearCards, renderEntryCard } from "./cards.js";
 import { $, $$ } from "./dom.js";
@@ -98,20 +98,21 @@ function loadVenueIndex() {
   return venueIndexLoad;
 }
 
-/** Look up one entry. `inconclusive` means a source failed transiently. */
-async function lookupEntry(entry) {
+// Entries looked up together: one Semantic Scholar batch request per chunk.
+// The first chunk is small so the first results show up quickly.
+const FIRST_CHUNK_SIZE = 10;
+const CHUNK_SIZE = 40;
+
+/** What lookupMany() needs to know about an entry. */
+function lookupItem(entry) {
   const title = stripLatex(entry.title || "");
-  if (TOUR_FAKE_MARKER.test(title)) {
-    await sleep(500);
-    return { found: null, inconclusive: false };
-  }
-  try {
-    return { found: await lookupPaper(title, entryIdentifiers(entry)), inconclusive: false };
-  } catch (err) {
-    if (err instanceof TransientLookupError) return { found: null, inconclusive: true };
-    console.warn("Lookup failed:", err);
-    return { found: null, inconclusive: false };
-  }
+  return {
+    // The tour's fabricated title is a guaranteed miss: don't look it up.
+    title: TOUR_FAKE_MARKER.test(title) ? "" : title,
+    author: entry.author || "",
+    year: entry.year || "",
+    ids: entryIdentifiers(entry),
+  };
 }
 
 /**
@@ -213,44 +214,48 @@ async function runVerification(run, resumeTour, startAt = 0) {
     const r = buildResult(entries[i], i, found, duplicateOf[i], { ...getSettings(), issues: issues[i] });
     return pending ? { ...r, pending: true } : r;
   };
-  // Indices whose lookup was inconclusive; re-checked once rate-limit pressure eases.
-  const pendingRetry = state.results.filter(r => r?.pending).map(r => r.index);
   await loadVenueIndex();
   if (run !== currentRun) return;
 
-  for (let i = startAt; i < total; i++) {
-    const entry = entries[i];
-    const title = entry.title || "";
-    barProgressFill.style.width = Math.round(((i + 1) / total) * 100) + "%";
-    barProgressText.textContent = `Verifying ${i + 1} / ${total}: ${title.slice(0, 50)}…`;
-
-    if (!title.trim()) {
-      showResult(build(i, null));
-      continue;
+  /**
+   * Look up `indices` chunk by chunk and show each result as it arrives.
+   * An inconclusive lookup shows as pending on the first pass, stays as it is
+   * while a retry remains, and is settled on the last one. Returns the
+   * indices that are still inconclusive.
+   */
+  const lookupAndShow = async (indices, { first = false, last = false } = {}) => {
+    const inconclusive = [];
+    for (let at = 0, size = FIRST_CHUNK_SIZE; at < indices.length && run === currentRun; at += size, size = CHUNK_SIZE) {
+      const chunk = indices.slice(at, at + size);
+      if (first) barProgressText.textContent =
+        `Looking up entries ${chunk[0] + 1}–${chunk[chunk.length - 1] + 1} of ${total}…`;
+      await lookupMany(chunk.map(i => lookupItem(entries[i])), (k, { found, inconclusive: unsure }) => {
+        if (run !== currentRun) return;
+        const i = chunk[k];
+        if (unsure && !last) inconclusive.push(i);
+        if (first || !unsure || last) showResult(build(i, found, unsure && !last));
+        if (first) {
+          barProgressFill.style.width = Math.round(((i + 1) / total) * 100) + "%";
+          barProgressText.textContent = `Verified ${i + 1} / ${total}: ${(entries[i].title || "").slice(0, 50)}…`;
+        }
+      }, () => run !== currentRun);
     }
+    return inconclusive;
+  };
 
-    const { found, inconclusive } = await lookupEntry(entry);
-    if (run !== currentRun) return;
-    if (inconclusive) pendingRetry.push(i);
-    showResult(build(i, found, inconclusive));
-  }
+  // Results saved as pending by an interrupted run are retried too.
+  let pendingRetry = state.results.filter(r => r?.pending).map(r => r.index);
+  const remaining = Array.from({ length: total - startAt }, (_, k) => startAt + k);
+  pendingRetry = pendingRetry.concat(await lookupAndShow(remaining, { first: true }));
+  if (run !== currentRun) return;
 
-  if (pendingRetry.length) {
+  // Re-check inconclusive lookups once rate-limit pressure eases.
+  for (let round = 0; round < 2 && pendingRetry.length; round++) {
     barProgressText.textContent =
       `Re-checking ${pendingRetry.length} ${pendingRetry.length === 1 ? "entry" : "entries"}…`;
-    await sleep(1200);
-    for (let round = 0; round < 2 && pendingRetry.length; round++) {
-      const stillPending = [];
-      for (const i of pendingRetry) {
-        const { found, inconclusive } = await lookupEntry(entries[i]);
-        if (run !== currentRun) return;
-        // Keep deferring only while still inconclusive and a round remains.
-        if (inconclusive && round === 0) { stillPending.push(i); continue; }
-        showResult(build(i, found));
-      }
-      pendingRetry.splice(0, pendingRetry.length, ...stillPending);
-      if (pendingRetry.length) await sleep(1500);
-    }
+    await sleep(round === 0 ? 1200 : 1500);
+    pendingRetry = await lookupAndShow(pendingRetry, { last: round === 1 });
+    if (run !== currentRun) return;
   }
 
   await checkEditorialNotices(run);

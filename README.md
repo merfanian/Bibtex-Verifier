@@ -63,7 +63,8 @@ Runs **100% in your browser** — no install, no server, no account. Only paper 
 
 ```
 Upload or paste .bib → Parse entries → For each entry:
-    DOI / arXiv ID lookup, else Semantic Scholar match → CrossRef enrich → OpenAlex fallback
+    CrossRef finds the paper and its DOI → Semantic Scholar is asked for many DOIs / arXiv IDs in one request
+    → entries it can't identify that way: Semantic Scholar title match → OpenAlex fallback
 → Compare fields → Verified / Auto-updated / Needs review / Not found / Can't check
 → Retraction check → You edit choices → Export corrected .bib
 ```

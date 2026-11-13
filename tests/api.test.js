@@ -1,7 +1,7 @@
 import "./helpers/setup.js";
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
-import { apiSettings, fetchEditorialNotices, lookupPaper, resetRateLimits, TransientLookupError } from "../src/app/api.js";
+import { apiSettings, fetchEditorialNotices, lookupMany, lookupPaper, resetRateLimits, TransientLookupError } from "../src/app/api.js";
 
 const realFetch = globalThis.fetch;
 let calls;
@@ -11,10 +11,11 @@ const json = (status, body) => new Response(JSON.stringify(body), { status });
 /** Route mocked requests by host; each handler gets the parsed URL. */
 function mockFetch({ ss = () => json(404, {}), cr = () => json(200, { message: { items: [] } }),
   oa = () => json(200, { results: [] }) } = {}) {
-  globalThis.fetch = async (url) => {
+  globalThis.fetch = async (url, init) => {
     const u = new URL(url);
+    u.body = init?.body ?? null;
     calls.push(u);
-    if (u.host.includes("semanticscholar")) return ss(u);
+    if (u.host.includes("semanticscholar")) return ss(u, init);
     if (u.host.includes("crossref")) return cr(u);
     if (u.host.includes("openalex")) return oa(u);
     throw new Error(`unexpected fetch ${url}`);
@@ -34,7 +35,7 @@ const crItem = {
 describe("lookupPaper", () => {
   beforeEach(() => {
     calls = [];
-    Object.assign(apiSettings, { maxRetries: 1, retryBaseMs: 0, throttle: false });
+    Object.assign(apiSettings, { maxRetries: 1, ssRetries: 1, batchRetries: 1, retryBaseMs: 0, ssRetryMs: 0, throttle: false });
     resetRateLimits();
   });
   afterEach(() => { globalThis.fetch = realFetch; });
@@ -146,6 +147,127 @@ describe("lookupPaper", () => {
         cr: (u) => (u.pathname.includes("/works/10.") ? json(404, {}) : json(200, { message: { items: [] } })),
       });
       assert.equal(await lookupPaper("Totally Made Up Title", { doi: "10.5555/1" }), null);
+    });
+  });
+
+  describe("lookupMany", () => {
+    const paper = (n, extra = {}) => ({
+      title: `Paper Number ${n} About Things`, year: 2020, venue: `Venue ${n}`,
+      authors: [{ name: `Ann Author${n}` }], externalIds: { DOI: `10.1000/p${n}` }, ...extra,
+    });
+    const crOf = (n, extra = {}) => ({
+      title: [`Paper Number ${n} About Things`], author: [{ family: `Author${n}`, given: "Ann" }],
+      "published-print": { "date-parts": [[2020]] }, "container-title": [`Venue ${n}`],
+      page: `${n}-${n + 9}`, DOI: `10.1000/p${n}`, ...extra,
+    });
+    const item = (n, extra = {}) => ({
+      title: `Paper Number ${n} About Things`, author: `Author${n}, Ann`, year: "2020", ids: { doi: "", arxiv: "" }, ...extra,
+    });
+    // CrossRef answers a title search with the paper whose number is in the query.
+    const crSearch = (u, known = [1, 2, 3]) => {
+      const n = Number((u.searchParams.get("query.title") || "").match(/Number (\d+)/)?.[1]);
+      return json(200, { message: { items: known.includes(n) ? [crOf(n)] : [] } });
+    };
+    const batch = (u, init, known = [1, 2, 3]) => {
+      const ids = JSON.parse(init.body).ids;
+      return json(200, ids.map(id => {
+        const n = Number(id.match(/p(\d+)$/)?.[1]);
+        return known.includes(n) ? paper(n) : null;
+      }));
+    };
+    const collect = async (items) => {
+      const out = [];
+      await lookupMany(items, (k, r) => { out[k] = r; });
+      return out;
+    };
+    const ssCalls = () => calls.filter(u => u.host.includes("semanticscholar"));
+
+    it("identifies entries on CrossRef and fetches Semantic Scholar once for all of them", async () => {
+      mockFetch({
+        ss: (u, init) => (u.pathname.endsWith("/paper/batch") ? batch(u, init) : json(500, {})),
+        cr: (u) => crSearch(u),
+      });
+      const out = await collect([item(1), item(2), item(3)]);
+      assert.deepEqual(out.map(r => r.found._source), Array(3).fill("semantic_scholar+crossref"));
+      assert.deepEqual(out.map(r => r.found.pages), ["1-10", "2-11", "3-12"]);
+      assert.ok(out.every(r => r.inconclusive === false));
+      assert.equal(ssCalls().length, 1, "one Semantic Scholar request for three entries");
+      assert.deepEqual(JSON.parse(ssCalls()[0].body), { ids: ["DOI:10.1000/p1", "DOI:10.1000/p2", "DOI:10.1000/p3"] });
+    });
+
+    it("uses the entry's own DOI or arXiv ID before CrossRef's", async () => {
+      mockFetch({
+        ss: (u, init) => {
+          const ids = JSON.parse(init.body).ids;
+          return json(200, ids.map(id => (id === "ARXIV:2001.00001" ? paper(1) : id === "DOI:10.1000/p2" ? paper(2) : null)));
+        },
+        cr: (u) => (u.pathname.includes("/works/10.") ? json(200, { message: crOf(2) }) : crSearch(u, [])),
+      });
+      const out = await collect([item(1, { ids: { doi: "", arxiv: "2001.00001" } }), item(2, { ids: { doi: "10.1000/p2", arxiv: "" } })]);
+      assert.deepEqual(JSON.parse(ssCalls()[0].body).ids, ["ARXIV:2001.00001", "DOI:10.1000/p2"]);
+      assert.equal(out[0].found._source, "semantic_scholar");
+      assert.equal(out[1].found._source, "semantic_scholar+crossref");
+    });
+
+    it("doesn't trust a CrossRef record with other authors: the title search decides", async () => {
+      mockFetch({
+        ss: (u, init) => (u.pathname.endsWith("/paper/batch") ? batch(u, init)
+          : u.pathname.endsWith("/match") ? json(200, { data: [paper(1, { externalIds: { DOI: "10.1000/by-title" } })] })
+          : json(200, { data: [] })),
+        cr: (u) => crSearch(u),
+      });
+      const [r] = await collect([item(1, { author: "Somebody, Else" })]);
+      assert.ok(!ssCalls().some(u => u.pathname.endsWith("/paper/batch")), "no id to ask about");
+      assert.equal(r.found.doi, "10.1000/by-title");
+    });
+
+    it("falls back to the title search for an id Semantic Scholar doesn't know, reusing CrossRef", async () => {
+      mockFetch({
+        ss: (u, init) => (u.pathname.endsWith("/paper/batch") ? batch(u, init, [])
+          : u.pathname.endsWith("/match") ? json(200, { data: [paper(1)] }) : json(200, { data: [] })),
+        cr: (u) => crSearch(u),
+      });
+      const [r] = await collect([item(1)]);
+      assert.equal(r.found._source, "semantic_scholar+crossref");
+      assert.equal(calls.filter(u => u.host.includes("crossref")).length, 1, "CrossRef asked once");
+    });
+
+    it("still answers when the batch request keeps failing", async () => {
+      mockFetch({
+        ss: (u) => (u.pathname.endsWith("/paper/batch") ? json(429, {})
+          : u.pathname.endsWith("/match") ? json(200, { data: [paper(1)] }) : json(200, { data: [] })),
+        cr: (u) => crSearch(u),
+      });
+      const [r] = await collect([item(1)]);
+      assert.equal(r.found._source, "semantic_scholar+crossref");
+    });
+
+    it("reports misses, inconclusive lookups and untitled entries, in order", async () => {
+      mockFetch({
+        ss: (u, init) => (u.pathname.endsWith("/paper/batch") ? batch(u, init)
+          : u.searchParams.get("query")?.includes("Number 8") ? json(503, {})
+          : u.pathname.endsWith("/match") ? json(404, {}) : json(200, { data: [] })),
+        cr: (u) => crSearch(u),
+      });
+      const order = [];
+      await lookupMany([item(9), item(1), item(0, { title: "" }), item(8)], (k, r) => { order.push([k, !!r.found, r.inconclusive]); });
+      assert.deepEqual(order, [[0, false, false], [1, true, false], [2, false, false], [3, false, true]]);
+    });
+
+    it("sends only titles and identifiers", async () => {
+      mockFetch({ ss: (u, init) => (init?.body ? batch(u, init) : json(404, {})), cr: (u) => crSearch(u) });
+      await collect([item(1, { author: "Author1, Ann and Secret, Coauthor" })]);
+      for (const u of calls) {
+        assert.ok(!u.toString().includes("Secret") && !(u.body || "").includes("Secret"));
+        assert.ok(!u.searchParams.has("mailto"));
+      }
+    });
+
+    it("stops the per-entry lookups when cancelled", async () => {
+      mockFetch({ ss: () => json(404, {}), cr: (u) => crSearch(u, []) });
+      const seen = [];
+      await lookupMany([item(7), item(8)], (k) => { seen.push(k); }, () => seen.length >= 1);
+      assert.deepEqual(seen, [0]);
     });
   });
 

@@ -1,5 +1,11 @@
 // Network layer: rate-limited lookups against Semantic Scholar, CrossRef and
 // OpenAlex. Only paper titles, DOIs and arXiv IDs are ever sent.
+//
+// Semantic Scholar accepts only a small share of anonymous requests, so the
+// accepted ones must carry many papers: lookupMany() finds each entry on
+// CrossRef first, then fetches all their Semantic Scholar records in one batch
+// request by DOI / arXiv ID. Only entries that can't be identified that way
+// take the slower one-by-one title search in lookupPaper().
 import {
   bestMatch, checkableDois, crossrefToStandard, editorialNotice, isSamePaper, mergeMetadata,
   MIN_TITLE_SIM, openAlexToStandard, ssToStandard, titleSimilarity,
@@ -9,6 +15,7 @@ const CROSSREF_API = "https://api.crossref.org/works";
 const SS_MATCH = "https://api.semanticscholar.org/graph/v1/paper/search/match";
 const SS_SEARCH = "https://api.semanticscholar.org/graph/v1/paper/search";
 const SS_PAPER = "https://api.semanticscholar.org/graph/v1/paper/";
+const SS_BATCH = "https://api.semanticscholar.org/graph/v1/paper/batch";
 const SS_FIELDS = "title,authors,year,venue,publicationVenue,externalIds";
 const OPENALEX_API = "https://api.openalex.org/works";
 const OPENALEX_FIELDS = "title,display_name,publication_year,doi,authorships,primary_location,biblio,id";
@@ -17,6 +24,15 @@ const OPENALEX_FIELDS = "title,display_name,publication_year,doi,authorships,pri
 export const apiSettings = {
   maxRetries: 4,
   retryBaseMs: 1500,
+  // Semantic Scholar turns away about two in three anonymous requests however
+  // long we wait (its limit is shared by all anonymous users), and accepts
+  // about one in three at a steady request per second. So its retries are
+  // evenly spaced, not an exponential back-off. Faster than this gets the
+  // address blocked for minutes.
+  ssRetries: 7,
+  ssRetryMs: 1000,
+  // The batch request stands for many entries, so it is retried for longer.
+  batchRetries: 15,
   throttle: true,
 };
 
@@ -34,8 +50,10 @@ export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // One bucket per source: current delay, its clamps, last request time, and a
 // run of consecutive successes used to speed back up.
 const RATE_DEFAULTS = {
-  ss: { delay: 500, min: 300, max: 3000 },
-  cr: { delay: 100, min: 50,  max: 2000 },
+  ss: { delay: 1000, min: 1000, max: 1000 },  // steady: see apiSettings.ssRetries
+  // CrossRef allows anonymous clients 1 request per second; slightly faster
+  // still passes most of the time, and a rejection backs off again.
+  cr: { delay: 1000, min: 700, max: 2000 },
   oa: { delay: 100, min: 50,  max: 2000 },
 };
 const rateBuckets = {};
@@ -67,8 +85,15 @@ function sourceOf(url) {
   return "cr";
 }
 
-async function fetchJSON(url, params, { is404Ok = false } = {}) {
-  const { maxRetries: retries, retryBaseMs } = apiSettings;
+// `body` makes it a POST. It is sent as text/plain, a "simple" request, so
+// the browser doesn't spend a second (rate-limited) preflight request on it.
+async function fetchJSON(url, params, { is404Ok = false, body = null, retries = null } = {}) {
+  const steady = sourceOf(url) === "ss";
+  retries ??= steady ? apiSettings.ssRetries : apiSettings.maxRetries;
+  const retryWait = (attempt) =>
+    steady ? apiSettings.ssRetryMs : apiSettings.retryBaseMs * Math.pow(2, attempt);
+  const init = body === null ? undefined
+    : { method: "POST", headers: { "Content-Type": "text/plain" }, body };
   const u = new URL(url);
   for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
 
@@ -80,7 +105,7 @@ async function fetchJSON(url, params, { is404Ok = false } = {}) {
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const resp = await fetch(u.toString());
+      const resp = await fetch(u.toString(), init);
       if (resp.ok) {
         rateSuccess(source);
         return resp.json();
@@ -91,7 +116,7 @@ async function fetchJSON(url, params, { is404Ok = false } = {}) {
       if (resp.status === 429 || resp.status >= 500) {
         rateBackoff(source);
         if (attempt < retries) {
-          const wait = retryBaseMs * Math.pow(2, attempt);
+          const wait = retryWait(attempt);
           console.warn(`Transient ${resp.status} on attempt ${attempt + 1}, retrying in ${wait}ms...`);
           await sleep(wait);
           continue;
@@ -104,7 +129,7 @@ async function fetchJSON(url, params, { is404Ok = false } = {}) {
       if (err instanceof TransientLookupError) throw err;
       rateBackoff(source);
       if (attempt < retries) {
-        const wait = retryBaseMs * Math.pow(2, attempt);
+        const wait = retryWait(attempt);
         console.warn(`Request failed (${err.message}), retrying in ${wait}ms...`);
         await sleep(wait);
         continue;
@@ -142,6 +167,21 @@ const idPath = (id) => encodeURIComponent(id).replace(/%3A/gi, ":").replace(/%2F
 async function fetchSSById(id) {
   const data = await fetchJSON(SS_PAPER + idPath(id), { fields: SS_FIELDS }, { is404Ok: true });
   return data?.title ? ssToStandard(data) : null;
+}
+
+/**
+ * Semantic Scholar records for many "DOI:…" / "ARXIV:…" ids in one request.
+ * Returns Map(id -> record); unknown ids are absent. A rejected request
+ * returns an empty map, so every entry falls back to the title search.
+ */
+async function fetchSSBatch(ids) {
+  const found = new Map();
+  if (!ids.length) return found;
+  const data = await fetchJSON(SS_BATCH, { fields: SS_FIELDS },
+    { body: JSON.stringify({ ids }), retries: apiSettings.batchRetries });
+  if (!Array.isArray(data)) return found;
+  data.forEach((paper, i) => { if (paper?.title) found.set(ids[i], ssToStandard(paper)); });
+  return found;
 }
 
 async function fetchCrossrefByDoi(doi) {
@@ -183,14 +223,44 @@ async function searchOpenAlex(title) {
 }
 
 /**
+ * CrossRef's records for an entry: `published` (version of record) and
+ * `posted`, kept apart because repository uploads ("posted-content") can
+ * re-register a famous paper under a new DOI and publisher: they never fill
+ * in another record and are used only when nothing else matches.
+ * `transient` is true when CrossRef could not be reached.
+ */
+async function crossrefLookup(title, ids = {}) {
+  let transient = false;
+  const attempt = async (fn) => {
+    try { return await fn(); }
+    catch (err) {
+      if (err instanceof TransientLookupError) { transient = true; return null; }
+      throw err;
+    }
+  };
+  if (ids.doi) {
+    const byDoi = await attempt(() => fetchCrossrefByDoi(ids.doi));
+    if (byDoi && !byDoi._preprint && titleSimilarity(title, byDoi.title || "") >= MIN_TITLE_SIM)
+      return { published: byDoi, posted: null, transient };
+  }
+  const items = (await attempt(() => searchCrossref(title))) || [];
+  return {
+    published: bestMatch(items.filter(c => !c._preprint), title),
+    posted: bestMatch(items.filter(c => c._preprint), title),
+    transient,
+  };
+}
+
+/**
  * Find the best published record for a title, or null if no source has it.
  * `ids` ({ doi, arxiv } from entryIdentifiers) are tried first: an identifier
  * names the paper exactly, but its record is used only when the title agrees,
  * so a wrong DOI can never swap in another paper.
+ * `known.crossref` is a crossrefLookup() result to reuse instead of asking again.
  * Throws TransientLookupError when nothing matched but a source failed
  * transiently, so the caller can retry instead of reporting "not found".
  */
-export async function lookupPaper(title, ids = {}) {
+export async function lookupPaper(title, ids = {}, known = {}) {
   let transient = false;
   const attempt = async (fn) => {
     try { return await fn(); }
@@ -200,20 +270,11 @@ export async function lookupPaper(title, ids = {}) {
     }
   };
 
-  // CrossRef repository uploads ("posted-content") are kept apart: anyone can
-  // re-register a famous paper under a new DOI and publisher, so they never
-  // fill in another record and are used only when nothing else matches.
   const sameTitle = (rec) => !!rec && titleSimilarity(title, rec.title || "") >= MIN_TITLE_SIM;
   const crossref = async () => {
-    if (ids.doi) {
-      const byDoi = await attempt(() => fetchCrossrefByDoi(ids.doi));
-      if (sameTitle(byDoi) && !byDoi._preprint) return { published: byDoi, posted: null };
-    }
-    const items = (await attempt(() => searchCrossref(title))) || [];
-    return {
-      published: bestMatch(items.filter(c => !c._preprint), title),
-      posted: bestMatch(items.filter(c => c._preprint), title),
-    };
+    const result = known.crossref ?? await crossrefLookup(title, ids);
+    if (result.transient) transient = true;
+    return result;
   };
 
   let ssMatch = null;
@@ -243,4 +304,64 @@ export async function lookupPaper(title, ids = {}) {
 
   if (transient) throw new TransientLookupError("inconclusive lookup");
   return null;
+}
+
+/**
+ * Look up many entries with as few Semantic Scholar requests as possible.
+ * `items[k]` is `{ title, author, year, ids }` (title "" = nothing to look up).
+ * `onResult(k, { found, inconclusive })` is called for every item, in order;
+ * `inconclusive` means a source failed transiently and the item is worth
+ * retrying. `isCancelled()` stops the slower per-entry lookups early.
+ *
+ * An entry is identified by its own DOI / arXiv ID, or by the DOI of a
+ * CrossRef record that agrees with it on title, authors and year. Anything
+ * else — and any id Semantic Scholar doesn't know — goes through
+ * lookupPaper()'s title search, exactly as a single lookup would.
+ */
+export async function lookupMany(items, onResult, isCancelled = () => false) {
+  // One at a time: CrossRef allows anonymous clients a single concurrent request.
+  const crossref = [];
+  for (const it of items) {
+    if (isCancelled()) return;
+    crossref.push(it.title ? await crossrefLookup(it.title, it.ids) : null);
+  }
+
+  const idOf = items.map((it, k) => {
+    if (!it.title) return null;
+    if (it.ids?.doi) return `DOI:${it.ids.doi}`;
+    if (it.ids?.arxiv) return `ARXIV:${it.ids.arxiv}`;
+    const published = crossref[k].published;
+    return published?.doi && isSamePaper(it, published) ? `DOI:${published.doi.toLowerCase()}` : null;
+  });
+
+  let byId = new Map();
+  try {
+    byId = await fetchSSBatch([...new Set(idOf.filter(Boolean))]);
+  } catch (err) {
+    if (!(err instanceof TransientLookupError)) throw err;
+  }
+
+  for (let k = 0; k < items.length; k++) {
+    if (isCancelled()) return;
+    const it = items[k];
+    if (!it.title) { await onResult(k, { found: null, inconclusive: false }); continue; }
+
+    const ss = idOf[k] ? byId.get(idOf[k]) : null;
+    let result;
+    if (ss && titleSimilarity(it.title, ss.title || "") >= MIN_TITLE_SIM) {
+      const published = crossref[k].published;
+      result = {
+        found: published && isSamePaper(ss, published) ? mergeMetadata(ss, published) : ss,
+        inconclusive: false,
+      };
+    } else {
+      try {
+        result = { found: await lookupPaper(it.title, {}, { crossref: crossref[k] }), inconclusive: false };
+      } catch (err) {
+        if (!(err instanceof TransientLookupError)) console.warn("Lookup failed:", err);
+        result = { found: null, inconclusive: err instanceof TransientLookupError };
+      }
+    }
+    await onResult(k, result);
+  }
 }
