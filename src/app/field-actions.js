@@ -1,6 +1,8 @@
 // Per-field choices on entry cards: keep original, adopt suggestion, edit
 // inline, remove a field, and the "Accept all" / "Keep original" bulk actions.
 import { isUnmatched } from "../lib/index.js";
+import { refreshAuthorRow } from "./authors.js";
+import { updateCardStatuses } from "./cards.js";
 import { updatePreview } from "./preview.js";
 import { state } from "./state.js";
 
@@ -17,6 +19,13 @@ function flashRow(row) {
 
 function syncRowState(row, action) {
   row.dataset.action = action;
+  // Author values are shown shortened to the "Max authors" setting. Doing so
+  // can hide or show the row, which changes the card's status.
+  if (row.dataset.field === "author") {
+    const wasHidden = row.classList.contains("author-match-hidden");
+    refreshAuthorRow(row);
+    if (row.classList.contains("author-match-hidden") !== wasHidden) updateCardStatuses();
+  }
   flashRow(row);
 }
 
@@ -65,7 +74,8 @@ function selectSuggested(sugPill) {
   editsFor(idx)[sugPill.dataset.field] = { action: "found", value: sugPill.dataset.val };
 
   row.querySelectorAll(".pill-original").forEach(p => p.classList.remove("active"));
-  setSuggestedPill(sugPill, { active: true, editable: true });
+  // The database value comes back, replacing anything typed into the pill before.
+  setSuggestedPill(sugPill, { active: true, editable: true, text: sugPill.dataset.val });
   row.querySelectorAll(".fa-btn-x").forEach(b => b.classList.remove("active"));
   afterRowChange(row, "found");
 }

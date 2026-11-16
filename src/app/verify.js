@@ -187,6 +187,8 @@ export function restoreSession(saved) {
   state.parsedEntries = saved.parsedEntries;
   state.results = saved.results;
   state.fieldEdits = saved.fieldEdits;
+  // Sessions saved by earlier versions stored the shortened author list as a choice.
+  for (const edits of Object.values(state.fieldEdits || {})) if (edits?.author?._injected) delete edits.author;
   state.noticesChecked = saved.complete;
 
   resultsSection.style.display = "block";

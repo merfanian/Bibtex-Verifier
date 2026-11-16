@@ -63,15 +63,25 @@ describe("isUncheckable", () => {
     assert.equal(buildResult(web, 0, { title: "PyTorch docs" }).status, "verified");
   });
 
+  it("buildResult: a web page matched to a paper with none of its authors is unverifiable", () => {
+    const web = { ID: "g", ENTRYTYPE: "misc", title: "GitHub Copilot", author: "{GitHub}", howpublished: "\\url{https://github.com/features/copilot}", year: "2025" };
+    const paper = { title: "GitHub Copilot", author: "Torres Ovalle, Brayan Stiven", year: "2022", journal: "Some Journal" };
+    const r = buildResult(web, 0, paper);
+    assert.equal(r.status, "unverifiable");
+    assert.deepEqual(r.field_diffs, []);
+    // A paper in the same situation is still a different work to review.
+    const article = { ...web, ENTRYTYPE: "article", journal: "J", howpublished: "" };
+    assert.equal(buildResult(article, 0, paper).review_reason, "different_work");
+  });
+
   it("'Remove not-found entries' keeps unverifiable ones", () => {
     const entries = [
       { ID: "w", ENTRYTYPE: "misc", title: "Docs", url: "https://x.org", author: "A, B and C, D and E, F" },
       { ID: "p", ENTRYTYPE: "article", title: "Made up", journal: "J" },
     ];
     const results = entries.map((e, i) => buildResult(e, i, null));
-    const out = buildExportEntries(entries, results, {}, { removeNotFound: true, maxAuthors: 1 });
+    const out = buildExportEntries(entries, results, {}, { removeNotFound: true, maxAuthors: 0 });
     assert.deepEqual(out.map(e => e.ID), ["w"]);
-    assert.equal(out[0].author, "A, B and C, D and E, F", "unmatched authors are not truncated");
   });
 });
 

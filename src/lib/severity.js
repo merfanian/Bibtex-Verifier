@@ -1,7 +1,7 @@
 // Triage field differences: which ones are cosmetic (formatting, venue
 // spelled differently, preprint year) and which ones need the user's eyes
 // (different authors, conflicting DOI, a different venue, …).
-import { stripLatex } from "./latex.js";
+import { splitAuthors, stripLatex } from "./latex.js";
 import { VENUE_ABBREVIATIONS } from "./venues.js";
 
 export const SEVERITY = {
@@ -55,7 +55,7 @@ const NAME_SUFFIXES = new Set(["jr", "sr", "ii", "iii", "iv"]);
 export function parseAuthors(authorStr) {
   const people = [];
   let truncated = false;
-  for (let part of String(authorStr ?? "").split(/\s+and\s+/i)) {
+  for (let part of splitAuthors(authorStr)) {
     part = part.trim();
     if (!part) continue;
     if (ETAL_RE.test(part.replace(/[{}]/g, ""))) { truncated = true; continue; }
@@ -153,38 +153,75 @@ export function authorListsAgree(a, b) {
   return true;
 }
 
+// One letter changed, added or dropped: "yura" / "yuri".
+function withinOneEdit(x, y) {
+  if (Math.abs(x.length - y.length) > 1) return false;
+  let i = 0;
+  while (i < x.length && i < y.length && x[i] === y[i]) i++;
+  const [a, b] = x.length === y.length ? [x.slice(i + 1), y.slice(i + 1)]
+    : x.length > y.length ? [x.slice(i + 1), y.slice(i)] : [x.slice(i), y.slice(i + 1)];
+  return a === b;
+}
+
+// A looser test for two names in the same place of lists that otherwise
+// agree, where a database writing a name its own way is the likely cause:
+// a nickname or one-letter variant of the given name ("Mo" / "Mohammad",
+// "Yura" / "Yuri"), or a surname filed under another part of the name
+// ("Pondé, Henrique" / "Pinto, Henrique Pondé de Oliveira").
+function sameSlotPerson(a, b) {
+  if (!a.last || !b.last) return false;
+  const x = a.given.words[0] || "", y = b.given.words[0] || "";
+  if (!x || !y) return false;
+  if (a.last !== b.last)
+    return (b.tokens.has(a.last) || a.tokens.has(b.last)) && initialsCompatible(a, b);
+  const [short, long] = x.length <= y.length ? [x, y] : [y, x];
+  return short.length >= 2 && (long.startsWith(short) || (short.length >= 4 && withinOneEdit(x, y)));
+}
+
 function classifyAuthors(orig, found) {
   const o = parseAuthors(orig), f = parseAuthors(found);
   if (!o.people.length || !f.people.length) return major("authors differ");
 
-  // Match greedily in order; unmatched people on either side are real differences.
+  // Match greedily in order: `match[i]` is the record's author for yours, or -1.
   const used = new Set();
-  let matched = 0, inOrder = true, lastIdx = -1;
-  for (const p of o.people) {
+  const match = o.people.map(p => {
     const j = f.people.findIndex((q, k) => !used.has(k) && samePerson(p, q));
-    if (j === -1) continue;
-    used.add(j); matched++;
-    if (j < lastIdx) inOrder = false;
-    lastIdx = j;
-  }
-  const missingFromYours = f.people.length - matched;
+    if (j !== -1) used.add(j);
+    return j;
+  });
+  // An author still unmatched may be the record's next one, written differently.
+  if (used.size) match.forEach((j, i) => {
+    if (j !== -1 || (i && match[i - 1] === -1)) return;
+    const k = i ? match[i - 1] + 1 : 0;
+    if (k < f.people.length && !used.has(k) && sameSlotPerson(o.people[i], f.people[k])) {
+      match[i] = k;
+      used.add(k);
+    }
+  });
+  const matched = used.size;
   const notInRecord = o.people.length - matched;
+  const missingFromYours = f.people.length - matched;
 
+  // Unmatched people on your side are real differences.
   if (notInRecord > 0)
     return major(notInRecord === o.people.length
       ? NO_COMMON_AUTHORS
       : `${notInRecord} of your authors ${notInRecord === 1 ? "is" : "are"} not in the database record`);
-  if (missingFromYours > 0 && !o.truncated)
-    return major(`${missingFromYours} author${missingFromYours === 1 ? "" : "s"} missing from your entry`);
-  // "…and others" is formatting only if your authors are the start of the full list.
-  if (o.truncated && !o.people.every((p, i) => f.people[i] && samePerson(p, f.people[i])))
-    return major("your authors aren't the first authors of the database record");
   // A different first author changes how the paper is cited; a reshuffle
   // further down is more often the database's mistake than the user's.
-  if (!inOrder) return samePerson(o.people[0], f.people[0])
+  if (!match.every((j, i) => !i || j > match[i - 1])) return match[0] === 0
     ? keepYours("later authors in a different order")
     : major("different first author");
-  return minor(missingFromYours ? "full author list (yours is truncated)" : "name formatting");
+  if (match[0] !== 0) return major("different first author");
+  if (!missingFromYours) return minor("name formatting");
+
+  // Every author you list is in the record, in order and from the first one
+  // on: the record completes your list. Authors it has between yours were
+  // skipped; the ones after your last are what "and others" stands for.
+  const skipped = match[match.length - 1] + 1 - matched;
+  if (o.truncated && !skipped) return minor("full author list (yours is truncated)");
+  const n = o.truncated ? skipped : missingFromYours;
+  return { severity: SEVERITY.ENRICHMENT, reason: `${n} author${n === 1 ? "" : "s"} missing from your entry` };
 }
 
 // ─── Venues ──────────────────────────────────────────────────────────

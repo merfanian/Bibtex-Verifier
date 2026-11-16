@@ -1,10 +1,9 @@
-import { normalizeTitle } from "./latex.js";
-import { isUnmatched } from "./results.js";
+import { normalizeTitle, splitAuthors } from "./latex.js";
 import { cleanEntryNotes } from "./notes.js";
 
 export function truncateAuthors(authorStr, max) {
   if (!authorStr || max <= 0) return authorStr;
-  const authors = authorStr.split(/\s+and\s+/i);
+  const authors = splitAuthors(authorStr);
   if (authors.length <= max) return authorStr;
   return authors.slice(0, max).join(" and ") + " and others";
 }
@@ -48,7 +47,8 @@ export function buildExportEntries(entries, results, fieldEdits, settings) {
 
     const out = applyFieldEdits(entry, fieldEdits[i]);
 
-    if (s.maxAuthors > 0 && out.author && !isUnmatched(r.status)) {
+    // "Max authors" shortens every list except one the user typed themselves.
+    if (s.maxAuthors > 0 && out.author && fieldEdits[i]?.author?.action !== "custom") {
       out.author = truncateAuthors(out.author, s.maxAuthors);
     }
 
