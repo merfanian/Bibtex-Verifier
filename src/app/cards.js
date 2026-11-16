@@ -1,5 +1,5 @@
 // Entry cards: rendering, status/summary badges, and filter/search visibility.
-import { adoptsByDefault, COMPARED_FIELDS, entryMatchesQuery, stripLatex, truncateAuthors } from "../lib/index.js";
+import { adoptsByDefault, COMPARED_FIELDS, entryMatchesQuery, stripLatex } from "../lib/index.js";
 import { $, $$, esc } from "./dom.js";
 import { getSettings } from "./settings.js";
 import { state } from "./state.js";
@@ -126,9 +126,8 @@ export function updateSummary() {
 }
 
 /**
- * Re-derive each card's displayed status from its visible diff rows: author
- * truncation can add a suggestion to a verified entry, or hide the only
- * difference of an updated one.
+ * Re-derive each card's displayed status from its visible diff rows:
+ * shortening the author lists can hide the only difference of an updated entry.
  */
 export function updateCardStatuses() {
   $$(".entry-card").forEach(card => {
@@ -139,11 +138,9 @@ export function updateCardStatuses() {
 
     const diffRows = card.querySelectorAll(".diff-row:not(.field-row-plain)");
     const hasVisibleDiffs = diffRows.length > 0 && ![...diffRows].every(row => row.classList.contains("author-match-hidden"));
-    const hasInjectedRows = card.querySelector(".diff-row[data-injected]") !== null;
 
     let effectiveStatus = savedStatus;
-    if (hasInjectedRows && hasVisibleDiffs && savedStatus === "verified") effectiveStatus = "updated";
-    else if (!hasVisibleDiffs && (savedStatus === "updated" || savedStatus === "needs_review")) effectiveStatus = "verified";
+    if (!hasVisibleDiffs && (savedStatus === "updated" || savedStatus === "needs_review")) effectiveStatus = "verified";
 
     card.dataset.status = effectiveStatus;
     card.className = card.className.replace(/status-\S+/, `status-${effectiveStatus}`);
@@ -154,7 +151,7 @@ export function updateCardStatuses() {
     }
 
     const diffTable = card.querySelector(".diff-table:not(.fields-table)");
-    if (diffTable) diffTable.style.display = !hasVisibleDiffs && !hasInjectedRows ? "none" : "";
+    if (diffTable) diffTable.style.display = !hasVisibleDiffs ? "none" : "";
     const actions = card.querySelector(".entry-actions");
     if (actions) actions.style.display = !hasVisibleDiffs ? "none" : "";
   });
@@ -164,7 +161,6 @@ export function updateCardStatuses() {
 
 // ─── Rendering ───────────────────────────────────────────────────────
 function renderDiffRow(r, idx, d, hasSuggestion, settings) {
-  const { maxAuthors } = settings;
   const edits = state.fieldEdits[idx];
   const isEnrichment = !(d.original || "").trim();
   // Safe changes adopt the suggestion; major differences wait for the user.
@@ -177,16 +173,14 @@ function renderDiffRow(r, idx, d, hasSuggestion, settings) {
   const fe = edits[d.field];
   const currentAction = fe.action;
 
-  const suggestionText = currentAction === "custom" ? (fe.value || "") : (d.found || "");
-  const displaySuggestion = (d.field === "author" && maxAuthors > 0 && currentAction !== "custom")
-    ? truncateAuthors(suggestionText, maxAuthors) : suggestionText;
-  const authorMatchHidden = d.field === "author" && maxAuthors > 0 && displaySuggestion.trim() === (d.original || "").trim();
+  // Author values are shortened to the "Max authors" setting by updateAuthorPills().
+  const displaySuggestion = currentAction === "custom" ? (fe.value || "") : (d.found || "");
 
   const severity = d.severity || "";
   const reasonHTML = d.reason && !isEnrichment
     ? `<span class="diff-reason diff-reason-${esc(severity)}" title="${esc(d.reason)}">${esc(d.reason)}</span>` : "";
 
-  return `<tr class="diff-row${authorMatchHidden ? " author-match-hidden" : ""}${severity ? ` severity-${esc(severity)}` : ""}" data-entry="${idx}" data-field="${esc(d.field)}" data-action="${currentAction}"
+  return `<tr class="diff-row${severity ? ` severity-${esc(severity)}` : ""}" data-entry="${idx}" data-field="${esc(d.field)}" data-action="${currentAction}"
       data-enrichment="${isEnrichment ? "1" : ""}" data-default="${defaultAction}"${d.prefer === "original" ? ' data-keep-yours="1"' : ""}
       data-found-val="${encodeURIComponent(d.found || "")}"
       data-original-val="${encodeURIComponent(d.original || "")}">

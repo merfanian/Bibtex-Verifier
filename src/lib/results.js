@@ -37,6 +37,10 @@ export function buildResult(entry, index, found, duplicateOf = null, { preferPub
     fieldDiffs = classifyDiffs(
       status === "needs_review" ? fieldDiffsForNeedsReview(entry, found) : cmp.field_diffs,
       entry, found);
+    // A web page, thesis or report can share its title with a paper: a record
+    // with none of its authors is not that source, so there is nothing to compare.
+    if (isUncheckable(entry) && fieldDiffs.some(isDifferentWork))
+      return buildResult(entry, index, null, duplicateOf, { preferPublished, issues });
     if (status === "needs_review") {
       reviewReason = "title";
     } else if (fieldDiffs.some(isDifferentWork)) {

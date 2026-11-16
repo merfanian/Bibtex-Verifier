@@ -21,8 +21,37 @@ describe("classifyDiff: authors", () => {
     assert.equal(sev("author", "Vaswani, Ashish and others", "Ashish Vaswani and Noam Shazeer and Niki Parmar"), SEVERITY.MINOR);
   });
 
-  it("missing authors without 'others' is major", () => {
-    assert.equal(sev("author", "Vaswani, Ashish", "Ashish Vaswani and Noam Shazeer"), SEVERITY.MAJOR);
+  it("a list the record completes is filled in, not sent to review", () => {
+    const end = classifyDiff({ field: "author", original: "Vaswani, Ashish", found: "Ashish Vaswani and Noam Shazeer" });
+    assert.equal(end.severity, SEVERITY.ENRICHMENT);
+    assert.equal(end.reason, "1 author missing from your entry");
+    // One left out in the middle, with and without "and others".
+    const mid = classifyDiff({ field: "author",
+      original: "Landman, D. and Serebrenik, Alexander and Vinju, J.",
+      found: "Landman, D. and Serebrenik, Alexander and Bouwers, Eric and Vinju, J." });
+    assert.equal(mid.severity, SEVERITY.ENRICHMENT);
+    const etal = classifyDiff({ field: "author",
+      original: "Smith, John and Lee, Ann and others", found: "Smith, John and Doe, Jane and Lee, Ann and Poe, Max" });
+    assert.equal(etal.severity, SEVERITY.ENRICHMENT);
+    assert.equal(etal.reason, "1 author missing from your entry");
+  });
+
+  it("a record that starts with someone you don't list is a different first author", () => {
+    const r = classifyDiff({ field: "author", original: "Doe, Jane and Lee, Ann", found: "Smith, John and Doe, Jane and Lee, Ann" });
+    assert.equal(r.severity, SEVERITY.MAJOR);
+    assert.equal(r.reason, "different first author");
+  });
+
+  it("a name the database writes its own way, in the same place of a matching list, is the same person", () => {
+    // Nickname, one-letter variant, and a surname filed under another part of the name.
+    assert.equal(sev("author", "Bavarian, Mohammad and Jun, Heewoo and Chen, Mark", "Bavarian, Mo and Jun, Heewoo and Chen, Mark"), SEVERITY.MINOR);
+    assert.equal(sev("author", "Chen, Mark and Pondé, Henrique and Burda, Yura and others",
+      "Chen, Mark and Pinto, Henrique Pondé de Oliveira and Burda, Yuri and Brockman, Greg"), SEVERITY.MINOR);
+    // Not when the given names are simply different, or nothing else matches.
+    assert.equal(sev("author", "Tian, Yuchen and Chen, Qiufeng", "Tian, Yuchen and Chen, Qian"), SEVERITY.MAJOR);
+    assert.equal(sev("author", "Zhang, Yuanzhi and Li, Ming", "Zhang, Yuan-Fang and Li, Ming"), SEVERITY.MAJOR);
+    assert.equal(sev("author", "Jiang, Weiming and others", "Jiang, Nan and Li, Qi"), SEVERITY.MAJOR);
+    assert.equal(sev("author", "Bavarian, Mohammad", "Bavarian, Mo"), SEVERITY.MAJOR);
   });
 
   it("an author not in the record is major", () => {
@@ -36,7 +65,7 @@ describe("classifyDiff: authors", () => {
   });
 
   it("LaTeX dotless i, apostrophes, suffixes and Turkish ı are minor", () => {
-    assert.equal(sev("author", "D{\\'\\i}az, Mark and Sar{\\i}, Leda", "Diaz, Mark and Sari, Leda and Extra, Person"), SEVERITY.MAJOR);
+    assert.equal(sev("author", "D{\\'\\i}az, Mark and Sar{\\i}, Leda", "Diaz, Mark and Sari, Leda and Extra, Person"), SEVERITY.ENRICHMENT);
     assert.equal(sev("author", "D{\\'\\i}az, Mark and Sar{\\i}, Leda and others", "Diaz, Mark and Sari, Leda and Extra, Person"), SEVERITY.MINOR);
     assert.equal(sev("author", "Blodgett, Su Lin and Daum{\\'e} III, Hal", "Blodgett, Su Lin and Daum'e, Hal"), SEVERITY.MINOR);
     assert.equal(sev("author", "Kiciman, Emre", "Kıcıman, Emre"), SEVERITY.MINOR);
@@ -86,7 +115,7 @@ describe("PR #13 review fixes", () => {
 
   it("'and others' must be a prefix of the full list", () => {
     assert.equal(sev("author", "Doe, Jane and others", "Smith, John and Doe, Jane"), SEVERITY.MAJOR);
-    assert.equal(sev("author", "Smith, John and Lee, Ann and others", "Smith, John and Doe, Jane and Lee, Ann"), SEVERITY.MAJOR);
+    assert.equal(sev("author", "Smith, John and Lee, Ann and others", "Smith, John and Doe, Jane and Lee, Ann"), SEVERITY.ENRICHMENT);
     assert.equal(sev("author", "Smith, John and others", "Smith, John and Doe, Jane"), SEVERITY.MINOR);
   });
 

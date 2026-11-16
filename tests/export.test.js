@@ -100,13 +100,26 @@ describe("buildExportEntries", () => {
     assert.deepEqual(byId.map(e => e.ID), ["x", "z"]);
   });
 
-  it("truncates authors except on not-found entries", () => {
-    const out = buildExportEntries(
-      [{ ID: "a", author: "A and B and C" }, { ID: "b", author: "A and B and C" }],
-      [{ status: "verified", suggested: {} }, { status: "not_found", suggested: {} }],
-      {}, { ...DEFAULT_SETTINGS, maxAuthors: 1 });
-    assert.equal(out[0].author, "A and others");
-    assert.equal(out[1].author, "A and B and C");
+  it("shortens every author list to the limit, whatever the entry's status or choice", () => {
+    const three = "A and B and C";
+    const entries = ["a", "b", "c", "d", "e"].map(ID => ({ ID, author: three }));
+    const statuses = ["verified", "not_found", "unverifiable", "needs_review", "updated"];
+    const edits = {
+      3: { author: { action: "original", value: three } },
+      4: { author: { action: "found", value: "A and B and C and D" } },
+    };
+    const out = buildExportEntries(entries, statuses.map(status => ({ status, suggested: {} })),
+      edits, { ...DEFAULT_SETTINGS, maxAuthors: 1 });
+    assert.deepEqual(out.map(e => e.author), Array(5).fill("A and others"));
+    // No limit: nothing is shortened.
+    const all = buildExportEntries(entries, statuses.map(status => ({ status, suggested: {} })), edits, DEFAULT_SETTINGS);
+    assert.equal(all[4].author, "A and B and C and D");
+  });
+
+  it("leaves an author list the user typed alone", () => {
+    const out = buildExportEntries([{ ID: "a", author: "A and B and C" }], [{ status: "updated", suggested: {} }],
+      { 0: { author: { action: "custom", value: "A and B and C and D" } } }, { ...DEFAULT_SETTINGS, maxAuthors: 1 });
+    assert.equal(out[0].author, "A and B and C and D");
   });
 
   it("cleans notes when asked", () => {

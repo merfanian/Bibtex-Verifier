@@ -2,6 +2,18 @@
 
 What changed for people using BibTeX Verifier, newest first.
 
+## 2026-11-16
+
+### Changed
+- **Fewer author lists sent to review.** When the database record has every author you list, in the same order, and more, the missing authors are added automatically. An author left out in the middle of your list counts the same way.
+- **Max authors** now shortens every entry in the download, including ones that were not found, and the cards show author lists the way the download will have them. A list you typed yourself is kept as typed.
+
+### Fixed
+- A name the database writes its own way ("Mo" for "Mohammad", "Yuri" for "Yura", a surname filed under another part of the name) no longer counts as a different author when the rest of the list agrees.
+- A web page whose title matches an unrelated paper is now "Can't Check", not "Needs Review".
+- Changing **Max authors** no longer moves verified entries to Auto-Updated or adds made-up suggestion rows, and choosing "your value" on an author row now takes effect in the download.
+- Selecting a suggestion again after editing it shows the database value, which is what the download uses.
+
 ## 2026-11-13
 
 ### Changed
