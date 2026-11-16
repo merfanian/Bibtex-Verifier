@@ -2,6 +2,7 @@
 // inline, remove a field, and the "Accept all" / "Keep original" bulk actions.
 import { isUnmatched } from "../lib/index.js";
 import { refreshAuthorRow } from "./authors.js";
+import { updateCardStatuses } from "./cards.js";
 import { updatePreview } from "./preview.js";
 import { state } from "./state.js";
 
@@ -18,8 +19,13 @@ function flashRow(row) {
 
 function syncRowState(row, action) {
   row.dataset.action = action;
-  // Author values are shown shortened to the "Max authors" setting.
-  if (row.dataset.field === "author") refreshAuthorRow(row);
+  // Author values are shown shortened to the "Max authors" setting. Doing so
+  // can hide or show the row, which changes the card's status.
+  if (row.dataset.field === "author") {
+    const wasHidden = row.classList.contains("author-match-hidden");
+    refreshAuthorRow(row);
+    if (row.classList.contains("author-match-hidden") !== wasHidden) updateCardStatuses();
+  }
   flashRow(row);
 }
 

@@ -1,3 +1,5 @@
+import { splitAuthors } from "./latex.js";
+
 // ─── Fuzzy matching ──────────────────────────────────────────────────
 // The browser loads fuzzball as a global; the fallback mirrors its default
 // token_sort_ratio so scores stay the same if the CDN script fails to load.
@@ -72,7 +74,7 @@ export function normalizePages(p) { return p.trim().replace(/\s*-+\s*/g, "-"); }
 export function extractLastNames(authorStr) {
   if (!authorStr) return new Set();
   const names = new Set();
-  for (let part of authorStr.split(/\s+and\s+/i)) {
+  for (let part of splitAuthors(authorStr)) {
     part = part.trim();
     if (!part) continue;
     if (part.includes(",")) names.add(part.split(",")[0].trim().toLowerCase());

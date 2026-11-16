@@ -27,9 +27,10 @@ export function refreshAuthorRow(row) {
   const found = decoded(row, "data-found-val");
   // A value the user typed is theirs: it is neither shortened nor compared.
   const custom = action === "custom";
-  // Shortened, the two lists can come out identical. A row that only fixes
-  // formatting then has nothing to show and is hidden; a real disagreement
-  // stays, with both lists in full so the difference can be seen.
+  // Shortened, the two lists can come out identical. The download is then the
+  // same whichever side is chosen, so a row that isn't a disagreement (name
+  // formatting, or authors added beyond the limit) has nothing to show and is
+  // hidden. A disagreement stays, with both lists in full so it can be seen.
   const same = !custom && cut(orig).trim() === cut(found).trim();
   const major = row.classList.contains("severity-major");
   const shown = same && major ? (authors) => authors : cut;

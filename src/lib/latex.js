@@ -19,3 +19,23 @@ export function stripLatex(text) {
 export function normalizeTitle(title) {
   return stripLatex(title).toLowerCase().trim();
 }
+
+/**
+ * Split a BibTeX author field into names on the "and"s that separate people.
+ * An "and" inside braces belongs to a name: "{Research and Development Group}".
+ */
+export function splitAuthors(authorStr) {
+  const s = String(authorStr ?? "");
+  const parts = [];
+  let depth = 0, start = 0;
+  for (let i = 0; i < s.length; i++) {
+    if (s[i] === "{") depth++;
+    else if (s[i] === "}") depth = Math.max(0, depth - 1);
+    else if (depth === 0 && /\s/.test(s[i])) {
+      const m = /^\s+and\s+/i.exec(s.slice(i));
+      if (m) { parts.push(s.slice(start, i)); i += m[0].length - 1; start = i + 1; }
+    }
+  }
+  parts.push(s.slice(start));
+  return parts;
+}

@@ -1,7 +1,7 @@
 import "./helpers/setup.js";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { buildExportEntries, buildResult, diffLines, findDuplicateTitles, truncateAuthors } from "../src/lib/index.js";
+import { buildExportEntries, buildResult, diffLines, findDuplicateTitles, splitAuthors, truncateAuthors } from "../src/lib/index.js";
 
 const DEFAULT_SETTINGS = {
   removeDuplicates: false, dedupBy: "title", removeNotFound: false,
@@ -54,6 +54,26 @@ describe("truncateAuthors", () => {
     assert.equal(truncateAuthors("A and B and C", 2), "A and B and others");
     assert.equal(truncateAuthors("A and B and C", 0), "A and B and C");
     assert.equal(truncateAuthors("", 2), "");
+  });
+
+  it("an 'and' inside braces is part of a name, not a separator", () => {
+    const org = "Doe, Jane and Smith, John and {Research and Development Group}";
+    assert.equal(truncateAuthors(org, 3), org);
+    assert.equal(truncateAuthors(org, 2), "Doe, Jane and Smith, John and others");
+    assert.equal(truncateAuthors("{Research and Development Group} and Doe, Jane and Lee, Ann", 1),
+      "{Research and Development Group} and others");
+    const out = buildExportEntries([{ ID: "a", author: org }], [{ status: "not_found", suggested: {} }],
+      {}, { ...DEFAULT_SETTINGS, maxAuthors: 3 });
+    assert.equal(out[0].author, org);
+  });
+});
+
+describe("splitAuthors", () => {
+  it("splits on top-level 'and' only", () => {
+    assert.deepEqual(splitAuthors("A and B AND C"), ["A", "B", "C"]);
+    assert.deepEqual(splitAuthors("{Barnes and Noble} and Doe, J."), ["{Barnes and Noble}", "Doe, J."]);
+    assert.deepEqual(splitAuthors("Alexander, Sandy"), ["Alexander, Sandy"], "'and' inside a word");
+    assert.deepEqual(splitAuthors(""), [""]);
   });
 });
 

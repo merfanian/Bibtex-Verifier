@@ -1,7 +1,7 @@
 // Triage field differences: which ones are cosmetic (formatting, venue
 // spelled differently, preprint year) and which ones need the user's eyes
 // (different authors, conflicting DOI, a different venue, …).
-import { stripLatex } from "./latex.js";
+import { splitAuthors, stripLatex } from "./latex.js";
 import { VENUE_ABBREVIATIONS } from "./venues.js";
 
 export const SEVERITY = {
@@ -55,7 +55,7 @@ const NAME_SUFFIXES = new Set(["jr", "sr", "ii", "iii", "iv"]);
 export function parseAuthors(authorStr) {
   const people = [];
   let truncated = false;
-  for (let part of String(authorStr ?? "").split(/\s+and\s+/i)) {
+  for (let part of splitAuthors(authorStr)) {
     part = part.trim();
     if (!part) continue;
     if (ETAL_RE.test(part.replace(/[{}]/g, ""))) { truncated = true; continue; }
