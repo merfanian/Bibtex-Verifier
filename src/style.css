@@ -242,30 +242,6 @@ code {
   letter-spacing: -0.01em;
 }
 
-/* Quiet author credit next to the product name */
-.brand-byline {
-  align-self: center;
-  margin-left: 0.15rem;
-  padding-left: 0.75rem;
-  border-left: 1px solid var(--border);
-  color: var(--text-dim);
-  font-size: 0.85rem;
-  line-height: 1.2;
-  text-decoration: none;
-  white-space: nowrap;
-  transition: color 0.15s;
-}
-
-.brand-byline:hover,
-.brand-byline:focus-visible {
-  color: var(--accent);
-  text-decoration: none;
-}
-
-@media (max-width: 560px) {
-  .brand-byline { display: none; }
-}
-
 /* Header controls share one height */
 .hero-top-right {
   --control-h: 36px;
