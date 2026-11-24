@@ -2,6 +2,11 @@
 
 What changed for people using BibTeX Verifier, newest first.
 
+## 2026-11-23
+
+### Added
+- The start page links to **[Glimpse](https://merfanian.github.io/glimpse/)**, a free browser extension from the same author. It previews cited papers while you read and copies their BibTeX, so you can check that BibTeX here before you submit.
+
 ## 2026-11-16
 
 ### Changed
